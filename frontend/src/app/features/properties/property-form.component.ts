@@ -81,8 +81,8 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
       <aside>
         @if (property(); as p) {
           <section class="panel lifecycle">
-            <h2>{{ p.status === 'available' ? 'Assign tenant' : 'Tenancy' }}</h2>
-            @if (p.status === 'available') {
+            <h2>{{ p.status === 'owned' ? 'Tenancy' : 'Assign tenant' }}</h2>
+            @if (p.status === 'available' || p.status === 'booked') {
               <p>Complete the tenant details to move this property to Occupied.</p>
               <form [formGroup]="tenantForm" (ngSubmit)="assignTenant()">
                 <label class="field"

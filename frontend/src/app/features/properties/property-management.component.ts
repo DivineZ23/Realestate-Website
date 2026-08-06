@@ -90,24 +90,14 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
               <td>{{ property.updatedAt | date: 'mediumDate' }}</td>
               <td>
                 <div class="row-actions">
-                  <a [routerLink]="[property.id, 'edit']">Manage</a>
-                  @if (property.status === 'available') {
-                    <a [routerLink]="[property.id, 'edit']" [queryParams]="{ action: 'assign' }"
-                      >Assign</a
-                    >
-                  }
-                  ><select
-                    [value]="property.status"
-                    (change)="changeStatus(property, $any($event.target).value)"
-                  >
-                    @for (status of statuses; track status.value) {
-                      <option [value]="status.value" [disabled]="status.value === 'owned'">
-                        {{ status.label }}
-                      </option>
-                    }
-                  </select>
-                  @if (property.status === 'owned') {
+                  @if (property.status === 'available' || property.status === 'booked') {
+                    <a [routerLink]="[property.id, 'edit']">Assign</a>
+                  } @else if (property.status === 'owned') {
                     <button class="danger" (click)="evict(property)">Evict</button>
+                  }
+                  @if (property.status === 'booked') {
+                    <span class="action-separator" aria-hidden="true">·</span>
+                    <button (click)="release(property)">Release</button>
                   }
                   @if (auth.isManager()) {
                     <button class="danger" (click)="remove(property)">Delete</button>
@@ -168,8 +158,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         margin-bottom: 18px;
       }
       .toolbar input,
-      .toolbar select,
-      .row-actions select {
+      .toolbar select {
         height: 42px;
         border: 1px solid var(--border);
         border-radius: 9px;
@@ -198,9 +187,8 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
       .row-actions .danger {
         color: var(--danger);
       }
-      .row-actions select {
-        height: 32px;
-        font-size: 0.75rem;
+      .action-separator {
+        color: var(--muted);
       }
       .pagination {
         display: flex;
@@ -269,25 +257,19 @@ export class PropertyManagementComponent {
   refresh() {
     this.filters.controls.page.setValue(this.filters.controls.page.value, { emitEvent: true });
   }
-  changeStatus(property: Property, status: PropertyStatus) {
-    if (status === property.status) return;
-    if (status === 'owned') {
-      return;
-    }
+  release(property: Property) {
     this.dialog
       .open(ConfirmDialogComponent, {
         data: {
-          title: `Mark ${property.propertyName} ${status}?`,
-          message: 'This change is recorded in property history and the audit log.',
-          confirmLabel: 'Change status',
+          title: 'Release this property?',
+          message: 'The current booking will be removed and the property will become available.',
+          confirmLabel: 'Release',
         },
       })
       .afterClosed()
       .subscribe((result) => {
         if (result?.confirmed)
-          this.service
-            .changeStatus(property.id, status, result.reason)
-            .subscribe(() => this.refresh());
+          this.service.changeStatus(property.id, 'available').subscribe(() => this.refresh());
       });
   }
   evict(property: Property) {

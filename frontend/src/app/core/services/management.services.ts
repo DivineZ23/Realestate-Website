@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { API_ENDPOINTS } from '../config/api-endpoints';
 import { PagedResult } from '../models/api.models';
 import {
@@ -17,7 +17,9 @@ import {
   ApprovalStatus,
   TeamMember,
   User,
+  normalizeUser,
   UserRole,
+  UserWire,
 } from '../models/user.models';
 import { ApiService } from './api.service';
 
@@ -83,14 +85,18 @@ export class UserService {
   all(
     filters: { approval?: ApprovalStatus; access?: AccessStatus; role?: UserRole } = {},
   ): Observable<PagedResult<User>> {
-    return this.api.get(API_ENDPOINTS.users, { page: 1, pageSize: 100, ...filters });
+    return this.api
+      .get<PagedResult<UserWire>>(API_ENDPOINTS.users, { page: 1, pageSize: 100, ...filters })
+      .pipe(map((page) => ({ ...page, items: page.items.map(normalizeUser) })));
   }
   action(
     id: string,
     action: 'approve' | 'reject' | 'promote' | 'demote' | 'revoke' | 'restore',
     reason?: string,
   ): Observable<User> {
-    return this.api.post(`${API_ENDPOINTS.users}/${id}/${action}`, { reason });
+    return this.api
+      .post<{ reason?: string }, UserWire>(`${API_ENDPOINTS.users}/${id}/${action}`, { reason })
+      .pipe(map(normalizeUser));
   }
   delete(id: string, reason: string): Observable<void> {
     return this.api.delete(`${API_ENDPOINTS.users}/${id}`, { reason });

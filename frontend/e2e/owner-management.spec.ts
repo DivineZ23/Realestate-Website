@@ -83,15 +83,3 @@ test('manager cannot grant manager role', async ({ page }) => {
   await expect(agentCard.getByRole('button', { name: 'Promote to Manager' })).toHaveCount(0);
   await expect(agentCard.getByRole('button', { name: 'Revoke' })).toBeVisible();
 });
-
-test('numeric API enum values display and authorize as Owner', async ({ page }) => {
-  await page.route('**/api/v1/auth/me', (route) =>
-    route.fulfill({
-      json: { ...owner, role: 2, approvalStatus: 1, accessStatus: 0 },
-    }),
-  );
-
-  await page.goto('/dashboard');
-  await expect(page.locator('.account small')).toHaveText('Owner');
-  await expect(page.locator('aside nav').getByRole('link', { name: 'Users' })).toBeVisible();
-});

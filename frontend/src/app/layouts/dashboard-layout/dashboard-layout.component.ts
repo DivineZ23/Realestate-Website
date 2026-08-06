@@ -1,4 +1,3 @@
-import { TitleCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -6,7 +5,7 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
 
 @Component({
   selector: 'app-dashboard-layout',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, ThemeToggleComponent, TitleCasePipe],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, ThemeToggleComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div class="shell" [class.collapsed]="collapsed()">
     <aside>
@@ -52,7 +51,7 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
           <a routerLink="/dashboard/profile"
             ><img [src]="auth.user()?.avatarUrl || fallback" alt="" /><span
               ><b>{{ auth.user()?.displayName }}</b
-              ><small>{{ auth.user()?.role | titlecase }}</small></span
+              ><small>{{ auth.user()?.role }}</small></span
             ></a
           ><button (click)="auth.logout()">Sign out</button>
         </div>

@@ -1,8 +1,8 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { catchError, map, Observable, of, shareReplay, tap } from 'rxjs';
+import { catchError, Observable, of, shareReplay, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { API_ENDPOINTS } from '../config/api-endpoints';
-import { normalizeUser, User, UserWire } from '../models/user.models';
+import { User } from '../models/user.models';
 import { ApiService } from './api.service';
 
 @Injectable({ providedIn: 'root' })
@@ -22,8 +22,7 @@ export class AuthService {
 
   loadCurrentUser(): Observable<User | null> {
     if (this.state() !== undefined) return of(this.state() ?? null);
-    return (this.loading$ ??= this.api.get<UserWire>(API_ENDPOINTS.auth.me).pipe(
-      map(normalizeUser),
+    return (this.loading$ ??= this.api.get<User>(API_ENDPOINTS.auth.me).pipe(
       tap((user) => this.state.set(user)),
       catchError(() => {
         this.state.set(null);

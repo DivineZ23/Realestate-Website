@@ -1,4 +1,4 @@
-import { CurrencyPipe, DatePipe, TitleCasePipe } from '@angular/common';
+import { DatePipe, TitleCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -19,7 +19,6 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
 @Component({
   selector: 'app-property-form',
   imports: [
-    CurrencyPipe,
     DatePipe,
     TitleCasePipe,
     ReactiveFormsModule,
@@ -71,40 +70,6 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
           </div>
         </section>
         <section>
-          <h2>Pricing & dimensions</h2>
-          <div class="fields">
-            <label class="field"
-              ><span>Monthly rent</span><input type="number" formControlName="rent" /></label
-            ><label class="field"
-              ><span>Security deposit</span
-              ><input type="number" formControlName="securityDeposit" /></label
-            ><label class="field"
-              ><span>Bedrooms</span><input type="number" formControlName="bedrooms" /></label
-            ><label class="field"
-              ><span>Bathrooms</span><input type="number" formControlName="bathrooms" /></label
-            ><label class="field"
-              ><span>Floor</span><input type="number" formControlName="floor" /></label
-            ><label class="field"
-              ><span>Area (sq ft)</span><input type="number" formControlName="area" /></label
-            ><label class="field"
-              ><span>Furnishing</span
-              ><select formControlName="furnishingStatus">
-                <option value="">Not specified</option>
-                <option>Furnished</option>
-                <option>Semi-furnished</option>
-                <option>Unfurnished</option>
-              </select></label
-            ><label class="field"><span>Storage</span><input formControlName="storage" /></label>
-          </div>
-        </section>
-        <section>
-          <h2>Amenities</h2>
-          <label class="field"
-            ><span>Comma-separated amenities</span
-            ><input formControlName="amenitiesText" placeholder="Parking, Security, Balcony"
-          /></label>
-        </section>
-        <section>
           <h2>Property images</h2>
           <app-image-uploader [images]="images()" (imagesChange)="images.set($event)" />
         </section>
@@ -116,9 +81,9 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
       <aside>
         @if (property(); as p) {
           <section class="panel lifecycle">
-            <h2>Lifecycle</h2>
-            <p>Occupied status can only be set with complete tenant details.</p>
-            @if (p.status === 'available' || p.status === 'booked') {
+            <h2>{{ p.status === 'available' ? 'Assign tenant' : 'Tenancy' }}</h2>
+            @if (p.status === 'available') {
+              <p>Complete the tenant details to move this property to Occupied.</p>
               <form [formGroup]="tenantForm" (ngSubmit)="assignTenant()">
                 <label class="field"
                   ><span>Tenant full name</span><input formControlName="fullName" /></label
@@ -137,7 +102,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
                 ><label class="field"
                   ><span>Notes</span><textarea rows="3" formControlName="notes"></textarea></label
                 ><button class="btn btn-primary" [disabled]="tenantForm.invalid || saving()">
-                  Finalize tenancy
+                  Assign tenant
                 </button>
               </form>
             } @else if (p.status === 'owned') {
@@ -145,17 +110,11 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
                 <b>Active tenant linked</b>
                 <p>Use the Evict action from the property table to end this tenancy safely.</p>
               </div>
-            } @else {
-              <p>Make the property available before assigning a tenant.</p>
             }
           </section>
           <section class="panel summary">
             <h2>At a glance</h2>
             <dl>
-              <div>
-                <dt>Rent</dt>
-                <dd>{{ p.rent | currency: 'USD' : 'symbol' : '1.0-0' }}</dd>
-              </div>
               <div>
                 <dt>Block</dt>
                 <dd>{{ p.blockName }}</dd>
@@ -301,15 +260,6 @@ export class PropertyFormComponent {
     propertyName: new FormControl('', { nonNullable: true, validators: Validators.required }),
     description: new FormControl(''),
     type: new FormControl<PropertyType>('apartment', { nonNullable: true }),
-    storage: new FormControl(''),
-    rent: new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
-    securityDeposit: new FormControl<number | null>(null, Validators.min(0)),
-    bedrooms: new FormControl<number | null>(null, Validators.min(0)),
-    bathrooms: new FormControl<number | null>(null, Validators.min(0)),
-    floor: new FormControl<number | null>(null),
-    area: new FormControl<number | null>(null, Validators.min(0)),
-    furnishingStatus: new FormControl(''),
-    amenitiesText: new FormControl(''),
     isFeatured: new FormControl(false, { nonNullable: true }),
     isActive: new FormControl(true, { nonNullable: true }),
   });
@@ -337,7 +287,7 @@ export class PropertyFormComponent {
         this.service.details(id).subscribe((p) => {
           this.property.set(p);
           this.images.set(p.images);
-          this.form.patchValue({ ...p, amenitiesText: p.amenities.join(', ') });
+          this.form.patchValue(p);
           this.tenantForm.patchValue({
             monthlyRent: p.rent,
             securityDeposit: p.securityDeposit ?? null,
@@ -349,23 +299,25 @@ export class PropertyFormComponent {
     if (this.form.invalid) return;
     this.saving.set(true);
     const raw = this.form.getRawValue();
+    const existing = this.property();
     const body: UpsertPropertyRequest = {
-      ...raw,
       propertyId: raw.propertyId!,
-      rent: raw.rent!,
+      blockId: raw.blockId,
+      propertyName: raw.propertyName,
       description: raw.description || null,
-      storage: raw.storage || null,
-      securityDeposit: raw.securityDeposit,
-      bedrooms: raw.bedrooms,
-      bathrooms: raw.bathrooms,
-      floor: raw.floor,
-      area: raw.area,
-      furnishingStatus: raw.furnishingStatus || null,
-      amenities: (raw.amenitiesText || '')
-        .split(',')
-        .map((x) => x.trim())
-        .filter(Boolean),
+      type: raw.type,
+      storage: existing?.storage ?? null,
+      rent: existing?.rent ?? 0,
+      securityDeposit: existing?.securityDeposit ?? null,
+      bedrooms: existing?.bedrooms ?? null,
+      bathrooms: existing?.bathrooms ?? null,
+      floor: existing?.floor ?? null,
+      area: existing?.area ?? null,
+      furnishingStatus: existing?.furnishingStatus ?? null,
+      amenities: existing?.amenities ?? [],
       images: this.images(),
+      isFeatured: raw.isFeatured,
+      isActive: raw.isActive,
     };
     const request = this.id() ? this.service.update(this.id()!, body) : this.service.create(body);
     request.subscribe({

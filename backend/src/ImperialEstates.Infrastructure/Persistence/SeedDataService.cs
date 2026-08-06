@@ -26,12 +26,11 @@ public sealed class SeedDataService(MongoContext db)
             Property(246, chinaTown.Id, "ChinaTown Apt 2", PropertyType.Apartment, 2850, PropertyStatus.Booked, false, "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1400&q=80"),
             Property(247, chinaTown.Id, "ChinaTown Apt 3", PropertyType.Apartment, 3200, PropertyStatus.Owned, false, "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=80"),
             Property(301, riverside.Id, "Riverside Villa", PropertyType.Villa, 5800, PropertyStatus.Available, true, "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=1400&q=80"),
-            Property(302, riverside.Id, "Garden House", PropertyType.House, 4100, PropertyStatus.Unavailable, false, "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1400&q=80")
+            Property(302, riverside.Id, "Garden House", PropertyType.House, 4100, PropertyStatus.Available, false, "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1400&q=80")
         };
         var tenant = new Tenant { Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString(), PropertyId = properties[2].Id, FullName = "Sample Tenant", PhoneNumber = "+1 555 0100", StartDate = DateTime.UtcNow.AddMonths(-3), MonthlyRent = properties[2].Rent, Status = TenantStatus.Active };
         properties[2].SetTenantForPersistence(tenant.Id);
         properties[1].SetBookingForPersistence("seed-enquiry-booked");
-        properties[4].SetUnavailableReasonForPersistence("Scheduled refurbishment");
         await db.Properties.InsertManyAsync(properties, cancellationToken: ct);
         await db.Tenants.InsertOneAsync(tenant, cancellationToken: ct);
         await db.Enquiries.InsertManyAsync([

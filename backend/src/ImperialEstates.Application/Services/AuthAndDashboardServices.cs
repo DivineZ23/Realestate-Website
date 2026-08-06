@@ -34,9 +34,9 @@ public sealed class DashboardService(IBlockRepository blocks, IPropertyRepositor
         await properties.CountByStatusAsync(PropertyStatus.Available, ct),
         await properties.CountByStatusAsync(PropertyStatus.Booked, ct),
         await properties.CountByStatusAsync(PropertyStatus.Owned, ct),
-        await properties.CountByStatusAsync(PropertyStatus.Unavailable, ct),
         await enquiries.CountPendingAsync(ct),
         await users.CountPendingAsync(ct),
-        (await history.GetRecentAsync(8, ct)).Select(x => x.ToDto()).ToList());
+        (await history.GetRecentAsync(8, ct))
+            .Where(x => x.PreviousStatus != PropertyStatus.Unavailable && x.NewStatus != PropertyStatus.Unavailable)
+            .Select(x => x.ToDto()).ToList());
 }
-

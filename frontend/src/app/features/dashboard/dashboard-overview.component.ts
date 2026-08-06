@@ -17,7 +17,6 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         <h1>Overview</h1>
         <p>Live operational status across Imperial Estates.</p>
       </div>
-      <a class="btn btn-primary" routerLink="/dashboard/properties/new">Add property</a>
     </div>
     @if (summary(); as s) {
       <div class="stats">
@@ -36,10 +35,6 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         <article>
           <span>Occupied</span><b>{{ s.occupiedProperties }}</b
           ><small>Active tenancies</small>
-        </article>
-        <article>
-          <span>Unavailable</span><b>{{ s.unavailableProperties }}</b
-          ><small>Internal or maintenance</small>
         </article>
       </div>
       <div class="dashboard-grid">
@@ -78,9 +73,6 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
                 ><span>Pending approvals</span><b>{{ s.pendingUsers }}</b></a
               >
             }
-            <a routerLink="/dashboard/properties"
-              ><span>Unavailable properties</span><b>{{ s.unavailableProperties }}</b></a
-            >
           </section>
           <section class="panel occupancy">
             <div class="ring" [style.--pct]="occupancyPercent(s)">
@@ -114,7 +106,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
       }
       .stats {
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 14px;
         margin-bottom: 20px;
       }

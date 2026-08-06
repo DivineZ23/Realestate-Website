@@ -1,0 +1,105 @@
+import { expect, Page, test } from '@playwright/test';
+
+const manager = {
+  id: 'manager-1',
+  discordUserId: 'discord-1',
+  username: 'manager',
+  displayName: 'Manager',
+  role: 'manager',
+  approvalStatus: 'approved',
+  accessStatus: 'active',
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+};
+
+const block = {
+  id: 'block-1',
+  blockId: 1,
+  blockName: 'Central Block',
+  numberOfProperties: 2,
+  isActive: true,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+};
+
+const property = (id: string, status: 'available' | 'owned') => ({
+  id,
+  propertyId: id === 'available-1' ? 101 : 102,
+  blockId: block.id,
+  blockName: block.blockName,
+  propertyName: id === 'available-1' ? 'Available Home' : 'Owned Home',
+  type: 'apartment',
+  rent: 0,
+  status,
+  amenities: [],
+  images: [],
+  isFeatured: false,
+  isActive: true,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+});
+
+async function authenticate(page: Page) {
+  await page.route('**/api/v1/auth/me', (route) => route.fulfill({ json: manager }));
+}
+
+test('overview omits property creation and unavailable status', async ({ page }) => {
+  await authenticate(page);
+  await page.route('**/api/v1/dashboard', (route) =>
+    route.fulfill({
+      json: {
+        totalBlocks: 1,
+        totalProperties: 2,
+        availableProperties: 1,
+        bookedProperties: 0,
+        occupiedProperties: 1,
+        pendingEnquiries: 0,
+        pendingUsers: 0,
+        recentStatusChanges: [],
+      },
+    }),
+  );
+
+  await page.goto('/dashboard');
+  await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Add property' })).toHaveCount(0);
+  await expect(page.getByText('Unavailable', { exact: true })).toHaveCount(0);
+});
+
+test('property actions switch from Assign to Evict by status', async ({ page }) => {
+  await authenticate(page);
+  await page.route('**/api/v1/blocks', (route) => route.fulfill({ json: [block] }));
+  await page.route('**/api/v1/properties?**', (route) =>
+    route.fulfill({
+      json: {
+        items: [property('available-1', 'available'), property('owned-1', 'owned')],
+        page: 1,
+        pageSize: 20,
+        totalItems: 2,
+        totalPages: 1,
+        hasPreviousPage: false,
+        hasNextPage: false,
+      },
+    }),
+  );
+
+  await page.goto('/dashboard/properties');
+  const availableRow = page.getByRole('row').filter({ hasText: 'Available Home' });
+  const ownedRow = page.getByRole('row').filter({ hasText: 'Owned Home' });
+  await expect(availableRow.getByRole('link', { name: 'Assign' })).toBeVisible();
+  await expect(availableRow.getByRole('button', { name: 'Evict' })).toHaveCount(0);
+  await expect(ownedRow.getByRole('button', { name: 'Evict' })).toBeVisible();
+  await expect(ownedRow.getByRole('link', { name: 'Assign' })).toHaveCount(0);
+  await expect(page.getByRole('option', { name: 'Unavailable' })).toHaveCount(0);
+});
+
+test('new property form omits pricing, dimensions, and amenities', async ({ page }) => {
+  await authenticate(page);
+  await page.route('**/api/v1/blocks', (route) => route.fulfill({ json: [block] }));
+
+  await page.goto('/dashboard/properties/new');
+  await expect(page.getByRole('heading', { name: 'Add a property' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Pricing & dimensions' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Amenities' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Property images' })).toBeVisible();
+});

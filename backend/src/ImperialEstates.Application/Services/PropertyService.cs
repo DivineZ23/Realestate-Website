@@ -81,7 +81,7 @@ public sealed class PropertyService(
         {
             case PropertyStatus.Available: value.MakeAvailable(); break;
             case PropertyStatus.Booked: value.MarkBooked(request.EnquiryId); break;
-            case PropertyStatus.Unavailable: value.MarkUnavailable(request.Reason ?? string.Empty); break;
+            case PropertyStatus.Unavailable: throw new DomainRuleException("Unavailable status is not enabled.", "STATUS_NOT_SUPPORTED");
             case PropertyStatus.Owned: throw new DomainRuleException("Assign tenant information to occupy a property.", "TENANT_REQUIRED");
         }
         value.UpdatedBy = actorId;

@@ -63,7 +63,6 @@ export interface DashboardSummary {
   availableProperties: number;
   bookedProperties: number;
   occupiedProperties: number;
-  unavailableProperties: number;
   pendingEnquiries: number;
   pendingUsers: number;
   recentStatusChanges: StatusHistory[];

@@ -108,7 +108,7 @@ Set `SeedData__Enabled=true` (direct process) or `SEED_DATA=true` (Compose). See
 - one manager, two active agents, and one pending agent;
 - ChinaTown (Block ID 2), Riverside Court, and five properties;
 - ChinaTown Apt 1/2/3 with Property IDs 245/246/247;
-- available, booked, occupied, and unavailable examples;
+- available, booked, and occupied examples;
 - a tenant, enquiries, and property status history.
 
 Seed profiles are synthetic and do not bypass Discord.

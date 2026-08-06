@@ -90,7 +90,12 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
               <td>{{ property.updatedAt | date: 'mediumDate' }}</td>
               <td>
                 <div class="row-actions">
-                  <a [routerLink]="[property.id, 'edit']">Manage</a
+                  <a [routerLink]="[property.id, 'edit']">Manage</a>
+                  @if (property.status === 'available') {
+                    <a [routerLink]="[property.id, 'edit']" [queryParams]="{ action: 'assign' }"
+                      >Assign</a
+                    >
+                  }
                   ><select
                     [value]="property.status"
                     (change)="changeStatus(property, $any($event.target).value)"
@@ -269,13 +274,11 @@ export class PropertyManagementComponent {
     if (status === 'owned') {
       return;
     }
-    const reasonRequired = status === 'unavailable';
     this.dialog
       .open(ConfirmDialogComponent, {
         data: {
           title: `Mark ${property.propertyName} ${status}?`,
           message: 'This change is recorded in property history and the audit log.',
-          requireReason: reasonRequired,
           confirmLabel: 'Change status',
         },
       })

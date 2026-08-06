@@ -194,7 +194,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
       }
       .stats .available span,
       .stats .available small {
-        color: var(--contrast-muted);
+        color: inherit;
       }
       .dashboard-grid {
         display: grid;

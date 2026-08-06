@@ -1,9 +1,13 @@
-import { DatePipe, TitleCasePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { PROPERTY_TYPES } from '../../core/constants/property-status.constants';
+import {
+  isSupportedPropertyType,
+  PROPERTY_TYPE_OPTIONS,
+  propertyTypeCapacity,
+} from '../../core/constants/property-status.constants';
 import {
   AssignTenantRequest,
   Block,
@@ -20,7 +24,6 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
   selector: 'app-property-form',
   imports: [
     DatePipe,
-    TitleCasePipe,
     ReactiveFormsModule,
     RouterLink,
     ImageUploaderComponent,
@@ -58,10 +61,15 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
                 }
               </select></label
             ><label class="field"
-              ><span>Type</span
+              ><span class="field-heading"
+                ><span>Type</span
+                ><small class="capacity"
+                  >Capacity: {{ capacity(form.controls.type.value) }}
+                  {{ capacity(form.controls.type.value) === 1 ? 'person' : 'people' }}</small
+                ></span
               ><select formControlName="type">
-                @for (type of types; track type) {
-                  <option [value]="type">{{ type | titlecase }}</option>
+                @for (type of types; track type.value) {
+                  <option [value]="type.value">{{ type.label }}</option>
                 }
               </select></label
             ><label class="field wide"
@@ -167,9 +175,26 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 16px;
+        align-items: start;
       }
       .wide {
         grid-column: 1/-1;
+      }
+      .field-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .capacity {
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--forest-light);
+        color: var(--forest);
+        font-size: 0.68rem;
+        font-weight: 750;
+        line-height: 1.3;
+        white-space: nowrap;
       }
       .checks {
         display: flex;
@@ -253,13 +278,14 @@ export class PropertyFormComponent {
   readonly blocks = signal<Block[]>([]);
   readonly images = signal<string[]>([]);
   readonly saving = signal(false);
-  readonly types = PROPERTY_TYPES;
+  readonly types = PROPERTY_TYPE_OPTIONS;
+  readonly capacity = propertyTypeCapacity;
   readonly form = new FormGroup({
     propertyId: new FormControl<number | null>(null, [Validators.required, Validators.min(1)]),
     blockId: new FormControl('', { nonNullable: true, validators: Validators.required }),
     propertyName: new FormControl('', { nonNullable: true, validators: Validators.required }),
     description: new FormControl(''),
-    type: new FormControl<PropertyType>('apartment', { nonNullable: true }),
+    type: new FormControl<PropertyType>('motel', { nonNullable: true }),
     isFeatured: new FormControl(false, { nonNullable: true }),
     isActive: new FormControl(true, { nonNullable: true }),
   });
@@ -287,7 +313,10 @@ export class PropertyFormComponent {
         this.service.details(id).subscribe((p) => {
           this.property.set(p);
           this.images.set(p.images);
-          this.form.patchValue(p);
+          this.form.patchValue({
+            ...p,
+            type: isSupportedPropertyType(p.type) ? p.type : 'motel',
+          });
           this.tenantForm.patchValue({
             monthlyRent: p.rent,
             securityDeposit: p.securityDeposit ?? null,

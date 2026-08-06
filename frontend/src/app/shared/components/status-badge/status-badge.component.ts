@@ -16,20 +16,20 @@ import { PropertyStatus } from '../../../core/models/property.models';
         text-transform: capitalize;
       }
       .available {
-        background: #dcece3;
-        color: #14533d;
+        background: var(--available-bg);
+        color: var(--available-ink);
       }
       .booked {
-        background: #f7e9cb;
-        color: #7a541a;
+        background: var(--booked-bg);
+        color: var(--booked-ink);
       }
       .owned {
-        background: #dfe7f3;
-        color: #294c7b;
+        background: var(--owned-bg);
+        color: var(--owned-ink);
       }
       .unavailable {
-        background: #ece7e4;
-        color: #655b56;
+        background: var(--neutral-soft);
+        color: var(--muted);
       }
     `,
   ],

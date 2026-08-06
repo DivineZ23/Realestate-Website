@@ -1,4 +1,4 @@
-import { CurrencyPipe, TitleCasePipe } from '@angular/common';
+import { CurrencyPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -7,6 +7,10 @@ import { catchError, of, switchMap } from 'rxjs';
 import { PublicProperty } from '../../core/models/property.models';
 import { EnquiryService } from '../../core/services/management.services';
 import { PropertyService } from '../../core/services/property.service';
+import {
+  propertyTypeCapacity,
+  propertyTypeLabel,
+} from '../../core/constants/property-status.constants';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { PropertyCardComponent } from '../../shared/components/property-card/property-card.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
@@ -15,7 +19,6 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
   selector: 'app-property-details',
   imports: [
     CurrencyPipe,
-    TitleCasePipe,
     ReactiveFormsModule,
     RouterLink,
     StatusBadgeComponent,
@@ -56,17 +59,11 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
             </div>
             <div class="facts">
               <span
-                ><b>{{ p.type | titlecase }}</b
-                >Type</span
+                ><b>{{ typeLabel(p.type) }}</b
+                >Interior structure</span
               ><span
-                ><b>{{ p.bedrooms ?? '—' }}</b
-                >Bedrooms</span
-              ><span
-                ><b>{{ p.bathrooms ?? '—' }}</b
-                >Bathrooms</span
-              ><span
-                ><b>{{ p.area ?? '—' }}</b
-                >Sq ft</span
+                ><b>{{ p.personCapacity ?? typeCapacity(p.type) ?? '—' }}</b
+                >Person capacity</span
               >
             </div>
             <section>
@@ -256,7 +253,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
       }
       .facts {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         padding: 26px 0;
         border-bottom: 1px solid var(--border);
       }
@@ -342,7 +339,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         margin: 5px 0 0;
       }
       .related {
-        background: #e9ede8;
+        background: var(--surface-soft);
       }
       .related-grid {
         display: grid;
@@ -413,6 +410,8 @@ export class PropertyDetailsComponent {
   readonly notFound = signal(false);
   readonly submitting = signal(false);
   readonly submitted = signal(false);
+  readonly typeLabel = propertyTypeLabel;
+  readonly typeCapacity = propertyTypeCapacity;
   readonly fallback =
     'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1400&q=80';
   readonly form = new FormGroup({

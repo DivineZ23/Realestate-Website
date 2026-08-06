@@ -138,7 +138,7 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
     `
       .hero {
         padding: 44px 0 82px;
-        background: linear-gradient(120deg, #f7f5f0 58%, #ecebe4 58%);
+        background: linear-gradient(120deg, var(--paper) 58%, var(--surface-muted) 58%);
       }
       .hero-grid {
         display: grid;
@@ -225,7 +225,7 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
         gap: 22px;
       }
       .highlights {
-        background: #e7ece7;
+        background: var(--surface-soft);
       }
       .highlight-grid {
         display: grid;
@@ -241,7 +241,7 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
         grid-template-columns: 50px 1fr;
         gap: 18px;
         padding: 24px 0;
-        border-bottom: 1px solid #cbd4ce;
+        border-bottom: 1px solid var(--border);
       }
       .benefits article > span {
         color: var(--bronze);
@@ -280,8 +280,8 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
       }
       .cta {
         text-align: center;
-        background: #173f38;
-        color: #fff;
+        background: var(--contrast-surface);
+        color: var(--contrast-text);
         padding: 100px 0;
       }
       .cta h2 {
@@ -289,7 +289,7 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
         margin: 18px auto 30px;
       }
       .cta .btn {
-        background: white;
+        background: var(--contrast-text);
         color: var(--forest);
       }
       @media (max-width: 900px) {

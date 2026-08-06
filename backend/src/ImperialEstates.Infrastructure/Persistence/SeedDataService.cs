@@ -22,11 +22,11 @@ public sealed class SeedDataService(MongoContext db)
 
         var properties = new List<Property>
         {
-            Property(245, chinaTown.Id, "ChinaTown Apt 1", PropertyType.Apartment, 2450, PropertyStatus.Available, true, "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1400&q=80"),
-            Property(246, chinaTown.Id, "ChinaTown Apt 2", PropertyType.Apartment, 2850, PropertyStatus.Booked, false, "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1400&q=80"),
-            Property(247, chinaTown.Id, "ChinaTown Apt 3", PropertyType.Apartment, 3200, PropertyStatus.Owned, false, "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=80"),
-            Property(301, riverside.Id, "Riverside Villa", PropertyType.Villa, 5800, PropertyStatus.Available, true, "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=1400&q=80"),
-            Property(302, riverside.Id, "Garden House", PropertyType.House, 4100, PropertyStatus.Available, false, "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1400&q=80")
+            Property(245, chinaTown.Id, "ChinaTown Apt 1", PropertyType.LowEndApartment, 2450, PropertyStatus.Available, true, "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1400&q=80"),
+            Property(246, chinaTown.Id, "ChinaTown Apt 2", PropertyType.MidEndApartment, 2850, PropertyStatus.Booked, false, "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1400&q=80"),
+            Property(247, chinaTown.Id, "ChinaTown Apt 3", PropertyType.HighEndApartment, 3200, PropertyStatus.Owned, false, "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=80"),
+            Property(301, riverside.Id, "Riverside Villa", PropertyType.MichaelsMansion, 5800, PropertyStatus.Available, true, "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=1400&q=80"),
+            Property(302, riverside.Id, "Garden House", PropertyType.FranklinsHouse, 4100, PropertyStatus.Available, false, "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1400&q=80")
         };
         var tenant = new Tenant { Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString(), PropertyId = properties[2].Id, FullName = "Sample Tenant", PhoneNumber = "+1 555 0100", StartDate = DateTime.UtcNow.AddMonths(-3), MonthlyRent = properties[2].Rent, Status = TenantStatus.Active };
         properties[2].SetTenantForPersistence(tenant.Id);
@@ -55,7 +55,7 @@ public sealed class SeedDataService(MongoContext db)
 
     private static Property Property(int id, string blockId, string name, PropertyType type, decimal rent, PropertyStatus status, bool featured, string image)
     {
-        var value = new Property { Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString(), PropertyId = id, BlockId = blockId, PropertyName = name, Type = type, Rent = rent, Bedrooms = type == PropertyType.Apartment ? 2 : 3, Bathrooms = 2, Area = type == PropertyType.Apartment ? 1100 : 2200, FurnishingStatus = "Furnished", Amenities = ["Parking", "Security", "Air conditioning"], Images = [image], IsFeatured = featured, Description = "A thoughtfully managed home with balanced proportions, quality finishes, and responsive estate support." };
+        var value = new Property { Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString(), PropertyId = id, BlockId = blockId, PropertyName = name, Type = type, Rent = rent, Images = [image], IsFeatured = featured, Description = "A thoughtfully managed home with balanced proportions, quality finishes, and responsive estate support." };
         value.SetStatusForPersistence(status); return value;
     }
 }

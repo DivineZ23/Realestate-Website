@@ -1,12 +1,16 @@
-import { CurrencyPipe, NgOptimizedImage, TitleCasePipe } from '@angular/common';
+import { CurrencyPipe, NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PublicProperty } from '../../../core/models/property.models';
+import {
+  propertyTypeCapacity,
+  propertyTypeLabel,
+} from '../../../core/constants/property-status.constants';
 import { StatusBadgeComponent } from '../status-badge/status-badge.component';
 
 @Component({
   selector: 'app-property-card',
-  imports: [CurrencyPipe, NgOptimizedImage, RouterLink, TitleCasePipe, StatusBadgeComponent],
+  imports: [CurrencyPipe, NgOptimizedImage, RouterLink, StatusBadgeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="card">
@@ -26,7 +30,7 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
       <div class="content">
         <div class="top">
           <div>
-            <p class="meta">{{ property().blockName }} · {{ property().type | titlecase }}</p>
+            <p class="meta">{{ property().blockName }} · {{ typeLabel(property().type) }}</p>
             <h3>{{ property().propertyName }}</h3>
           </div>
           <p class="rent">
@@ -34,9 +38,14 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
           </p>
         </div>
         <div class="details">
-          <span>{{ property().bedrooms ?? '—' }} beds</span
-          ><span>{{ property().bathrooms ?? '—' }} baths</span
-          ><span>{{ property().area ?? '—' }} sq ft</span>
+          <span
+            >{{ property().personCapacity ?? typeCapacity(property().type) ?? '—' }}
+            {{
+              (property().personCapacity ?? typeCapacity(property().type)) === 1
+                ? 'person'
+                : 'people'
+            }}</span
+          >
         </div>
         <a class="link" [routerLink]="['/properties', property().id]"
           >Explore property <span aria-hidden="true">→</span></a
@@ -131,4 +140,6 @@ export class PropertyCardComponent {
   readonly property = input.required<PublicProperty>();
   readonly fallback =
     'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1400&q=80';
+  readonly typeLabel = propertyTypeLabel;
+  readonly typeCapacity = propertyTypeCapacity;
 }

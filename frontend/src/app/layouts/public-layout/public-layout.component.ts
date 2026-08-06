@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 
 @Component({
   selector: 'app-public-layout',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, ThemeToggleComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="site-header">
@@ -20,7 +21,9 @@ import { AuthService } from '../../core/services/auth.service';
           ><a routerLink="/properties" routerLinkActive="active" (click)="menuOpen.set(false)"
             >Properties</a
           ><a routerLink="/about" routerLinkActive="active" (click)="menuOpen.set(false)">About</a
-          ><button class="btn btn-primary" (click)="signIn()">Team sign in</button>
+          ><app-theme-toggle /><button class="btn btn-primary" (click)="signIn()">
+            Team sign in
+          </button>
         </nav>
         <button
           class="menu"
@@ -65,9 +68,9 @@ import { AuthService } from '../../core/services/auth.service';
         position: sticky;
         top: 0;
         z-index: 30;
-        background: rgba(247, 245, 240, 0.9);
+        background: var(--header-bg);
         backdrop-filter: blur(16px);
-        border-bottom: 1px solid rgba(222, 223, 217, 0.8);
+        border-bottom: 1px solid var(--header-border);
       }
       .nav {
         height: 78px;
@@ -123,8 +126,8 @@ import { AuthService } from '../../core/services/auth.service';
         margin: 6px;
       }
       footer {
-        background: #152722;
-        color: #e8ece9;
+        background: var(--contrast-surface);
+        color: var(--contrast-text);
         padding: 72px 0 24px;
       }
       .footer-grid {
@@ -133,14 +136,14 @@ import { AuthService } from '../../core/services/auth.service';
         gap: 50px;
       }
       .brand.light span {
-        border-color: #e8ece9;
+        border-color: var(--contrast-text);
       }
       .footer-grid p {
-        color: #aebbb6;
+        color: var(--contrast-muted);
         margin-top: 22px;
       }
       .footer-grid h3 {
-        color: #8fa39a;
+        color: var(--contrast-subtle);
         text-transform: uppercase;
         letter-spacing: 0.12em;
         font-size: 0.72rem;
@@ -151,16 +154,16 @@ import { AuthService } from '../../core/services/auth.service';
         gap: 12px;
       }
       .footer-grid a:not(.brand) {
-        color: #d7dfdc;
+        color: var(--contrast-link);
         font-size: 0.86rem;
       }
       .legal {
         display: flex;
         justify-content: space-between;
-        border-top: 1px solid #31423d;
+        border-top: 1px solid var(--contrast-border);
         margin-top: 64px;
         padding-top: 24px;
-        color: #82928c;
+        color: var(--contrast-subtle);
         font-size: 0.75rem;
       }
       @media (max-width: 720px) {

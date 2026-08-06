@@ -11,6 +11,10 @@ body {
 }
 body {
   line-height: 1.55;
+  color: var(--ink);
+  transition:
+    color var(--ease),
+    background-color var(--ease);
 }
 button,
 input,
@@ -94,9 +98,9 @@ h3 {
   transform: translateY(-1px);
 }
 .btn-primary {
-  color: #fff;
+  color: var(--on-primary);
   background: var(--forest);
-  box-shadow: 0 8px 22px rgba(23, 63, 56, 0.2);
+  box-shadow: var(--primary-shadow);
 }
 .btn-secondary {
   background: transparent;
@@ -104,7 +108,7 @@ h3 {
   color: var(--ink);
 }
 .btn-danger {
-  color: #fff;
+  color: var(--on-primary);
   background: var(--danger);
 }
 .btn:disabled {
@@ -135,7 +139,7 @@ h3 {
 .field select:focus,
 .field textarea:focus {
   border-color: var(--forest);
-  box-shadow: 0 0 0 3px rgba(23, 63, 56, 0.1);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 .field .error {
   color: var(--danger);
@@ -168,7 +172,7 @@ table.data-table {
   text-transform: uppercase;
 }
 .data-table tbody tr:hover {
-  background: rgba(23, 63, 56, 0.035);
+  background: var(--row-hover);
 }
 .error-toast {
   --mdc-snackbar-container-color: var(--danger);

@@ -53,10 +53,10 @@ import { ApiService } from '../../../core/services/api.service';
     `
       .drop {
         padding: 28px;
-        border: 1px dashed #abb5b1;
+        border: 1px dashed var(--drop-border);
         border-radius: var(--radius-md);
         text-align: center;
-        background: #fafbf8;
+        background: var(--surface-subtle);
       }
       .drop p {
         margin: 10px 0 0;
@@ -104,7 +104,8 @@ import { ApiService } from '../../../core/services/api.service';
         top: 5px;
         border: 0;
         border-radius: 50%;
-        background: #fff;
+        background: var(--surface-strong);
+        color: var(--ink);
         width: 25px;
         height: 25px;
         cursor: pointer;
@@ -114,7 +115,7 @@ import { ApiService } from '../../../core/services/api.service';
         left: 6px;
         bottom: 6px;
         background: var(--forest);
-        color: white;
+        color: var(--on-primary);
         padding: 3px 7px;
         border-radius: 99px;
         font-size: 0.65rem;

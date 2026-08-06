@@ -58,7 +58,7 @@ export interface ConfirmDialogData {
       }
       .danger {
         background: var(--danger) !important;
-        color: white !important;
+        color: var(--on-primary) !important;
       }
       .field {
         margin-top: 18px;

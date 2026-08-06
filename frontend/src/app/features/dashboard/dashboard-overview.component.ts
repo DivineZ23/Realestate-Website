@@ -128,11 +128,11 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
       }
       .stats .available {
         background: var(--forest);
-        color: #fff;
+        color: var(--on-primary);
       }
       .stats .available span,
       .stats .available small {
-        color: #aec3ba;
+        color: var(--contrast-muted);
       }
       .dashboard-grid {
         display: grid;

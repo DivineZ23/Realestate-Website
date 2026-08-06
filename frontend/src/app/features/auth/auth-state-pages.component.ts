@@ -108,7 +108,7 @@ export class PendingApprovalComponent {
         height: 70px;
         margin: 0 auto 26px;
         border-radius: 50%;
-        background: #f1dddd;
+        background: var(--danger-soft);
         color: var(--danger);
         font-size: 1.6rem;
         font-weight: 800;

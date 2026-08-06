@@ -1,5 +1,6 @@
 using FluentValidation;
 using ImperialEstates.Application.DTOs;
+using ImperialEstates.Domain.Enums;
 
 namespace ImperialEstates.Application.Validators;
 
@@ -21,6 +22,9 @@ public sealed class UpsertPropertyRequestValidator : AbstractValidator<UpsertPro
         RuleFor(x => x.PropertyId).GreaterThan(0);
         RuleFor(x => x.BlockId).NotEmpty();
         RuleFor(x => x.PropertyName).NotEmpty().MaximumLength(160);
+        RuleFor(x => x.Type)
+            .Must(type => type.IsSupportedInterior())
+            .WithMessage("Select a supported interior structure.");
         RuleFor(x => x.Rent).GreaterThanOrEqualTo(0);
         RuleFor(x => x.SecurityDeposit).GreaterThanOrEqualTo(0).When(x => x.SecurityDeposit.HasValue);
         RuleFor(x => x.Bedrooms).GreaterThanOrEqualTo(0).When(x => x.Bedrooms.HasValue);
@@ -51,4 +55,3 @@ public sealed class CreateEnquiryRequestValidator : AbstractValidator<CreateEnqu
         RuleFor(x => x.Message).MaximumLength(2000);
     }
 }
-

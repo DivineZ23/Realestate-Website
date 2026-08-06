@@ -1,6 +1,24 @@
 export type PropertyStatus = 'available' | 'booked' | 'owned' | 'unavailable';
 export type PropertyType =
-  'apartment' | 'house' | 'villa' | 'office' | 'shop' | 'warehouse' | 'land' | 'other';
+  | 'motel'
+  | 'trevorsTrailer'
+  | 'janitorApartment'
+  | 'lowEndApartment'
+  | 'lestersHouse'
+  | 'franklinsHouse'
+  | 'midEndApartment'
+  | 'trevorsBeachHouse'
+  | 'michaelsMansion'
+  | 'franklinsMansion'
+  | 'highEndApartment'
+  | 'apartment'
+  | 'house'
+  | 'villa'
+  | 'office'
+  | 'shop'
+  | 'warehouse'
+  | 'land'
+  | 'other';
 
 export interface Block {
   id: string;
@@ -23,6 +41,7 @@ export interface Property {
   propertyName: string;
   description?: string;
   type: PropertyType;
+  personCapacity?: number;
   storage?: string;
   rent: number;
   securityDeposit?: number;
@@ -58,6 +77,7 @@ export interface PropertyQuery {
   minRent?: number | null;
   maxRent?: number | null;
   bedrooms?: number | null;
+  personCapacity?: number | null;
   furnishing?: string;
   amenities?: string[];
   sortBy?: string;

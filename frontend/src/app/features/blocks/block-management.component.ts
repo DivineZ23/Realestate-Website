@@ -138,7 +138,7 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
         font-size: 0.72rem;
         padding: 5px 9px;
         border-radius: 99px;
-        background: #eee;
+        background: var(--neutral-soft);
         color: var(--muted);
       }
       .state.on {

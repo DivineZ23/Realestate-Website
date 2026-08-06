@@ -29,7 +29,8 @@ const property = (id: string, status: 'available' | 'booked' | 'owned') => ({
   blockName: block.blockName,
   propertyName:
     status === 'available' ? 'Available Home' : status === 'booked' ? 'Booked Home' : 'Owned Home',
-  type: 'apartment',
+  type: 'lowEndApartment',
+  personCapacity: 2,
   rent: 0,
   status,
   amenities: [],
@@ -65,6 +66,35 @@ test('overview omits property creation and unavailable status', async ({ page })
   await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Add property' })).toHaveCount(0);
   await expect(page.getByText('Unavailable', { exact: true })).toHaveCount(0);
+});
+
+test('theme can be changed and is remembered', async ({ page }) => {
+  await authenticate(page);
+  await page.route('**/api/v1/dashboard', (route) =>
+    route.fulfill({
+      json: {
+        totalBlocks: 0,
+        totalProperties: 0,
+        availableProperties: 0,
+        bookedProperties: 0,
+        occupiedProperties: 0,
+        pendingEnquiries: 0,
+        pendingUsers: 0,
+        recentStatusChanges: [],
+      },
+    }),
+  );
+
+  await page.goto('/dashboard');
+  await page.evaluate(() => localStorage.removeItem('imperial-estates-theme'));
+  await page.reload();
+
+  await page.getByRole('button', { name: 'Switch to dark mode' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.getByRole('button', { name: 'Switch to light mode' })).toBeVisible();
 });
 
 test('property actions follow available, booked, and occupied status', async ({ page }) => {
@@ -134,4 +164,29 @@ test('new property form omits pricing, dimensions, and amenities', async ({ page
   await expect(page.getByRole('heading', { name: 'Pricing & dimensions' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Amenities' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Property images' })).toBeVisible();
+
+  const type = page.getByLabel('Type');
+  const blockSelect = page.getByLabel('Block');
+  const [blockBox, typeBox] = await Promise.all([blockSelect.boundingBox(), type.boundingBox()]);
+  expect(blockBox).not.toBeNull();
+  expect(typeBox).not.toBeNull();
+  expect(Math.abs(blockBox!.y - typeBox!.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(blockBox!.height - typeBox!.height)).toBeLessThanOrEqual(1);
+  await expect(type.getByRole('option')).toHaveText([
+    'Motel',
+    "Trevor's Trailer",
+    'Janitor Apartment',
+    'Low-End Apartment',
+    "Lester's House",
+    "Franklin's House",
+    'Mid-End Apartment',
+    "Trevor's Beach House",
+    "Michael's Mansion",
+    "Franklin's Mansion",
+    'High-End Apartment',
+  ]);
+  await expect(page.getByText('Capacity: 1 person')).toBeVisible();
+  await type.selectOption('highEndApartment');
+  await expect(page.getByText('Capacity: 5 people')).toBeVisible();
+  await expect(type.getByRole('option', { name: 'Villa' })).toHaveCount(0);
 });

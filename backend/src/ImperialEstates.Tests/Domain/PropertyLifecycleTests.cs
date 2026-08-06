@@ -7,6 +7,23 @@ namespace ImperialEstates.Tests.Domain;
 public sealed class PropertyLifecycleTests
 {
     [Fact]
+    public void Interior_structures_have_the_expected_person_capacity()
+    {
+        Assert.Equal(1, PropertyType.Motel.PersonCapacity());
+        Assert.Equal(2, PropertyType.TrevorsTrailer.PersonCapacity());
+        Assert.Equal(2, PropertyType.JanitorApartment.PersonCapacity());
+        Assert.Equal(2, PropertyType.LowEndApartment.PersonCapacity());
+        Assert.Equal(3, PropertyType.LestersHouse.PersonCapacity());
+        Assert.Equal(3, PropertyType.FranklinsHouse.PersonCapacity());
+        Assert.Equal(4, PropertyType.MidEndApartment.PersonCapacity());
+        Assert.Equal(4, PropertyType.TrevorsBeachHouse.PersonCapacity());
+        Assert.Equal(4, PropertyType.MichaelsMansion.PersonCapacity());
+        Assert.Equal(4, PropertyType.FranklinsMansion.PersonCapacity());
+        Assert.Equal(5, PropertyType.HighEndApartment.PersonCapacity());
+        Assert.Null(PropertyType.Villa.PersonCapacity());
+    }
+
+    [Fact]
     public void Available_property_can_be_booked()
     {
         var property = NewProperty();
@@ -79,4 +96,3 @@ public sealed class PropertyLifecycleTests
 
     private static Property NewProperty() => new() { Id = "property-1", PropertyId = 245, BlockId = "block-1", PropertyName = "ChinaTown Apt 1", IsActive = true };
 }
-

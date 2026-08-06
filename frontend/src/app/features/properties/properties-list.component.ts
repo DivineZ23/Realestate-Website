@@ -12,7 +12,7 @@ import {
   tap,
 } from 'rxjs';
 import { DEFAULT_PAGE_SIZE } from '../../core/constants/app.constants';
-import { PROPERTY_TYPES } from '../../core/constants/property-status.constants';
+import { PROPERTY_TYPE_OPTIONS } from '../../core/constants/property-status.constants';
 import { PagedResult } from '../../core/models/api.models';
 import {
   Block,
@@ -51,14 +51,16 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
           }</select
         ><select formControlName="type" aria-label="Filter by property type">
           <option value="">All types</option>
-          @for (type of types; track type) {
-            <option [value]="type">{{ type }}</option>
+          @for (type of types; track type.value) {
+            <option [value]="type.value">{{ type.label }}</option>
           }</select
-        ><select formControlName="bedrooms" aria-label="Filter by bedrooms">
-          <option [ngValue]="null">Any bedrooms</option>
-          <option [ngValue]="1">1+ bedroom</option>
-          <option [ngValue]="2">2+ bedrooms</option>
-          <option [ngValue]="3">3+ bedrooms</option></select
+        ><select formControlName="personCapacity" aria-label="Filter by person capacity">
+          <option [ngValue]="null">Any capacity</option>
+          <option [ngValue]="1">1 person</option>
+          <option [ngValue]="2">2 people</option>
+          <option [ngValue]="3">3 people</option>
+          <option [ngValue]="4">4 people</option>
+          <option [ngValue]="5">5 people</option></select
         ><input
           type="number"
           formControlName="minRent"
@@ -143,7 +145,7 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
     `
       .page-head {
         padding: 78px 0 62px;
-        background: #e9ede8;
+        background: var(--surface-soft);
       }
       .page-head h1 {
         font-size: clamp(3rem, 7vw, 5.3rem);
@@ -218,7 +220,12 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
       .skeleton {
         height: 390px;
         border-radius: var(--radius-md);
-        background: linear-gradient(90deg, #e8e8e2, #f4f3ef, #e8e8e2);
+        background: linear-gradient(
+          90deg,
+          var(--skeleton-start),
+          var(--skeleton-mid),
+          var(--skeleton-start)
+        );
         background-size: 200%;
         animation: shine 1.4s infinite;
       }
@@ -256,7 +263,7 @@ export class PropertiesListComponent {
   private service = inject(PropertyService);
   private blockService = inject(BlockService);
   private destroyRef = inject(DestroyRef);
-  readonly types = PROPERTY_TYPES;
+  readonly types = PROPERTY_TYPE_OPTIONS;
   readonly skeletons = [1, 2, 3, 4, 5, 6];
   readonly blocks = signal<Block[]>([]);
   readonly loading = signal(true);
@@ -274,7 +281,7 @@ export class PropertiesListComponent {
     search: new FormControl('', { nonNullable: true }),
     blockId: new FormControl('', { nonNullable: true }),
     type: new FormControl<PropertyType | ''>('', { nonNullable: true }),
-    bedrooms: new FormControl<number | null>(null),
+    personCapacity: new FormControl<number | null>(null),
     minRent: new FormControl<number | null>(null),
     maxRent: new FormControl<number | null>(null),
     furnishing: new FormControl('', { nonNullable: true }),
@@ -323,7 +330,7 @@ export class PropertiesListComponent {
       search: '',
       blockId: '',
       type: '',
-      bedrooms: null,
+      personCapacity: null,
       minRent: null,
       maxRent: null,
       furnishing: '',

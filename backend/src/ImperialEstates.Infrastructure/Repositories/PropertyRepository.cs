@@ -22,6 +22,12 @@ public sealed class PropertyRepository(MongoContext db) : IPropertyRepository
         if (query.MinRent.HasValue) filter &= f.Gte(x => x.Rent, query.MinRent.Value);
         if (query.MaxRent.HasValue) filter &= f.Lte(x => x.Rent, query.MaxRent.Value);
         if (query.Bedrooms.HasValue) filter &= f.Eq(x => x.Bedrooms, query.Bedrooms.Value);
+        if (query.PersonCapacity.HasValue)
+        {
+            var types = Enum.GetValues<PropertyType>()
+                .Where(type => type.PersonCapacity() == query.PersonCapacity.Value);
+            filter &= f.In(x => x.Type, types);
+        }
         if (!string.IsNullOrWhiteSpace(query.Furnishing)) filter &= f.Eq(x => x.FurnishingStatus, query.Furnishing);
         if (query.Amenities.Length > 0) filter &= f.All(x => x.Amenities, query.Amenities);
         if (!string.IsNullOrWhiteSpace(query.Search))

@@ -1,11 +1,16 @@
-import { CurrencyPipe, DatePipe, TitleCasePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { RouterLink } from '@angular/router';
 import { debounceTime, finalize, startWith, switchMap } from 'rxjs';
-import { PROPERTY_STATUSES, PROPERTY_TYPES } from '../../core/constants/property-status.constants';
+import {
+  PROPERTY_STATUSES,
+  PROPERTY_TYPE_OPTIONS,
+  propertyTypeCapacity,
+  propertyTypeLabel,
+} from '../../core/constants/property-status.constants';
 import { PagedResult } from '../../core/models/api.models';
 import { Block, Property, PropertyStatus, PropertyType } from '../../core/models/property.models';
 import { AuthService } from '../../core/services/auth.service';
@@ -20,7 +25,6 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
   imports: [
     CurrencyPipe,
     DatePipe,
-    TitleCasePipe,
     ReactiveFormsModule,
     RouterLink,
     StatusBadgeComponent,
@@ -49,8 +53,8 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         }</select
       ><select formControlName="type">
         <option value="">All types</option>
-        @for (type of types; track type) {
-          <option [value]="type">{{ type | titlecase }}</option>
+        @for (type of types; track type.value) {
+          <option [value]="type.value">{{ type.label }}</option>
         }</select
       ><select formControlName="blockId">
         <option value="">All blocks</option>
@@ -84,7 +88,12 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
                 <b>{{ property.propertyName }}</b>
               </td>
               <td>{{ property.blockName }}</td>
-              <td>{{ property.type | titlecase }}</td>
+              <td>
+                {{ typeLabel(property.type) }}
+                @if (property.personCapacity ?? typeCapacity(property.type); as capacity) {
+                  <small>{{ capacity }} {{ capacity === 1 ? 'person' : 'people' }}</small>
+                }
+              </td>
               <td>{{ property.rent | currency: 'USD' : 'symbol' : '1.0-0' }}</td>
               <td><app-status-badge [status]="property.status" /></td>
               <td>{{ property.updatedAt | date: 'mediumDate' }}</td>
@@ -164,7 +173,8 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         height: 42px;
         border: 1px solid var(--border);
         border-radius: 9px;
-        background: white;
+        background: var(--surface-strong);
+        color: var(--ink);
         padding: 0 12px;
       }
       .loading {
@@ -176,6 +186,11 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         display: flex;
         align-items: center;
         gap: 9px;
+      }
+      .data-table td small {
+        display: block;
+        color: var(--muted);
+        font-size: 0.7rem;
       }
       .row-actions a,
       .row-actions button {
@@ -215,7 +230,9 @@ export class PropertyManagementComponent {
   private dialog = inject(MatDialog);
   private destroy = inject(DestroyRef);
   readonly statuses = PROPERTY_STATUSES;
-  readonly types = PROPERTY_TYPES;
+  readonly types = PROPERTY_TYPE_OPTIONS;
+  readonly typeLabel = propertyTypeLabel;
+  readonly typeCapacity = propertyTypeCapacity;
   readonly blocks = signal<Block[]>([]);
   readonly loading = signal(false);
   readonly result = signal<PagedResult<Property>>({

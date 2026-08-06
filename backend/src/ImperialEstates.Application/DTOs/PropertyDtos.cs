@@ -13,6 +13,7 @@ public sealed class PropertyQuery
     public decimal? MinRent { get; init; }
     public decimal? MaxRent { get; init; }
     public int? Bedrooms { get; init; }
+    public int? PersonCapacity { get; init; }
     public string? Furnishing { get; init; }
     public string[] Amenities { get; init; } = [];
     public string SortBy { get; init; } = "newest";
@@ -21,7 +22,7 @@ public sealed class PropertyQuery
 
 public sealed record PropertyDto(
     string Id, int PropertyId, string BlockId, string BlockName, string PropertyName, string? Description,
-    PropertyType Type, string? Storage, decimal Rent, decimal? SecurityDeposit, PropertyStatus Status,
+    PropertyType Type, int? PersonCapacity, string? Storage, decimal Rent, decimal? SecurityDeposit, PropertyStatus Status,
     int? Bedrooms, int? Bathrooms, int? Floor, decimal? Area, string? FurnishingStatus,
     IReadOnlyList<string> Amenities, IReadOnlyList<string> Images, string? CurrentTenantId,
     string? BookedByEnquiryId, string? UnavailableReason, bool IsFeatured, bool IsActive,
@@ -29,7 +30,7 @@ public sealed record PropertyDto(
 
 public sealed record PublicPropertyDto(
     string Id, int PropertyId, string BlockId, string BlockName, string PropertyName, string? Description,
-    PropertyType Type, string? Storage, decimal Rent, decimal? SecurityDeposit, PropertyStatus Status,
+    PropertyType Type, int? PersonCapacity, string? Storage, decimal Rent, decimal? SecurityDeposit, PropertyStatus Status,
     int? Bedrooms, int? Bathrooms, int? Floor, decimal? Area, string? FurnishingStatus,
     IReadOnlyList<string> Amenities, IReadOnlyList<string> Images, bool IsFeatured, DateTime CreatedAt);
 
@@ -51,4 +52,3 @@ public sealed record EvictTenantRequest(string? Reason);
 public sealed record PropertyStatusHistoryDto(
     string Id, PropertyStatus PreviousStatus, PropertyStatus NewStatus, string? Reason,
     string ChangedByUserId, DateTime CreatedAt);
-

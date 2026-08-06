@@ -93,7 +93,8 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
       .card-head select {
         border: 1px solid var(--border);
         border-radius: 9px;
-        background: white;
+        background: var(--surface-strong);
+        color: var(--ink);
         padding: 10px;
       }
       .cards {
@@ -141,7 +142,8 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
       .field select {
         border: 1px solid var(--border);
         border-radius: 9px;
-        background: white;
+        background: var(--surface-strong);
+        color: var(--ink);
         padding: 10px;
       }
       @media (max-width: 780px) {

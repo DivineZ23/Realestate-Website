@@ -4,6 +4,23 @@
     <meta charset="utf-8" />
     <meta name="description" content="Imperial Estates — considered homes, managed with care." />
     <meta name="theme-color" content="#173f38" />
+    <script>
+      (() => {
+        try {
+          const savedTheme = localStorage.getItem('imperial-estates-theme');
+          const theme =
+            savedTheme === 'light' || savedTheme === 'dark'
+              ? savedTheme
+              : matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.style.colorScheme = theme;
+        } catch {
+          document.documentElement.dataset.theme = 'light';
+        }
+      })();
+    </script>
     <title>Imperial Estates | Property, thoughtfully managed</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

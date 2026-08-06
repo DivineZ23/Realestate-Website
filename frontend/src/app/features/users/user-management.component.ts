@@ -97,8 +97,8 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
         margin: 0;
       }
       .pending {
-        background: #f6e6c8;
-        color: #74511e;
+        background: var(--warning-soft);
+        color: var(--warning-ink);
         border-radius: 99px;
         padding: 8px 13px;
         font-size: 0.78rem;
@@ -159,7 +159,7 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
         font-size: 0.65rem;
       }
       .badges .revoked {
-        background: #f1dddd;
+        background: var(--danger-soft);
         color: var(--danger);
       }
       dl {
@@ -195,7 +195,7 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
         cursor: pointer;
       }
       .actions .danger {
-        background: #f5e4e2;
+        background: var(--danger-soft);
         color: var(--danger);
       }
       @media (max-width: 1050px) {

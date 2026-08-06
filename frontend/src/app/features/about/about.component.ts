@@ -111,7 +111,7 @@ import { SettingsService } from '../../core/services/management.services';
     `
       .about-hero {
         padding: 110px 0;
-        background: #e5ebe6;
+        background: var(--surface-soft);
       }
       .about-hero h1 {
         max-width: 1000px;
@@ -148,30 +148,30 @@ import { SettingsService } from '../../core/services/management.services';
         font-size: 1.3rem;
       }
       .values {
-        background: #182e28;
-        color: #e7eeeb;
+        background: var(--contrast-surface);
+        color: var(--contrast-text);
       }
       .values .eyebrow {
-        color: #c69059;
+        color: var(--bronze);
       }
       .value-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        border-top: 1px solid #3a4c47;
+        border-top: 1px solid var(--contrast-border);
       }
       .value-grid article {
         padding: 32px 28px;
-        border-right: 1px solid #3a4c47;
+        border-right: 1px solid var(--contrast-border);
       }
       .value-grid span {
-        color: #b98550;
+        color: var(--bronze);
         font-size: 0.75rem;
       }
       .value-grid h3 {
         margin-top: 55px;
       }
       .value-grid p {
-        color: #9fb0aa;
+        color: var(--contrast-muted);
       }
       .team-grid {
         display: grid;
@@ -207,7 +207,7 @@ import { SettingsService } from '../../core/services/management.services';
       }
       .contact {
         padding: 90px 0;
-        background: #deded5;
+        background: var(--surface-muted);
       }
       .contact > .container {
         display: grid;
@@ -246,7 +246,7 @@ import { SettingsService } from '../../core/services/management.services';
           grid-template-columns: 1fr;
         }
         .value-grid article {
-          border-bottom: 1px solid #3a4c47;
+          border-bottom: 1px solid var(--contrast-border);
         }
         .team-grid img {
           height: 360px;

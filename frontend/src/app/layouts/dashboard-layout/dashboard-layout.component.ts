@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 
 @Component({
   selector: 'app-dashboard-layout',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, ThemeToggleComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div class="shell" [class.collapsed]="collapsed()">
     <aside>
@@ -45,6 +46,7 @@ import { AuthService } from '../../core/services/auth.service';
           ><strong>Good {{ greeting() }}, {{ auth.user()?.displayName }}</strong>
         </div>
         <div class="account">
+          <app-theme-toggle />
           <a routerLink="/dashboard/profile"
             ><img [src]="auth.user()?.avatarUrl || fallback" alt="" /><span
               ><b>{{ auth.user()?.displayName }}</b
@@ -62,14 +64,14 @@ import { AuthService } from '../../core/services/auth.service';
         min-height: 100vh;
         display: grid;
         grid-template-columns: 250px 1fr;
-        background: #f3f4f1;
+        background: var(--workspace-bg);
       }
       aside {
         position: sticky;
         top: 0;
         height: 100vh;
-        background: #142b25;
-        color: #dce5e1;
+        background: var(--sidebar-bg);
+        color: var(--sidebar-text);
         padding: 24px 16px;
         display: flex;
         flex-direction: column;
@@ -81,14 +83,14 @@ import { AuthService } from '../../core/services/auth.service';
         align-items: center;
         gap: 12px;
         padding: 0 10px 22px;
-        border-bottom: 1px solid #2d413b;
+        border-bottom: 1px solid var(--sidebar-border);
       }
       .mark {
         display: grid;
         place-items: center;
         width: 38px;
         height: 38px;
-        border: 1px solid #8ea299;
+        border: 1px solid var(--sidebar-muted);
         border-radius: 50%;
         font-family: Georgia, serif;
       }
@@ -109,7 +111,7 @@ import { AuthService } from '../../core/services/auth.service';
         align-items: center;
         gap: 13px;
         padding: 11px 13px;
-        color: #aebdb7;
+        color: var(--sidebar-link);
         border-radius: 10px;
         font-size: 0.84rem;
       }
@@ -123,12 +125,12 @@ import { AuthService } from '../../core/services/auth.service';
       }
       nav a.active,
       nav a:hover {
-        background: #26423a;
-        color: white;
+        background: var(--sidebar-active);
+        color: var(--sidebar-active-text);
       }
       nav p {
         margin: 24px 13px 6px;
-        color: #6f867d;
+        color: var(--sidebar-subtle);
         font-size: 0.66rem;
         text-transform: uppercase;
         letter-spacing: 0.14em;
@@ -136,7 +138,7 @@ import { AuthService } from '../../core/services/auth.service';
       .collapse {
         border: 0;
         background: transparent;
-        color: #81968e;
+        color: var(--sidebar-muted);
         text-align: left;
         padding: 12px;
         display: flex;

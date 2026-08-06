@@ -10,7 +10,7 @@ public sealed class SeedDataService(MongoContext db)
     public async Task SeedAsync(CancellationToken ct)
     {
         if (await db.Users.EstimatedDocumentCountAsync(cancellationToken: ct) > 0) return;
-        var manager = User("seed-manager", "estate.owner", "Estate Owner", UserRole.Manager, ApprovalStatus.Approved, AccessStatus.Active);
+        var manager = User("seed-manager", "estate.manager", "Estate Manager", UserRole.Manager, ApprovalStatus.Approved, AccessStatus.Active);
         var agentOne = User("seed-agent-1", "ava.agent", "Ava Sharma", UserRole.Agent, ApprovalStatus.Approved, AccessStatus.Active);
         var agentTwo = User("seed-agent-2", "liam.agent", "Liam Chen", UserRole.Agent, ApprovalStatus.Approved, AccessStatus.Active);
         var pending = User("seed-pending", "new.agent", "Pending Agent", UserRole.Agent, ApprovalStatus.Pending, AccessStatus.Pending);

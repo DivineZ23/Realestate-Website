@@ -41,7 +41,7 @@ export class ThemeService {
     root.dataset['theme'] = theme;
     root.style.colorScheme = theme;
 
-    const themeColor = theme === 'dark' ? '#0f1513' : '#173f38';
+    const themeColor = theme === 'dark' ? '#080908' : '#173f38';
     this.document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeColor);
 
     try {

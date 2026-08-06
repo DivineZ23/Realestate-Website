@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   isSupportedPropertyType,
@@ -9,7 +10,6 @@ import {
   propertyTypeCapacity,
 } from '../../core/constants/property-status.constants';
 import {
-  AssignTenantRequest,
   Block,
   Property,
   PropertyType,
@@ -88,38 +88,6 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
       </form>
       <aside>
         @if (property(); as p) {
-          <section class="panel lifecycle">
-            <h2>{{ p.status === 'owned' ? 'Tenancy' : 'Assign tenant' }}</h2>
-            @if (p.status === 'available' || p.status === 'booked') {
-              <p>Complete the tenant details to move this property to Occupied.</p>
-              <form [formGroup]="tenantForm" (ngSubmit)="assignTenant()">
-                <label class="field"
-                  ><span>Tenant full name</span><input formControlName="fullName" /></label
-                ><label class="field"
-                  ><span>Phone</span><input formControlName="phoneNumber" /></label
-                ><label class="field"
-                  ><span>Email</span><input type="email" formControlName="email" /></label
-                ><label class="field"
-                  ><span>Start date</span><input type="date" formControlName="startDate" /></label
-                ><label class="field"
-                  ><span>Monthly rent</span
-                  ><input type="number" formControlName="monthlyRent" /></label
-                ><label class="field"
-                  ><span>Security deposit</span
-                  ><input type="number" formControlName="securityDeposit" /></label
-                ><label class="field"
-                  ><span>Notes</span><textarea rows="3" formControlName="notes"></textarea></label
-                ><button class="btn btn-primary" [disabled]="tenantForm.invalid || saving()">
-                  Assign tenant
-                </button>
-              </form>
-            } @else if (p.status === 'owned') {
-              <div class="occupied">
-                <b>Active tenant linked</b>
-                <p>Use the Evict action from the property table to end this tenancy safely.</p>
-              </div>
-            }
-          </section>
           <section class="panel summary">
             <h2>At a glance</h2>
             <dl>
@@ -167,7 +135,6 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         margin-top: 28px;
       }
       .form h2,
-      .lifecycle h2,
       .summary h2 {
         font-size: 1.15rem;
       }
@@ -204,27 +171,9 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         display: flex;
         gap: 8px;
       }
-      .lifecycle,
       .summary {
         padding: 22px;
         margin-bottom: 20px;
-      }
-      .lifecycle > p {
-        font-size: 0.8rem;
-        color: var(--muted);
-      }
-      .lifecycle form {
-        display: grid;
-        gap: 12px;
-      }
-      .occupied {
-        padding: 16px;
-        background: var(--forest-light);
-        border-radius: 12px;
-      }
-      .occupied p {
-        margin: 5px 0 0;
-        font-size: 0.8rem;
       }
       .summary dl {
         margin: 0;
@@ -272,6 +221,7 @@ export class PropertyFormComponent {
   private router = inject(Router);
   private service = inject(PropertyService);
   private blockService = inject(BlockService);
+  private snackBar = inject(MatSnackBar);
   private destroy = inject(DestroyRef);
   readonly id = signal<string | null>(null);
   readonly property = signal<Property | null>(null);
@@ -289,21 +239,6 @@ export class PropertyFormComponent {
     isFeatured: new FormControl(false, { nonNullable: true }),
     isActive: new FormControl(true, { nonNullable: true }),
   });
-  readonly tenantForm = new FormGroup({
-    fullName: new FormControl('', { nonNullable: true, validators: Validators.required }),
-    phoneNumber: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.pattern(/^[+0-9()\-\s]{7,24}$/)],
-    }),
-    email: new FormControl('', { nonNullable: true, validators: Validators.email }),
-    startDate: new FormControl(new Date().toISOString().slice(0, 10), {
-      nonNullable: true,
-      validators: Validators.required,
-    }),
-    monthlyRent: new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
-    securityDeposit: new FormControl<number | null>(null),
-    notes: new FormControl('', { nonNullable: true }),
-  });
   constructor() {
     this.blockService.all().subscribe((v) => this.blocks.set(v));
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroy)).subscribe((params) => {
@@ -316,10 +251,6 @@ export class PropertyFormComponent {
           this.form.patchValue({
             ...p,
             type: isSupportedPropertyType(p.type) ? p.type : 'motel',
-          });
-          this.tenantForm.patchValue({
-            monthlyRent: p.rent,
-            securityDeposit: p.securityDeposit ?? null,
           });
         });
     });
@@ -348,30 +279,20 @@ export class PropertyFormComponent {
       isFeatured: raw.isFeatured,
       isActive: raw.isActive,
     };
-    const request = this.id() ? this.service.update(this.id()!, body) : this.service.create(body);
+    const isEditing = Boolean(this.id());
+    const request = isEditing ? this.service.update(this.id()!, body) : this.service.create(body);
     request.subscribe({
-      next: (p) => {
+      next: () => {
         this.saving.set(false);
-        this.router.navigate(['/dashboard/properties', p.id, 'edit']);
-      },
-      error: () => this.saving.set(false),
-    });
-  }
-  assignTenant() {
-    if (this.tenantForm.invalid || !this.id()) return;
-    this.saving.set(true);
-    const raw = this.tenantForm.getRawValue();
-    const body: AssignTenantRequest = {
-      ...raw,
-      monthlyRent: raw.monthlyRent!,
-      email: raw.email || undefined,
-      securityDeposit: raw.securityDeposit ?? undefined,
-      notes: raw.notes || undefined,
-    };
-    this.service.assignTenant(this.id()!, body).subscribe({
-      next: (p) => {
-        this.property.set(p);
-        this.saving.set(false);
+        this.snackBar.open(
+          `Property ${isEditing ? 'updated' : 'created'} successfully.`,
+          'Dismiss',
+          {
+            duration: 4000,
+            panelClass: ['success-toast'],
+          },
+        );
+        this.router.navigate(['/dashboard/properties']);
       },
       error: () => this.saving.set(false),
     });

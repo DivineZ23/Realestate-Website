@@ -7,20 +7,33 @@ namespace ImperialEstates.Tests.Domain;
 public sealed class PropertyLifecycleTests
 {
     [Fact]
-    public void Interior_structures_have_the_expected_person_capacity()
+    public void Interior_structures_have_the_expected_capacity_cost_and_storage()
     {
-        Assert.Equal(1, PropertyType.Motel.PersonCapacity());
-        Assert.Equal(2, PropertyType.TrevorsTrailer.PersonCapacity());
-        Assert.Equal(2, PropertyType.JanitorApartment.PersonCapacity());
-        Assert.Equal(2, PropertyType.LowEndApartment.PersonCapacity());
-        Assert.Equal(3, PropertyType.LestersHouse.PersonCapacity());
-        Assert.Equal(3, PropertyType.FranklinsHouse.PersonCapacity());
-        Assert.Equal(4, PropertyType.MidEndApartment.PersonCapacity());
-        Assert.Equal(4, PropertyType.TrevorsBeachHouse.PersonCapacity());
-        Assert.Equal(4, PropertyType.MichaelsMansion.PersonCapacity());
-        Assert.Equal(4, PropertyType.FranklinsMansion.PersonCapacity());
-        Assert.Equal(5, PropertyType.HighEndApartment.PersonCapacity());
+        var expected = new[]
+        {
+            (PropertyType.Motel, 1, 500m, 1500),
+            (PropertyType.TrevorsTrailer, 2, 1000m, 2250),
+            (PropertyType.JanitorApartment, 2, 1500m, 3000),
+            (PropertyType.LowEndApartment, 2, 2000m, 3750),
+            (PropertyType.LestersHouse, 3, 3000m, 5250),
+            (PropertyType.FranklinsHouse, 3, 4000m, 6000),
+            (PropertyType.MidEndApartment, 4, 4500m, 7500),
+            (PropertyType.TrevorsBeachHouse, 4, 5000m, 9000),
+            (PropertyType.MichaelsMansion, 4, 8000m, 15000),
+            (PropertyType.FranklinsMansion, 4, 8000m, 15000),
+            (PropertyType.HighEndApartment, 5, 8000m, 15000)
+        };
+
+        foreach (var (type, capacity, stateCost, storage) in expected)
+        {
+            Assert.Equal(capacity, type.PersonCapacity());
+            Assert.Equal(stateCost, type.StateCost());
+            Assert.Equal(storage, type.StorageCapacity());
+        }
+
         Assert.Null(PropertyType.Villa.PersonCapacity());
+        Assert.Null(PropertyType.Villa.StateCost());
+        Assert.Null(PropertyType.Villa.StorageCapacity());
     }
 
     [Fact]

@@ -20,6 +20,7 @@ public interface IPropertyRepository
     Task<PagedResult<Property>> QueryAsync(PropertyQuery query, bool publicOnly, CancellationToken cancellationToken);
     Task<Property?> GetByIdAsync(string id, CancellationToken cancellationToken);
     Task<Property?> GetByBusinessIdAsync(int propertyId, CancellationToken cancellationToken);
+    Task<IReadOnlyList<Property>> GetAllAsync(CancellationToken cancellationToken);
     Task<IReadOnlyList<Property>> GetFeaturedAsync(int limit, CancellationToken cancellationToken);
     Task<long> CountByBlockAsync(string blockId, CancellationToken cancellationToken);
     Task<long> CountByStatusAsync(PropertyStatus? status, CancellationToken cancellationToken);
@@ -44,6 +45,11 @@ public interface IUserRepository
     Task<long> CountPendingAsync(CancellationToken cancellationToken);
     Task CreateAsync(User user, CancellationToken cancellationToken);
     Task UpdateAsync(User user, CancellationToken cancellationToken);
+}
+
+public interface IOwnerIdentity
+{
+    bool IsOwner(string discordUserId);
 }
 
 public interface IEnquiryRepository

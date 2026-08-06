@@ -28,6 +28,9 @@ export interface Block {
   address?: string;
   imageUrl?: string;
   numberOfProperties: number;
+  totalCost: number;
+  totalRent: number;
+  totalProfit: number;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -42,6 +45,8 @@ export interface Property {
   description?: string;
   type: PropertyType;
   personCapacity?: number;
+  stateCost?: number;
+  storageCapacity?: number;
   storage?: string;
   rent: number;
   securityDeposit?: number;
@@ -114,10 +119,9 @@ export interface UpsertBlockRequest {
 }
 
 export interface AssignTenantRequest {
+  cid: number;
   fullName: string;
   phoneNumber: string;
-  cid?: string;
-  email?: string;
   discordId?: string;
   startDate: string;
   expectedEndDate?: string;

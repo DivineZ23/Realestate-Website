@@ -17,32 +17,51 @@ public sealed class UserManagementService(IUserRepository users, IAuditRepositor
 
     public async Task<UserDto> GetAsync(string id, CancellationToken cancellationToken) => (await GetEntityAsync(id, cancellationToken)).ToDto();
 
-    public Task<UserDto> ApproveAsync(string id, string actorId, CancellationToken ct) => MutateAsync(id, actorId, "user.approved", user =>
+    public async Task<UserDto> ApproveAsync(string id, string actorId, CancellationToken ct)
     {
-        user.ApprovalStatus = ApprovalStatus.Approved; user.AccessStatus = AccessStatus.Active;
-        user.ApprovedAt = DateTime.UtcNow; user.ApprovedBy = actorId; user.RevokeReason = null;
-    }, ct);
+        var actor = await GetEntityAsync(actorId, ct);
+        var target = await GetEntityAsync(id, ct);
+        EnsureCanManageAccess(actor, target);
+        return await MutateAsync(target, actorId, "user.approved", user =>
+        {
+            user.ApprovalStatus = ApprovalStatus.Approved; user.AccessStatus = AccessStatus.Active;
+            user.ApprovedAt = DateTime.UtcNow; user.ApprovedBy = actorId; user.RevokeReason = null;
+        }, null, ct);
+    }
 
-    public Task<UserDto> RejectAsync(string id, string actorId, string? reason, CancellationToken ct) => MutateAsync(id, actorId, "user.rejected", user =>
+    public async Task<UserDto> RejectAsync(string id, string actorId, string? reason, CancellationToken ct)
     {
-        RequireReason(reason); user.ApprovalStatus = ApprovalStatus.Rejected; user.AccessStatus = AccessStatus.Revoked; user.RevokeReason = reason!.Trim();
-    }, ct);
+        RequireReason(reason);
+        var actor = await GetEntityAsync(actorId, ct);
+        var target = await GetEntityAsync(id, ct);
+        EnsureCanManageAccess(actor, target);
+        return await MutateAsync(target, actorId, "user.rejected", user =>
+        {
+            user.ApprovalStatus = ApprovalStatus.Rejected; user.AccessStatus = AccessStatus.Revoked; user.RevokeReason = reason!.Trim();
+        }, reason, ct);
+    }
 
-    public Task<UserDto> PromoteAsync(string id, string actorId, CancellationToken ct) => MutateAsync(id, actorId, "user.promoted", user =>
+    public async Task<UserDto> PromoteAsync(string id, string actorId, CancellationToken ct)
     {
+        var actor = await GetEntityAsync(actorId, ct);
+        RequireOwner(actor);
         if (id == actorId) throw new DomainRuleException("You cannot promote yourself.", "SELF_ROLE_CHANGE_FORBIDDEN");
-        if (user.ApprovalStatus != ApprovalStatus.Approved || user.AccessStatus != AccessStatus.Active)
+        var target = await GetEntityAsync(id, ct);
+        if (target.Role != UserRole.Agent || target.ApprovalStatus != ApprovalStatus.Approved || target.AccessStatus != AccessStatus.Active)
             throw new DomainRuleException("Only an approved active agent can be promoted.", "USER_NOT_ACTIVE");
-        user.Role = UserRole.Manager;
-    }, ct);
+        return await MutateAsync(target, actorId, "user.promoted", user => user.Role = UserRole.Manager, null, ct);
+    }
 
     public async Task<UserDto> DemoteAsync(string id, string actorId, string? reason, CancellationToken ct)
     {
         RequireReason(reason);
         if (id == actorId) throw new DomainRuleException("You cannot demote yourself.", "SELF_ROLE_CHANGE_FORBIDDEN");
+        var actor = await GetEntityAsync(actorId, ct);
+        RequireOwner(actor);
         var target = await GetEntityAsync(id, ct);
-        if (target.Role == UserRole.Manager && target.AccessStatus == AccessStatus.Active && await users.CountActiveManagersAsync(ct) <= 1)
-            throw new DomainRuleException("The final active manager cannot be demoted.", "FINAL_MANAGER_PROTECTED");
+        ProtectOwner(target);
+        if (target.Role != UserRole.Manager)
+            throw new DomainRuleException("Only a manager can be demoted.", "USER_NOT_MANAGER");
         return await MutateAsync(target, actorId, "user.demoted", user => user.Role = UserRole.Agent, reason, ct);
     }
 
@@ -50,28 +69,34 @@ public sealed class UserManagementService(IUserRepository users, IAuditRepositor
     {
         RequireReason(reason);
         if (id == actorId) throw new DomainRuleException("You cannot revoke your own access.", "SELF_ACCESS_CHANGE_FORBIDDEN");
+        var actor = await GetEntityAsync(actorId, ct);
         var target = await GetEntityAsync(id, ct);
-        if (target.Role == UserRole.Manager && target.AccessStatus == AccessStatus.Active && await users.CountActiveManagersAsync(ct) <= 1)
-            throw new DomainRuleException("The final active manager cannot be revoked.", "FINAL_MANAGER_PROTECTED");
+        EnsureCanManageAccess(actor, target);
         return await MutateAsync(target, actorId, "user.revoked", user =>
         {
             user.AccessStatus = AccessStatus.Revoked; user.RevokedAt = DateTime.UtcNow; user.RevokedBy = actorId; user.RevokeReason = reason!.Trim();
         }, reason, ct);
     }
 
-    public Task<UserDto> RestoreAsync(string id, string actorId, CancellationToken ct) => MutateAsync(id, actorId, "user.restored", user =>
+    public async Task<UserDto> RestoreAsync(string id, string actorId, CancellationToken ct)
     {
-        if (user.ApprovalStatus != ApprovalStatus.Approved) throw new DomainRuleException("Only approved users can be restored.", "USER_NOT_APPROVED");
-        user.AccessStatus = AccessStatus.Active; user.RevokedAt = null; user.RevokedBy = null; user.RevokeReason = null;
-    }, ct);
+        var actor = await GetEntityAsync(actorId, ct);
+        var target = await GetEntityAsync(id, ct);
+        EnsureCanManageAccess(actor, target);
+        if (target.ApprovalStatus != ApprovalStatus.Approved) throw new DomainRuleException("Only approved users can be restored.", "USER_NOT_APPROVED");
+        return await MutateAsync(target, actorId, "user.restored", user =>
+        {
+            user.AccessStatus = AccessStatus.Active; user.RevokedAt = null; user.RevokedBy = null; user.RevokeReason = null;
+        }, null, ct);
+    }
 
     public async Task DeleteAsync(string id, string actorId, string? reason, CancellationToken ct)
     {
         RequireReason(reason);
         if (id == actorId) throw new DomainRuleException("You cannot delete your own account.", "SELF_DELETE_FORBIDDEN");
+        var actor = await GetEntityAsync(actorId, ct);
         var target = await GetEntityAsync(id, ct);
-        if (target.Role == UserRole.Manager && target.AccessStatus == AccessStatus.Active && await users.CountActiveManagersAsync(ct) <= 1)
-            throw new DomainRuleException("The final active manager cannot be deleted.", "FINAL_MANAGER_PROTECTED");
+        EnsureCanManageAccess(actor, target);
         target.IsDeleted = true; target.AccessStatus = AccessStatus.Revoked; target.UpdatedBy = actorId; target.UpdatedAt = DateTime.UtcNow;
         await users.UpdateAsync(target, ct);
         await LogAsync("user.deleted", target.Id, actorId, reason, ct);
@@ -89,6 +114,21 @@ public sealed class UserManagementService(IUserRepository users, IAuditRepositor
     private async Task LogAsync(string action, string entityId, string actorId, string? reason, CancellationToken ct) =>
         await audits.CreateAsync(new AuditLog { Action = action, EntityType = "user", EntityId = entityId, PerformedByUserId = actorId, Metadata = new() { ["reason"] = reason } }, ct);
     private async Task<User> GetEntityAsync(string id, CancellationToken ct) => await users.GetByIdAsync(id, ct) ?? throw new KeyNotFoundException("User not found.");
+    private static void RequireOwner(User actor)
+    {
+        if (actor.Role != UserRole.Owner)
+            throw new DomainRuleException("Only the Owner can change Manager roles.", "OWNER_REQUIRED");
+    }
+    private static void ProtectOwner(User target)
+    {
+        if (target.Role == UserRole.Owner)
+            throw new DomainRuleException("The Owner account is protected.", "OWNER_PROTECTED");
+    }
+    private static void EnsureCanManageAccess(User actor, User target)
+    {
+        ProtectOwner(target);
+        if (target.Role == UserRole.Manager && actor.Role != UserRole.Owner)
+            throw new DomainRuleException("Only the Owner can change a Manager's access.", "OWNER_REQUIRED");
+    }
     private static void RequireReason(string? reason) { if (string.IsNullOrWhiteSpace(reason)) throw new DomainRuleException("A reason is required.", "REASON_REQUIRED"); }
 }
-

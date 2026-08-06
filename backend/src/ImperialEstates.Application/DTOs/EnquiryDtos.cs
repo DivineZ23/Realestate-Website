@@ -23,5 +23,7 @@ public sealed record AuditLogDto(
 
 public sealed record DashboardSummaryDto(
     long TotalBlocks, long TotalProperties, long AvailableProperties, long BookedProperties,
-    long OccupiedProperties, long PendingEnquiries, long PendingUsers,
+    long OccupiedProperties, decimal TotalRevenue, decimal TotalCost, decimal TotalProfit,
+    decimal AverageProfitPerProperty, string? MostProfitableBlock, decimal MostProfitableBlockProfit,
+    long PendingEnquiries, long PendingUsers,
     IReadOnlyList<PropertyStatusHistoryDto> RecentStatusChanges);

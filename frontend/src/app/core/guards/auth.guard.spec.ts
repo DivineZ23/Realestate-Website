@@ -41,4 +41,20 @@ describe('route guards', () => {
     const result = (await firstValueFrom(run(managerGuard) as never)) as UrlTree;
     expect(TestBed.inject(Router).serializeUrl(result)).toBe('/dashboard');
   });
+
+  it('allows owners through manager routes', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        {
+          provide: AuthService,
+          useValue: {
+            loadCurrentUser: () =>
+              of({ role: 'owner', approvalStatus: 'approved', accessStatus: 'active' }),
+          },
+        },
+      ],
+    });
+    expect(await firstValueFrom(run(managerGuard) as never)).toBe(true);
+  });
 });

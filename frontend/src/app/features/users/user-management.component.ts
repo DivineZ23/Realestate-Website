@@ -2,6 +2,7 @@ import { DatePipe, TitleCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { User } from '../../core/models/user.models';
+import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/management.services';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
@@ -33,7 +34,7 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
             <h2>{{ user.displayName }}</h2>
             <p>@{{ user.username }}</p>
             <div class="badges">
-              <span>{{ user.role | titlecase }}</span
+              <span [class.owner]="user.role === 'owner'">{{ user.role | titlecase }}</span
               ><span>{{ user.approvalStatus | titlecase }}</span
               ><span [class.revoked]="user.accessStatus === 'revoked'">{{
                 user.accessStatus | titlecase
@@ -58,20 +59,27 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
             @if (
               user.approvalStatus === 'approved' &&
               user.accessStatus === 'active' &&
-              user.role === 'agent'
+              user.role === 'agent' &&
+              auth.isOwner()
             ) {
-              <button (click)="simple(user, 'promote')">Promote</button>
+              <button (click)="simple(user, 'promote')">Promote to Manager</button>
             }
-            @if (user.role === 'manager') {
+            @if (user.role === 'manager' && auth.isOwner()) {
               <button class="danger" (click)="reason(user, 'demote')">Demote</button>
             }
-            @if (user.accessStatus === 'active') {
+            @if (user.accessStatus === 'active' && canChangeAccess(user)) {
               <button class="danger" (click)="reason(user, 'revoke')">Revoke</button>
             }
-            @if (user.accessStatus === 'revoked' && user.approvalStatus === 'approved') {
+            @if (
+              user.accessStatus === 'revoked' &&
+              user.approvalStatus === 'approved' &&
+              canChangeAccess(user)
+            ) {
               <button (click)="simple(user, 'restore')">Restore</button>
             }
-            <button class="danger" (click)="remove(user)">Delete</button>
+            @if (canChangeAccess(user)) {
+              <button class="danger" (click)="remove(user)">Delete</button>
+            }
           </div>
         </article>
       } @empty {
@@ -162,6 +170,10 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
         background: var(--danger-soft);
         color: var(--danger);
       }
+      .badges .owner {
+        background: var(--bronze);
+        color: var(--on-primary);
+      }
       dl {
         font-size: 0.72rem;
         margin: 0;
@@ -225,6 +237,7 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
   ],
 })
 export class UserManagementComponent {
+  readonly auth = inject(AuthService);
   private service = inject(UserService);
   private dialog = inject(MatDialog);
   readonly users = signal<User[]>([]);
@@ -235,6 +248,7 @@ export class UserManagementComponent {
     { key: 'pending', label: 'Pending approval' },
     { key: 'agents', label: 'Active agents' },
     { key: 'managers', label: 'Managers' },
+    { key: 'owners', label: 'Owner' },
     { key: 'revoked', label: 'Revoked' },
     { key: 'rejected', label: 'Rejected' },
   ];
@@ -250,10 +264,16 @@ export class UserManagementComponent {
           ? { approval: 'approved' as const, access: 'active' as const, role: 'agent' as const }
           : this.activeTab() === 'managers'
             ? { approval: 'approved' as const, role: 'manager' as const }
-            : this.activeTab() === 'revoked'
-              ? { access: 'revoked' as const }
-              : { approval: 'rejected' as const };
+            : this.activeTab() === 'owners'
+              ? { approval: 'approved' as const, role: 'owner' as const }
+              : this.activeTab() === 'revoked'
+                ? { access: 'revoked' as const }
+                : { approval: 'rejected' as const };
     this.service.all(filters).subscribe((v) => this.users.set(v.items));
+  }
+  canChangeAccess(user: User): boolean {
+    if (user.role === 'owner' || user.id === this.auth.user()?.id) return false;
+    return this.auth.isOwner() || user.role === 'agent';
   }
   simple(user: User, action: 'approve' | 'promote' | 'restore') {
     this.confirm(user, action, false);
@@ -292,8 +312,7 @@ export class UserManagementComponent {
       .open(ConfirmDialogComponent, {
         data: {
           title: `Delete ${user.displayName}?`,
-          message:
-            'This account will be soft-deleted. The final active manager is always protected.',
+          message: 'This account will be soft-deleted and immediately lose access.',
           requireReason: true,
           dangerous: true,
           confirmLabel: 'Delete account',

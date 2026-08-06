@@ -33,6 +33,11 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'team',
+        loadComponent: () =>
+          import('./features/team/team-overview.component').then((m) => m.TeamOverviewComponent),
+      },
+      {
         path: 'properties',
         loadComponent: () =>
           import('./features/properties/property-management.component').then(
@@ -49,9 +54,17 @@ export const routes: Routes = [
       },
       {
         path: 'properties/:id/edit',
+        canActivate: [managerGuard],
         loadComponent: () =>
           import('./features/properties/property-form.component').then(
             (m) => m.PropertyFormComponent,
+          ),
+      },
+      {
+        path: 'properties/:id/assign',
+        loadComponent: () =>
+          import('./features/properties/tenant-assignment.component').then(
+            (m) => m.TenantAssignmentComponent,
           ),
       },
       {
@@ -65,11 +78,6 @@ export const routes: Routes = [
         path: 'tenants',
         loadComponent: () =>
           import('./features/tenants/tenants.component').then((m) => m.TenantsComponent),
-      },
-      {
-        path: 'enquiries',
-        loadComponent: () =>
-          import('./features/enquiries/enquiries.component').then((m) => m.EnquiriesComponent),
       },
       {
         path: 'users',

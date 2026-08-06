@@ -3,8 +3,8 @@ namespace ImperialEstates.Infrastructure.Persistence;
 public sealed class MongoOptions
 {
     public const string SectionName = "MongoDb";
-    public string ConnectionString { get; set; } = "mongodb://localhost:27017";
-    public string DatabaseName { get; set; } = "imperial_estates";
+    public string ConnectionString { get; set; } = string.Empty;
+    public string DatabaseName { get; set; } = "imperialEstates";
 }
 
 public sealed class JwtOptions
@@ -24,6 +24,12 @@ public sealed class DiscordOptions
     public string RedirectUri { get; set; } = string.Empty;
 }
 
+public sealed class AccessOptions
+{
+    public const string SectionName = "Access";
+    public string OwnerDiscordUserId { get; set; } = string.Empty;
+}
+
 public sealed class StorageOptions
 {
     public string LocalRoot { get; set; } = "wwwroot/uploads";
@@ -32,4 +38,3 @@ public sealed class StorageOptions
     public string? ZiplineApiToken { get; set; }
     public long MaximumFileSize { get; set; } = 10 * 1024 * 1024;
 }
-

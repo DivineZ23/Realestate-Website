@@ -14,7 +14,7 @@ The application uses Angular 21 standalone components, ASP.NET Core 8, MongoDB, 
 - Enforced property lifecycle: available → booked → occupied, controlled unavailability, and historical eviction.
 - Server-side search, filters, sorting, and pagination backed by MongoDB indexes.
 - Local image storage with a configurable Zipline implementation.
-- Docker images, sample configuration, seed data, unit tests, and browser tests.
+- Docker images, Atlas-ready configuration, unit tests, and browser tests.
 
 ## Architecture
 
@@ -45,15 +45,16 @@ See [architecture.md](docs/architecture.md), [database-design.md](docs/database-
 - Node.js compatible with Angular 21 (Node 20.19+, 22.12+, or 24+)
 - pnpm 11+
 - .NET 8 SDK
-- MongoDB 7+, or Docker with Compose
+- A MongoDB Atlas cluster with database access and network access configured
+- Docker with Compose, or the .NET and Node.js toolchains for direct execution
 - A Discord application for employee sign-in
 
 ## Local setup
 
 1. Copy `.env.example` to `.env` for Docker, and copy `backend/src/ImperialEstates.Api/appsettings.example.json` to `appsettings.Development.json` for direct local execution.
-2. Replace the JWT development key with at least 32 random bytes.
-3. Configure the Discord values described below.
-4. Start MongoDB.
+2. Configure the Atlas connection string and allow your current IP in Atlas Network Access.
+3. Replace the JWT development key with at least 32 random bytes.
+4. Configure the Discord values described below and leave seed data disabled.
 5. Start the API:
 
 ```bash
@@ -79,7 +80,7 @@ docker compose config
 docker compose up --build
 ```
 
-The public application is served at `http://localhost:4200`, the API at `http://localhost:5080`, and MongoDB at `localhost:27017`.
+The public application is served at `http://localhost:4200` and the API at `http://localhost:5080`. Both direct and Docker execution connect to MongoDB Atlas; Compose does not start a local MongoDB service.
 
 ## Discord OAuth setup
 
@@ -89,29 +90,11 @@ The public application is served at `http://localhost:4200`, the API at `http://
 4. The API requests `identify email`. Email remains optional because Discord may not return it.
 5. Never place the Discord secret in Angular or commit it to source control.
 
-The first login creates a pending Agent record. A manager must approve the account. For a brand-new database, enable seed data and bootstrap your real Discord account:
-
-```javascript
-// Run after your first Discord sign-in, in mongosh against imperial_estates.
-db.users.updateOne(
-  { discordUserId: "YOUR_DISCORD_USER_ID" },
-  { $set: { role: 1, approvalStatus: 1, accessStatus: 0, approvedAt: new Date() } }
-)
-```
-
-Enums are stored as their configured MongoDB representation. Verify the pending document before updating it; alternatively copy the manager fields from the development seed document using MongoDB Compass. Restart sign-in after bootstrapping. From then on, use the manager UI for approvals. There are no password credentials because authentication is exclusively Discord OAuth.
+The Discord account whose immutable user ID matches `OWNER_DISCORD_USER_ID` is automatically maintained as the approved, active Owner. Other first-time sign-ins create pending Agent records that the Owner or a Manager can review. There are no password credentials because authentication is exclusively Discord OAuth.
 
 ## Seed data
 
-Set `SeedData__Enabled=true` (direct process) or `SEED_DATA=true` (Compose). Seeding is idempotent on a fresh user collection and creates:
-
-- one manager, two active agents, and one pending agent;
-- ChinaTown (Block ID 2), Riverside Court, and five properties;
-- ChinaTown Apt 1/2/3 with Property IDs 245/246/247;
-- available, booked, and occupied examples;
-- a tenant, enquiries, and property status history.
-
-Seed profiles are synthetic and do not bypass Discord.
+Production and shared Atlas environments must keep `SEED_DATA=false`. Create real blocks, properties, tenants, and users through the application instead of loading development fixtures.
 
 ## Environment variables
 

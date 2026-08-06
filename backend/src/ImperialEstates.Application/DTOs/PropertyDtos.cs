@@ -22,7 +22,8 @@ public sealed class PropertyQuery
 
 public sealed record PropertyDto(
     string Id, int PropertyId, string BlockId, string BlockName, string PropertyName, string? Description,
-    PropertyType Type, int? PersonCapacity, string? Storage, decimal Rent, decimal? SecurityDeposit, PropertyStatus Status,
+    PropertyType Type, int? PersonCapacity, decimal? StateCost, int? StorageCapacity,
+    string? Storage, decimal Rent, decimal? SecurityDeposit, PropertyStatus Status,
     int? Bedrooms, int? Bathrooms, int? Floor, decimal? Area, string? FurnishingStatus,
     IReadOnlyList<string> Amenities, IReadOnlyList<string> Images, string? CurrentTenantId,
     string? BookedByEnquiryId, string? UnavailableReason, bool IsFeatured, bool IsActive,
@@ -30,7 +31,8 @@ public sealed record PropertyDto(
 
 public sealed record PublicPropertyDto(
     string Id, int PropertyId, string BlockId, string BlockName, string PropertyName, string? Description,
-    PropertyType Type, int? PersonCapacity, string? Storage, decimal Rent, decimal? SecurityDeposit, PropertyStatus Status,
+    PropertyType Type, int? PersonCapacity, decimal? StateCost, int? StorageCapacity,
+    string? Storage, decimal Rent, decimal? SecurityDeposit, PropertyStatus Status,
     int? Bedrooms, int? Bathrooms, int? Floor, decimal? Area, string? FurnishingStatus,
     IReadOnlyList<string> Amenities, IReadOnlyList<string> Images, bool IsFeatured, DateTime CreatedAt);
 
@@ -43,7 +45,7 @@ public sealed record UpsertPropertyRequest(
 public sealed record ChangePropertyStatusRequest(PropertyStatus Status, string? Reason, string? EnquiryId);
 
 public sealed record AssignTenantRequest(
-    string FullName, string PhoneNumber, string? Cid, string? Email, string? DiscordId,
+    int Cid, string FullName, string PhoneNumber, string? DiscordId,
     DateTime StartDate, DateTime? ExpectedEndDate, decimal MonthlyRent, decimal? SecurityDeposit,
     string? EmergencyContact, string? Notes);
 

@@ -6,20 +6,23 @@ namespace ImperialEstates.Application.Services;
 
 internal static class MappingExtensions
 {
-    public static BlockDto ToDto(this Block value, long count) => new(
+    public static BlockDto ToDto(
+        this Block value, long count, decimal totalCost = 0, decimal totalRent = 0) => new(
         value.Id, value.BlockId, value.BlockName, value.Description, value.Address, value.ImageUrl,
-        count, value.IsActive, value.CreatedAt, value.UpdatedAt);
+        count, totalCost, totalRent, totalRent - totalCost, value.IsActive, value.CreatedAt, value.UpdatedAt);
 
     public static PropertyDto ToDto(this Property value, string blockName) => new(
         value.Id, value.PropertyId, value.BlockId, blockName, value.PropertyName, value.Description,
-        value.Type, value.Type.PersonCapacity(), value.Storage, value.Rent, value.SecurityDeposit, value.Status, value.Bedrooms,
+        value.Type, value.Type.PersonCapacity(), value.Type.StateCost(), value.Type.StorageCapacity(),
+        value.Storage, value.Rent, value.SecurityDeposit, value.Status, value.Bedrooms,
         value.Bathrooms, value.Floor, value.Area, value.FurnishingStatus, value.Amenities, value.Images,
         value.CurrentTenantId, value.BookedByEnquiryId, value.UnavailableReason, value.IsFeatured,
         value.IsActive, value.CreatedAt, value.UpdatedAt);
 
     public static PublicPropertyDto ToPublicDto(this Property value, string blockName) => new(
         value.Id, value.PropertyId, value.BlockId, blockName, value.PropertyName, value.Description,
-        value.Type, value.Type.PersonCapacity(), value.Storage, value.Rent, value.SecurityDeposit, value.Status, value.Bedrooms,
+        value.Type, value.Type.PersonCapacity(), value.Type.StateCost(), value.Type.StorageCapacity(),
+        value.Storage, value.Rent, value.SecurityDeposit, value.Status, value.Bedrooms,
         value.Bathrooms, value.Floor, value.Area, value.FurnishingStatus, value.Amenities, value.Images,
         value.IsFeatured, value.CreatedAt);
 

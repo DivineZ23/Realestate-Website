@@ -1,4 +1,4 @@
-export type UserRole = 'agent' | 'manager';
+export type UserRole = 'agent' | 'manager' | 'owner';
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 export type AccessStatus = 'active' | 'pending' | 'revoked';
 

@@ -10,36 +10,60 @@ namespace ImperialEstates.Tests.Services;
 public sealed class UserManagementServiceTests
 {
     [Fact]
-    public async Task Final_active_manager_cannot_be_demoted()
+    public async Task Owner_can_demote_a_manager()
     {
         var manager = ActiveManager("manager-1");
-        var service = new UserManagementService(new FakeUserRepository([manager]), new FakeAuditRepository());
-        var exception = await Assert.ThrowsAsync<DomainRuleException>(() => service.DemoteAsync(manager.Id, "manager-2", "Role change", default));
-        Assert.Equal("FINAL_MANAGER_PROTECTED", exception.ErrorCode);
+        var owner = ActiveOwner("owner-1");
+        var service = new UserManagementService(new FakeUserRepository([manager, owner]), new FakeAuditRepository());
+        var result = await service.DemoteAsync(manager.Id, owner.Id, "Role change", default);
+        Assert.Equal(UserRole.Agent, result.Role);
     }
 
     [Fact]
-    public async Task Manager_cannot_promote_self()
+    public async Task Owner_can_promote_an_active_agent()
     {
         var agent = new User { Id = "agent-1", Role = UserRole.Agent, ApprovalStatus = ApprovalStatus.Approved, AccessStatus = AccessStatus.Active };
-        var service = new UserManagementService(new FakeUserRepository([agent]), new FakeAuditRepository());
-        var exception = await Assert.ThrowsAsync<DomainRuleException>(() => service.PromoteAsync(agent.Id, agent.Id, default));
-        Assert.Equal("SELF_ROLE_CHANGE_FORBIDDEN", exception.ErrorCode);
+        var owner = ActiveOwner("owner-1");
+        var service = new UserManagementService(new FakeUserRepository([agent, owner]), new FakeAuditRepository());
+        var result = await service.PromoteAsync(agent.Id, owner.Id, default);
+        Assert.Equal(UserRole.Manager, result.Role);
+    }
+
+    [Fact]
+    public async Task Manager_cannot_promote_an_agent()
+    {
+        var agent = new User { Id = "agent-1", Role = UserRole.Agent, ApprovalStatus = ApprovalStatus.Approved, AccessStatus = AccessStatus.Active };
+        var manager = ActiveManager("manager-1");
+        var service = new UserManagementService(new FakeUserRepository([agent, manager]), new FakeAuditRepository());
+        var exception = await Assert.ThrowsAsync<DomainRuleException>(() => service.PromoteAsync(agent.Id, manager.Id, default));
+        Assert.Equal("OWNER_REQUIRED", exception.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Owner_account_cannot_be_revoked()
+    {
+        var owner = ActiveOwner("owner-1");
+        var manager = ActiveManager("manager-1");
+        var service = new UserManagementService(new FakeUserRepository([owner, manager]), new FakeAuditRepository());
+        var exception = await Assert.ThrowsAsync<DomainRuleException>(() => service.RevokeAsync(owner.Id, manager.Id, "No access", default));
+        Assert.Equal("OWNER_PROTECTED", exception.ErrorCode);
     }
 
     [Fact]
     public async Task Approval_activates_pending_agent_and_is_audited()
     {
         var pending = new User { Id = "agent-1", ApprovalStatus = ApprovalStatus.Pending, AccessStatus = AccessStatus.Pending };
+        var manager = ActiveManager("manager-1");
         var audits = new FakeAuditRepository();
-        var service = new UserManagementService(new FakeUserRepository([pending]), audits);
-        var result = await service.ApproveAsync(pending.Id, "manager-1", default);
+        var service = new UserManagementService(new FakeUserRepository([pending, manager]), audits);
+        var result = await service.ApproveAsync(pending.Id, manager.Id, default);
         Assert.Equal(ApprovalStatus.Approved, result.ApprovalStatus);
         Assert.Equal(AccessStatus.Active, result.AccessStatus);
         Assert.Contains(audits.Values, x => x.Action == "user.approved");
     }
 
     private static User ActiveManager(string id) => new() { Id = id, Role = UserRole.Manager, ApprovalStatus = ApprovalStatus.Approved, AccessStatus = AccessStatus.Active };
+    private static User ActiveOwner(string id) => new() { Id = id, Role = UserRole.Owner, ApprovalStatus = ApprovalStatus.Approved, AccessStatus = AccessStatus.Active };
 
     private sealed class FakeUserRepository(IEnumerable<User> seed) : IUserRepository
     {

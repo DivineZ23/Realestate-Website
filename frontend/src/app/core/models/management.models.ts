@@ -63,6 +63,12 @@ export interface DashboardSummary {
   availableProperties: number;
   bookedProperties: number;
   occupiedProperties: number;
+  totalRevenue: number;
+  totalCost: number;
+  totalProfit: number;
+  averageProfitPerProperty: number;
+  mostProfitableBlock?: string;
+  mostProfitableBlockProfit: number;
   pendingEnquiries: number;
   pendingUsers: number;
   recentStatusChanges: StatusHistory[];

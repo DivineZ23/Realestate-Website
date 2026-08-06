@@ -13,18 +13,19 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         <a routerLink="/dashboard" class="mark">IE</a><strong>Imperial<br />Estates</strong>
       </div>
       <nav>
+        <p class="first-group">Workspace</p>
         <a
           routerLink="/dashboard"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
           ><span>⌂</span><b>Overview</b></a
+        ><a routerLink="/dashboard/team" routerLinkActive="active"
+          ><span>♦</span><b>About the Team</b></a
         ><a routerLink="/dashboard/properties" routerLinkActive="active"
           ><span>◇</span><b>Properties</b></a
         ><a routerLink="/dashboard/blocks" routerLinkActive="active"><span>▦</span><b>Blocks</b></a
         ><a routerLink="/dashboard/tenants" routerLinkActive="active"
           ><span>♙</span><b>Tenants</b></a
-        ><a routerLink="/dashboard/enquiries" routerLinkActive="active"
-          ><span>✉</span><b>Enquiries</b></a
         >
         @if (auth.isManager()) {
           <p>Administration</p>
@@ -134,6 +135,9 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         font-size: 0.66rem;
         text-transform: uppercase;
         letter-spacing: 0.14em;
+      }
+      nav p.first-group {
+        margin-top: 0;
       }
       .collapse {
         border: 0;

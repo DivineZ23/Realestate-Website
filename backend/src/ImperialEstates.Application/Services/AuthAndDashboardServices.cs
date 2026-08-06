@@ -5,7 +5,7 @@ using ImperialEstates.Domain.Enums;
 
 namespace ImperialEstates.Application.Services;
 
-public sealed class AuthService(IUserRepository users, ITokenService tokens)
+public sealed class AuthService(IUserRepository users, ITokenService tokens, IOwnerIdentity ownerIdentity)
 {
     public async Task<AuthResult> SignInAsync(DiscordProfile profile, CancellationToken cancellationToken)
     {
@@ -13,30 +13,68 @@ public sealed class AuthService(IUserRepository users, ITokenService tokens)
         if (user is null)
         {
             user = new User { DiscordUserId = profile.Id, Username = profile.Username, DisplayName = profile.DisplayName, AvatarUrl = profile.AvatarUrl, Email = profile.Email };
+            if (ownerIdentity.IsOwner(profile.Id)) ActivateOwner(user);
             await users.CreateAsync(user, cancellationToken);
         }
         else
         {
             user.Username = profile.Username; user.DisplayName = profile.DisplayName; user.AvatarUrl = profile.AvatarUrl;
             user.Email = profile.Email ?? user.Email; user.LastLoginAt = DateTime.UtcNow; user.UpdatedAt = DateTime.UtcNow;
+            if (ownerIdentity.IsOwner(profile.Id)) ActivateOwner(user);
             await users.UpdateAsync(user, cancellationToken);
         }
         var (token, expiresAt) = tokens.Create(user);
         return new(user.ToDto(), token, expiresAt);
     }
+
+    private static void ActivateOwner(User user)
+    {
+        user.Role = UserRole.Owner;
+        user.ApprovalStatus = ApprovalStatus.Approved;
+        user.AccessStatus = AccessStatus.Active;
+        user.RevokedAt = null;
+        user.RevokedBy = null;
+        user.RevokeReason = null;
+    }
 }
 
 public sealed class DashboardService(IBlockRepository blocks, IPropertyRepository properties, IEnquiryRepository enquiries, IUserRepository users, IStatusHistoryRepository history)
 {
-    public async Task<DashboardSummaryDto> GetAsync(CancellationToken ct) => new(
-        (await blocks.GetAllAsync(true, ct)).Count,
-        await properties.CountByStatusAsync(null, ct),
-        await properties.CountByStatusAsync(PropertyStatus.Available, ct),
-        await properties.CountByStatusAsync(PropertyStatus.Booked, ct),
-        await properties.CountByStatusAsync(PropertyStatus.Owned, ct),
-        await enquiries.CountPendingAsync(ct),
-        await users.CountPendingAsync(ct),
-        (await history.GetRecentAsync(8, ct))
-            .Where(x => x.PreviousStatus != PropertyStatus.Unavailable && x.NewStatus != PropertyStatus.Unavailable)
-            .Select(x => x.ToDto()).ToList());
+    public async Task<DashboardSummaryDto> GetAsync(CancellationToken ct)
+    {
+        var activeBlocks = await blocks.GetAllAsync(true, ct);
+        var allProperties = await properties.GetAllAsync(ct);
+        var totalCost = allProperties.Sum(property => property.Type.StateCost() ?? 0);
+        var totalRevenue = allProperties.Sum(property => property.Rent);
+        var totalProfit = totalRevenue - totalCost;
+        var blockNames = activeBlocks.ToDictionary(block => block.Id, block => block.BlockName);
+        var blockFinancials = allProperties
+            .Where(property => blockNames.ContainsKey(property.BlockId))
+            .GroupBy(property => property.BlockId)
+            .Select(group => new
+            {
+                Name = blockNames[group.Key],
+                Profit = group.Sum(property => property.Rent) - group.Sum(property => property.Type.StateCost() ?? 0)
+            })
+            .OrderByDescending(block => block.Profit)
+            .FirstOrDefault();
+
+        return new(
+            activeBlocks.Count,
+            allProperties.Count,
+            allProperties.Count(property => property.Status == PropertyStatus.Available),
+            allProperties.Count(property => property.Status == PropertyStatus.Booked),
+            allProperties.Count(property => property.Status == PropertyStatus.Owned),
+            totalRevenue,
+            totalCost,
+            totalProfit,
+            allProperties.Count == 0 ? 0 : totalProfit / allProperties.Count,
+            blockFinancials?.Name,
+            blockFinancials?.Profit ?? 0,
+            await enquiries.CountPendingAsync(ct),
+            await users.CountPendingAsync(ct),
+            (await history.GetRecentAsync(8, ct))
+                .Where(x => x.PreviousStatus != PropertyStatus.Unavailable && x.NewStatus != PropertyStatus.Unavailable)
+                .Select(x => x.ToDto()).ToList());
+    }
 }

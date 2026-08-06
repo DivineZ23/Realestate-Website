@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
@@ -9,7 +9,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
 
 @Component({
   selector: 'app-dashboard-overview',
-  imports: [DatePipe, RouterLink, StatusBadgeComponent],
+  imports: [CurrencyPipe, DatePipe, RouterLink, StatusBadgeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div class="page-title">
       <div>
@@ -19,6 +19,33 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
       </div>
     </div>
     @if (summary(); as s) {
+      <div class="financial-stats">
+        <article class="panel">
+          <span>Total revenue</span>
+          <b>{{ s.totalRevenue | currency: 'USD' : 'symbol' : '1.0-0' }}</b>
+          <small>Combined property rent</small>
+        </article>
+        <article class="panel">
+          <span>Total cost</span>
+          <b>{{ s.totalCost | currency: 'USD' : 'symbol' : '1.0-0' }}</b>
+          <small>Fixed State cost by interior</small>
+        </article>
+        <article class="panel profit" [class.negative]="s.totalProfit < 0">
+          <span>Total profit</span>
+          <b>{{ s.totalProfit | currency: 'USD' : 'symbol' : '1.0-0' }}</b>
+          <small
+            >Rent − Cost · Avg
+            {{ s.averageProfitPerProperty | currency: 'USD' : 'symbol' : '1.0-0' }}</small
+          >
+        </article>
+        <article class="panel block-highlight">
+          <span>Most profitable block</span>
+          <b>{{ s.mostProfitableBlock || 'No block data' }}</b>
+          <small
+            >{{ s.mostProfitableBlockProfit | currency: 'USD' : 'symbol' : '1.0-0' }} profit</small
+          >
+        </article>
+      </div>
       <div class="stats">
         <article>
           <span>Total properties</span><b>{{ s.totalProperties }}</b
@@ -64,14 +91,13 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         </section>
         <aside>
           <section class="panel actions">
-            <h2>Needs attention</h2>
-            <a routerLink="/dashboard/enquiries"
-              ><span>New enquiries</span><b>{{ s.pendingEnquiries }}</b></a
-            >
+            <h2>Team access</h2>
             @if (s.pendingUsers > 0) {
               <a routerLink="/dashboard/users"
                 ><span>Pending approvals</span><b>{{ s.pendingUsers }}</b></a
               >
+            } @else {
+              <p class="empty-attention">No pending access requests.</p>
             }
           </section>
           <section class="panel occupancy">
@@ -109,6 +135,42 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         grid-template-columns: repeat(4, 1fr);
         gap: 14px;
         margin-bottom: 20px;
+      }
+      .financial-stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        margin-bottom: 14px;
+      }
+      .financial-stats article {
+        display: grid;
+        min-height: 142px;
+        padding: 20px;
+      }
+      .financial-stats span,
+      .financial-stats small {
+        color: var(--muted);
+        font-size: 0.75rem;
+      }
+      .financial-stats b {
+        align-self: center;
+        overflow: hidden;
+        font-size: clamp(1.25rem, 2.2vw, 1.9rem);
+        text-overflow: ellipsis;
+      }
+      .financial-stats .profit {
+        border-color: var(--forest);
+        background: var(--forest-light);
+      }
+      .financial-stats .negative {
+        border-color: var(--danger);
+        background: var(--danger-soft);
+      }
+      .financial-stats .negative b {
+        color: var(--danger);
+      }
+      .block-highlight b {
+        font-size: 1.3rem;
       }
       .stats article {
         background: var(--surface);
@@ -214,6 +276,11 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         background: var(--forest-light);
         color: var(--forest);
       }
+      .empty-attention {
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
       .occupancy {
         padding: 24px;
         display: flex;
@@ -258,6 +325,9 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         color: var(--muted);
       }
       @media (max-width: 1100px) {
+        .financial-stats {
+          grid-template-columns: 1fr 1fr;
+        }
         .stats {
           grid-template-columns: repeat(3, 1fr);
         }
@@ -272,6 +342,9 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         }
         .page-title .btn {
           display: none;
+        }
+        .financial-stats {
+          grid-template-columns: 1fr;
         }
         .stats {
           grid-template-columns: 1fr 1fr;

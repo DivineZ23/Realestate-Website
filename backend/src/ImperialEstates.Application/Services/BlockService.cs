@@ -1,6 +1,7 @@
 using ImperialEstates.Application.DTOs;
 using ImperialEstates.Application.Interfaces;
 using ImperialEstates.Domain.Entities;
+using ImperialEstates.Domain.Enums;
 using ImperialEstates.Domain.Exceptions;
 
 namespace ImperialEstates.Application.Services;
@@ -10,16 +11,14 @@ public sealed class BlockService(IBlockRepository blocks, IPropertyRepository pr
     public async Task<IReadOnlyList<BlockDto>> GetAllAsync(bool activeOnly, CancellationToken cancellationToken)
     {
         var values = await blocks.GetAllAsync(activeOnly, cancellationToken);
-        var result = new List<BlockDto>(values.Count);
-        foreach (var value in values)
-            result.Add(value.ToDto(await properties.CountByBlockAsync(value.Id, cancellationToken)));
-        return result;
+        var allProperties = await properties.GetAllAsync(cancellationToken);
+        return values.Select(value => FinancialDto(value, allProperties)).ToList();
     }
 
     public async Task<BlockDto> GetAsync(string id, CancellationToken cancellationToken)
     {
         var value = await GetEntityAsync(id, cancellationToken);
-        return value.ToDto(await properties.CountByBlockAsync(value.Id, cancellationToken));
+        return FinancialDto(value, await properties.GetAllAsync(cancellationToken));
     }
 
     public async Task<BlockDto> CreateAsync(UpsertBlockRequest request, string actorId, CancellationToken cancellationToken)
@@ -54,7 +53,7 @@ public sealed class BlockService(IBlockRepository blocks, IPropertyRepository pr
         value.UpdatedBy = actorId;
         await blocks.UpdateAsync(value, cancellationToken);
         await audits.CreateAsync(NewAudit("block.updated", value.Id, actorId), cancellationToken);
-        return value.ToDto(await properties.CountByBlockAsync(value.Id, cancellationToken));
+        return FinancialDto(value, await properties.GetAllAsync(cancellationToken));
     }
 
     public async Task DeleteAsync(string id, string actorId, CancellationToken cancellationToken)
@@ -75,5 +74,12 @@ public sealed class BlockService(IBlockRepository blocks, IPropertyRepository pr
 
     private static AuditLog NewAudit(string action, string entityId, string actorId) =>
         new() { Action = action, EntityType = "block", EntityId = entityId, PerformedByUserId = actorId };
-}
 
+    private static BlockDto FinancialDto(Block block, IEnumerable<Property> allProperties)
+    {
+        var blockProperties = allProperties.Where(property => property.BlockId == block.Id).ToList();
+        var cost = blockProperties.Sum(property => property.Type.StateCost() ?? 0);
+        var rent = blockProperties.Sum(property => property.Rent);
+        return block.ToDto(blockProperties.Count, cost, rent);
+    }
+}

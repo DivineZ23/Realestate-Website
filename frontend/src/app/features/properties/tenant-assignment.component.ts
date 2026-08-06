@@ -1,0 +1,312 @@
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import {
+  propertyTypeCapacity,
+  propertyTypeLabel,
+} from '../../core/constants/property-status.constants';
+import { AssignTenantRequest, Property } from '../../core/models/property.models';
+import { PropertyService } from '../../core/services/property.service';
+import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
+
+@Component({
+  selector: 'app-tenant-assignment',
+  imports: [ReactiveFormsModule, RouterLink, StatusBadgeComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div class="back"><a routerLink="/dashboard/properties">← Back to properties</a></div>
+    <div class="page-title">
+      <div>
+        <p class="eyebrow">Tenant assignment</p>
+        <h1>Assign tenant</h1>
+        <p>Add a tenant without changing the property configuration.</p>
+      </div>
+    </div>
+
+    @if (property(); as p) {
+      <div class="assignment-grid">
+        <section class="panel property-context">
+          <header>
+            <div>
+              <p class="eyebrow">Selected property</p>
+              <h2>{{ p.propertyName }}</h2>
+            </div>
+            <app-status-badge [status]="p.status" />
+          </header>
+          <dl>
+            <div>
+              <dt>Property ID</dt>
+              <dd>#{{ p.propertyId }}</dd>
+            </div>
+            <div>
+              <dt>Block</dt>
+              <dd>{{ p.blockName }}</dd>
+            </div>
+            <div>
+              <dt>Interior structure</dt>
+              <dd>{{ typeLabel(p.type) }}</dd>
+            </div>
+            <div>
+              <dt>Person capacity</dt>
+              <dd>{{ p.personCapacity ?? typeCapacity(p.type) ?? '—' }}</dd>
+            </div>
+          </dl>
+          <p class="locked">Property details are read-only during tenant assignment.</p>
+        </section>
+
+        @if (p.status === 'available' || p.status === 'booked') {
+          <form class="panel tenant-form" [formGroup]="form" (ngSubmit)="assign()">
+            <div>
+              <p class="eyebrow">Tenant information</p>
+              <h2>Occupant details</h2>
+              <p>CID, full name, and phone number are required.</p>
+            </div>
+
+            <label class="field">
+              <span>CID</span>
+              <input type="number" min="1" step="1" formControlName="cid" />
+              @if (invalid('cid')) {
+                <small class="error">Enter a valid integer CID.</small>
+              }
+            </label>
+            <label class="field">
+              <span>Tenant full name</span>
+              <input formControlName="fullName" autocomplete="name" />
+              @if (invalid('fullName')) {
+                <small class="error">Tenant full name is required.</small>
+              }
+            </label>
+            <label class="field">
+              <span>Phone number</span>
+              <input formControlName="phoneNumber" autocomplete="tel" />
+              @if (invalid('phoneNumber')) {
+                <small class="error">Enter a valid phone number.</small>
+              }
+            </label>
+            <div class="two-columns">
+              <label class="field">
+                <span>Start date</span>
+                <input type="date" formControlName="startDate" />
+              </label>
+              <label class="field">
+                <span>Monthly rent</span>
+                <input type="number" min="0" formControlName="monthlyRent" />
+              </label>
+            </div>
+            <label class="field">
+              <span>Security deposit <i>optional</i></span>
+              <input type="number" min="0" formControlName="securityDeposit" />
+            </label>
+            <label class="field">
+              <span>Notes <i>optional</i></span>
+              <textarea rows="3" formControlName="notes"></textarea>
+            </label>
+            <div class="actions">
+              <a class="btn btn-secondary" routerLink="/dashboard/properties">Cancel</a>
+              <button class="btn btn-primary" [disabled]="form.invalid || saving()">
+                {{ saving() ? 'Assigning…' : 'Assign tenant' }}
+              </button>
+            </div>
+          </form>
+        } @else {
+          <section class="panel unavailable">
+            <h2>Tenant already assigned</h2>
+            <p>This property must be Available or Booked before a tenant can be assigned.</p>
+            <a class="btn btn-secondary" routerLink="/dashboard/properties">Return to properties</a>
+          </section>
+        }
+      </div>
+    } @else {
+      <section class="panel loading">Loading property…</section>
+    }
+  `,
+  styles: [
+    `
+      .back {
+        margin-bottom: 20px;
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+      .page-title {
+        margin-bottom: 24px;
+      }
+      .page-title h1 {
+        margin: 4px 0;
+        font-size: 2.5rem;
+      }
+      .page-title p:last-child,
+      .tenant-form > div:first-child > p:last-child {
+        margin-bottom: 0;
+        color: var(--muted);
+      }
+      .assignment-grid {
+        display: grid;
+        grid-template-columns: minmax(280px, 0.75fr) minmax(420px, 1.25fr);
+        gap: 20px;
+        align-items: start;
+      }
+      .property-context,
+      .tenant-form,
+      .unavailable,
+      .loading {
+        padding: 26px;
+      }
+      .property-context header {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 18px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+      }
+      h2 {
+        margin: 4px 0 0;
+        font-size: 1.3rem;
+      }
+      dl {
+        margin: 10px 0 0;
+      }
+      dl div {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      dt {
+        color: var(--muted);
+      }
+      dd {
+        margin: 0;
+        text-align: right;
+        font-weight: 700;
+      }
+      .locked {
+        margin: 20px 0 0;
+        padding: 12px;
+        border-radius: var(--radius-sm);
+        background: var(--forest-light);
+        color: var(--forest);
+        font-size: 0.78rem;
+        font-weight: 650;
+      }
+      .tenant-form {
+        display: grid;
+        gap: 16px;
+      }
+      .two-columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      .field i {
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 500;
+      }
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        padding-top: 6px;
+      }
+      .unavailable p {
+        color: var(--muted);
+      }
+      .loading {
+        color: var(--muted);
+      }
+      @media (max-width: 900px) {
+        .assignment-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 560px) {
+        .two-columns {
+          grid-template-columns: 1fr;
+        }
+        .actions {
+          align-items: stretch;
+          flex-direction: column-reverse;
+        }
+      }
+    `,
+  ],
+})
+export class TenantAssignmentComponent {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly properties = inject(PropertyService);
+
+  readonly property = signal<Property | null>(null);
+  readonly saving = signal(false);
+  readonly typeLabel = propertyTypeLabel;
+  readonly typeCapacity = propertyTypeCapacity;
+  readonly form = new FormGroup({
+    cid: new FormControl<number | null>(null, [
+      Validators.required,
+      Validators.min(1),
+      Validators.pattern(/^\d+$/),
+    ]),
+    fullName: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.maxLength(160)],
+    }),
+    phoneNumber: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(/^[+0-9()\-\s]{7,24}$/)],
+    }),
+    startDate: new FormControl(new Date().toISOString().slice(0, 10), {
+      nonNullable: true,
+      validators: Validators.required,
+    }),
+    monthlyRent: new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
+    securityDeposit: new FormControl<number | null>(null, Validators.min(0)),
+    notes: new FormControl('', { nonNullable: true }),
+  });
+
+  constructor() {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (!id) {
+      this.router.navigate(['/dashboard/properties']);
+      return;
+    }
+
+    this.properties.details(id).subscribe((property) => {
+      this.property.set(property);
+      this.form.patchValue({
+        monthlyRent: property.rent,
+        securityDeposit: property.securityDeposit ?? null,
+      });
+    });
+  }
+
+  invalid(name: 'cid' | 'fullName' | 'phoneNumber') {
+    const control = this.form.controls[name];
+    return control.invalid && (control.dirty || control.touched);
+  }
+
+  assign() {
+    const property = this.property();
+    if (!property || this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    this.saving.set(true);
+    const raw = this.form.getRawValue();
+    const request: AssignTenantRequest = {
+      cid: raw.cid!,
+      fullName: raw.fullName,
+      phoneNumber: raw.phoneNumber,
+      startDate: raw.startDate,
+      monthlyRent: raw.monthlyRent!,
+      securityDeposit: raw.securityDeposit ?? undefined,
+      notes: raw.notes || undefined,
+    };
+    this.properties.assignTenant(property.id, request).subscribe({
+      next: () => this.router.navigate(['/dashboard/properties']),
+      error: () => this.saving.set(false),
+    });
+  }
+}

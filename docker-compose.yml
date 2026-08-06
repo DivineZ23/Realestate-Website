@@ -1,18 +1,5 @@
 name: imperial-estates
 services:
-  mongo:
-    image: mongo:7.0
-    restart: unless-stopped
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-    healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-
   backend:
     build:
       context: .
@@ -22,21 +9,19 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
-      MongoDb__ConnectionString: ${MONGODB_CONNECTION_STRING:-mongodb://mongo:27017}
-      MongoDb__DatabaseName: ${MONGODB_DATABASE:-imperial_estates}
+      MongoDb__ConnectionString: ${MONGODB_CONNECTION_STRING:?Set MONGODB_CONNECTION_STRING in .env}
+      MongoDb__DatabaseName: ${MONGODB_DATABASE:-imperialEstates}
       Jwt__SigningKey: ${JWT_SIGNING_KEY}
       Jwt__Issuer: ${JWT_ISSUER:-ImperialEstates}
       Jwt__Audience: ${JWT_AUDIENCE:-ImperialEstates.Web}
       Discord__ClientId: ${DISCORD_CLIENT_ID}
       Discord__ClientSecret: ${DISCORD_CLIENT_SECRET}
       Discord__RedirectUri: ${DISCORD_REDIRECT_URI:-http://localhost:5080/api/v1/auth/discord/callback}
+      Access__OwnerDiscordUserId: ${OWNER_DISCORD_USER_ID}
       App__FrontendUrl: ${FRONTEND_URL:-http://localhost:4200}
       Zipline__BaseUrl: ${ZIPLINE_BASE_URL}
       Zipline__ApiToken: ${ZIPLINE_API_TOKEN}
       SeedData__Enabled: ${SEED_DATA:-false}
-    depends_on:
-      mongo:
-        condition: service_healthy
     ports:
       - "5080:8080"
     volumes:
@@ -53,6 +38,4 @@ services:
       - "4200:80"
 
 volumes:
-  mongo_data:
   uploads:
-

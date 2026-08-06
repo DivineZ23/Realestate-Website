@@ -25,7 +25,7 @@ export const managerGuard: CanActivateFn = () => {
     .loadCurrentUser()
     .pipe(
       map((user) =>
-        user?.role === 'manager' &&
+        (user?.role === 'manager' || user?.role === 'owner') &&
         user.approvalStatus === 'approved' &&
         user.accessStatus === 'active'
           ? true

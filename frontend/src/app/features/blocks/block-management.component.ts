@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
@@ -10,7 +10,7 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
 
 @Component({
   selector: 'app-block-management',
-  imports: [DatePipe, ReactiveFormsModule, EmptyStateComponent],
+  imports: [CurrencyPipe, DatePipe, ReactiveFormsModule, EmptyStateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div class="page-title">
       <div>
@@ -30,6 +30,9 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
               <th>ID</th>
               <th>Block</th>
               <th>Properties</th>
+              <th>Cost</th>
+              <th>Rent</th>
+              <th>Profit</th>
               <th>Active</th>
               <th>Updated</th>
               @if (auth.isManager()) {
@@ -46,6 +49,11 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
                   ><small>{{ block.address || 'No address set' }}</small>
                 </td>
                 <td>{{ block.numberOfProperties }}</td>
+                <td>{{ block.totalCost | currency: 'USD' : 'symbol' : '1.0-0' }}</td>
+                <td>{{ block.totalRent | currency: 'USD' : 'symbol' : '1.0-0' }}</td>
+                <td [class.negative]="block.totalProfit < 0">
+                  {{ block.totalProfit | currency: 'USD' : 'symbol' : '1.0-0' }}
+                </td>
                 <td>
                   <span class="state" [class.on]="block.isActive">{{
                     block.isActive ? 'Active' : 'Inactive'
@@ -61,7 +69,7 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
               </tr>
             } @empty {
               <tr>
-                <td colspan="6">
+                <td [attr.colspan]="auth.isManager() ? 9 : 8">
                   <app-empty-state
                     title="No blocks yet"
                     message="Create the first block to start adding properties."
@@ -132,6 +140,9 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
         cursor: pointer;
       }
       .data-table .danger {
+        color: var(--danger);
+      }
+      .data-table .negative {
         color: var(--danger);
       }
       .state {

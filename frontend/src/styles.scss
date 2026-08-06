@@ -178,6 +178,10 @@ table.data-table {
   --mdc-snackbar-container-color: var(--danger);
   --mdc-snackbar-supporting-text-color: white;
 }
+.success-toast {
+  --mdc-snackbar-container-color: var(--forest);
+  --mdc-snackbar-supporting-text-color: var(--on-primary);
+}
 
 @media (max-width: 720px) {
   :root {

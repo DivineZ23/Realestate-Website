@@ -35,7 +35,13 @@ public sealed class PropertyRepository(MongoContext db) : IPropertyRepository
             var regex = new BsonRegularExpression(System.Text.RegularExpressions.Regex.Escape(query.Search.Trim()), "i");
             var matchingBlocks = await db.Blocks.Find(Builders<Block>.Filter.Regex(x => x.BlockName, regex)).Project(x => x.Id).ToListAsync(ct);
             var numeric = int.TryParse(query.Search, out var propertyId);
-            filter &= f.Or(f.Regex(x => x.PropertyName, regex), f.In(x => x.BlockId, matchingBlocks), numeric ? f.Eq(x => x.PropertyId, propertyId) : f.Empty);
+            var searchFilters = new List<FilterDefinition<Property>>
+            {
+                f.Regex(x => x.PropertyName, regex),
+                f.In(x => x.BlockId, matchingBlocks)
+            };
+            if (numeric) searchFilters.Add(f.Eq(x => x.PropertyId, propertyId));
+            filter &= f.Or(searchFilters);
         }
         var page = Paging.NormalizePage(query.Page); var pageSize = Paging.NormalizePageSize(query.PageSize);
         var total = await db.Properties.CountDocumentsAsync(filter, cancellationToken: ct);
@@ -46,6 +52,8 @@ public sealed class PropertyRepository(MongoContext db) : IPropertyRepository
 
     public Task<Property?> GetByIdAsync(string id, CancellationToken ct) => db.Properties.Find(x => x.Id == id && !x.IsDeleted).FirstOrDefaultAsync(ct)!;
     public Task<Property?> GetByBusinessIdAsync(int id, CancellationToken ct) => db.Properties.Find(x => x.PropertyId == id && !x.IsDeleted).FirstOrDefaultAsync(ct)!;
+    public async Task<IReadOnlyList<Property>> GetAllAsync(CancellationToken ct) =>
+        await db.Properties.Find(x => !x.IsDeleted).ToListAsync(ct);
     public async Task<IReadOnlyList<Property>> GetFeaturedAsync(int limit, CancellationToken ct) => await db.Properties.Find(x => !x.IsDeleted && x.IsActive && x.IsFeatured && x.Status == PropertyStatus.Available).SortByDescending(x => x.CreatedAt).Limit(limit).ToListAsync(ct);
     public Task<long> CountByBlockAsync(string blockId, CancellationToken ct) => db.Properties.CountDocumentsAsync(x => x.BlockId == blockId && !x.IsDeleted, cancellationToken: ct);
     public Task<long> CountByStatusAsync(PropertyStatus? status, CancellationToken ct)

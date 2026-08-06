@@ -94,10 +94,11 @@ public sealed class PropertyService(
     {
         var value = await GetEntityAsync(id, cancellationToken);
         var previous = value.Status;
+        value.Rent = request.MonthlyRent;
         var tenant = new Tenant
         {
             PropertyId = value.Id, FullName = request.FullName.Trim(), PhoneNumber = request.PhoneNumber.Trim(),
-            Cid = request.Cid?.Trim(), Email = request.Email?.Trim(), DiscordId = request.DiscordId?.Trim(),
+            Cid = request.Cid, DiscordId = request.DiscordId?.Trim(),
             StartDate = request.StartDate, ExpectedEndDate = request.ExpectedEndDate, MonthlyRent = request.MonthlyRent,
             SecurityDeposit = request.SecurityDeposit, EmergencyContact = request.EmergencyContact?.Trim(),
             Notes = request.Notes?.Trim(), CreatedBy = actorId

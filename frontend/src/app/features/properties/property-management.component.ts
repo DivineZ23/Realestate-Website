@@ -100,7 +100,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
               <td>
                 <div class="row-actions">
                   @if (property.status === 'available' || property.status === 'booked') {
-                    <a [routerLink]="[property.id, 'edit']">Assign</a>
+                    <a [routerLink]="[property.id, 'assign']">Assign</a>
                   } @else if (property.status === 'owned') {
                     <button class="danger" (click)="evict(property)">Evict</button>
                   }
@@ -111,6 +111,17 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
                     <button (click)="release(property)">Release</button>
                   }
                   @if (auth.isManager()) {
+                    <a
+                      class="edit-action"
+                      [routerLink]="[property.id, 'edit']"
+                      [attr.aria-label]="'Edit ' + property.propertyName"
+                      title="Edit property"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 20h4l11-11-4-4L4 16v4Z" />
+                        <path d="m13.5 6.5 4 4" />
+                      </svg>
+                    </a>
                     <button class="danger" (click)="remove(property)">Delete</button>
                   }
                 </div>
@@ -203,6 +214,29 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
       }
       .row-actions .danger {
         color: var(--danger);
+      }
+      .row-actions .edit-action {
+        display: grid;
+        place-items: center;
+        width: 26px;
+        height: 26px;
+        padding: 0;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        color: var(--muted);
+      }
+      .row-actions .edit-action:hover {
+        border-color: var(--forest);
+        color: var(--forest);
+      }
+      .edit-action svg {
+        width: 14px;
+        height: 14px;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.8;
       }
       .pagination {
         display: flex;

@@ -12,9 +12,14 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<MongoOptions>(configuration.GetSection(MongoOptions.SectionName));
+        services.AddOptions<MongoOptions>()
+            .Bind(configuration.GetSection(MongoOptions.SectionName))
+            .Validate(options => !string.IsNullOrWhiteSpace(options.ConnectionString), "MongoDb:ConnectionString is required.")
+            .Validate(options => !string.IsNullOrWhiteSpace(options.DatabaseName), "MongoDb:DatabaseName is required.")
+            .ValidateOnStart();
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.Configure<DiscordOptions>(configuration.GetSection(DiscordOptions.SectionName));
+        services.Configure<AccessOptions>(configuration.GetSection(AccessOptions.SectionName));
         services.Configure<StorageOptions>(configuration.GetSection("Storage"));
         services.AddSingleton<MongoContext>();
         services.AddSingleton<MongoIndexInitializer>();
@@ -29,6 +34,7 @@ public static class DependencyInjection
         services.AddScoped<IPropertyLifecycleStore, PropertyLifecycleStore>();
         services.AddScoped<ISettingRepository, SettingRepository>();
         services.AddSingleton<ITokenService, JwtTokenService>();
+        services.AddSingleton<IOwnerIdentity, ConfiguredOwnerIdentity>();
         services.AddHttpClient<IDiscordOAuthService, DiscordOAuthService>();
         services.AddHttpClient<ZiplineFileStorageService>();
         services.AddSingleton<LocalFileStorageService>();

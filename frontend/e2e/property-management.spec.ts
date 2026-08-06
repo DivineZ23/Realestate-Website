@@ -93,19 +93,29 @@ test('property actions follow available, booked, and occupied status', async ({ 
   const bookedRow = page.getByRole('row').filter({ hasText: 'Booked Home' });
   const ownedRow = page.getByRole('row').filter({ hasText: 'Owned Home' });
   await expect(availableRow.getByRole('link', { name: 'Assign' })).toBeVisible();
+  await expect(availableRow.getByRole('button', { name: 'Book' })).toBeVisible();
   await expect(availableRow.getByRole('button', { name: 'Evict' })).toHaveCount(0);
   await expect(availableRow.getByRole('button', { name: 'Release' })).toHaveCount(0);
   await expect(bookedRow.getByRole('link', { name: 'Assign' })).toBeVisible();
+  await expect(bookedRow.getByRole('button', { name: 'Book' })).toHaveCount(0);
   await expect(bookedRow.getByRole('button', { name: 'Release' })).toBeVisible();
   await expect(bookedRow.getByRole('button', { name: 'Evict' })).toHaveCount(0);
   await expect(ownedRow.getByRole('button', { name: 'Evict' })).toBeVisible();
   await expect(ownedRow.getByRole('link', { name: 'Assign' })).toHaveCount(0);
+  await expect(ownedRow.getByRole('button', { name: 'Book' })).toHaveCount(0);
   for (const row of [availableRow, bookedRow, ownedRow]) {
     await expect(row.getByRole('link', { name: 'Manage' })).toHaveCount(0);
     await expect(row.getByRole('combobox')).toHaveCount(0);
     await expect(row.getByRole('button', { name: 'Delete' })).toBeVisible();
   }
   await expect(page.getByRole('option', { name: 'Unavailable' })).toHaveCount(0);
+
+  await availableRow.getByRole('button', { name: 'Book' }).click();
+  await expect(page.getByRole('heading', { name: 'Book this property?' })).toBeVisible();
+  await expect(
+    page.getByText('The property will be removed from public availability and marked as Booked.'),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Cancel' }).click();
 
   await bookedRow.getByRole('button', { name: 'Release' }).click();
   await expect(page.getByRole('heading', { name: 'Release this property?' })).toBeVisible();

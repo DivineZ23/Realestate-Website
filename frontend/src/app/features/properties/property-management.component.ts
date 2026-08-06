@@ -95,8 +95,10 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
                   } @else if (property.status === 'owned') {
                     <button class="danger" (click)="evict(property)">Evict</button>
                   }
+                  @if (property.status === 'available') {
+                    <button (click)="book(property)">Book</button>
+                  }
                   @if (property.status === 'booked') {
-                    <span class="action-separator" aria-hidden="true">·</span>
                     <button (click)="release(property)">Release</button>
                   }
                   @if (auth.isManager()) {
@@ -187,9 +189,6 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
       .row-actions .danger {
         color: var(--danger);
       }
-      .action-separator {
-        color: var(--muted);
-      }
       .pagination {
         display: flex;
         justify-content: center;
@@ -256,6 +255,21 @@ export class PropertyManagementComponent {
   }
   refresh() {
     this.filters.controls.page.setValue(this.filters.controls.page.value, { emitEvent: true });
+  }
+  book(property: Property) {
+    this.dialog
+      .open(ConfirmDialogComponent, {
+        data: {
+          title: 'Book this property?',
+          message: 'The property will be removed from public availability and marked as Booked.',
+          confirmLabel: 'Book',
+        },
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (result?.confirmed)
+          this.service.changeStatus(property.id, 'booked').subscribe(() => this.refresh());
+      });
   }
   release(property: Property) {
     this.dialog

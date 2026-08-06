@@ -113,6 +113,11 @@ Production and shared Atlas environments must keep `SEED_DATA=false`. Create rea
 | `SEED_DATA` | Enables development seeding |
 
 ASP.NET Core also accepts hierarchical names such as `MongoDb__ConnectionString` and `Jwt__SigningKey`.
+The flat names above are also mapped by the API when it is launched directly, without Docker Compose.
+An `.env` file is not loaded automatically by `dotnet`; configure your VPS process manager to load it
+(for example, with systemd's `EnvironmentFile=`) or export the variables before starting the API.
+When no Compose interpolation is involved, put the complete, URL-encoded password directly in
+`MONGODB_CONNECTION_STRING` rather than using a literal `${MONGODB_PASSWORD}` placeholder.
 
 ## Tests and builds
 

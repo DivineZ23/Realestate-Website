@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ImperialEstates.Api\ImperialEstates.Api.csproj" />
     <ProjectReference Include="..\ImperialEstates.Application\ImperialEstates.Application.csproj" />
     <ProjectReference Include="..\ImperialEstates.Domain\ImperialEstates.Domain.csproj" />
     <ProjectReference Include="..\ImperialEstates.Infrastructure\ImperialEstates.Infrastructure.csproj" />

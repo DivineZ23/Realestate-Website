@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using ImperialEstates.Api.Middleware;
 using ImperialEstates.Api.Authorization;
+using ImperialEstates.Api.Configuration;
 using ImperialEstates.Application;
 using ImperialEstates.Infrastructure;
 using ImperialEstates.Infrastructure.Persistence;
@@ -15,6 +16,7 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.ApplyDeploymentEnvironmentAliases();
 builder.Host.UseSerilog((context, configuration) => configuration.ReadFrom.Configuration(context.Configuration).WriteTo.Console());
 
 builder.Services.AddApplication();

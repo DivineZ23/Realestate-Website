@@ -19,8 +19,8 @@ services:
       Discord__RedirectUri: ${DISCORD_REDIRECT_URI:-http://localhost:5080/api/v1/auth/discord/callback}
       Access__OwnerDiscordUserId: ${OWNER_DISCORD_USER_ID}
       App__FrontendUrl: ${FRONTEND_URL:-http://localhost:4200}
-      Zipline__BaseUrl: ${ZIPLINE_BASE_URL}
-      Zipline__ApiToken: ${ZIPLINE_API_TOKEN}
+      Storage__ZiplineBaseUrl: ${ZIPLINE_BASE_URL}
+      Storage__ZiplineApiToken: ${ZIPLINE_API_TOKEN}
       SeedData__Enabled: ${SEED_DATA:-false}
     ports:
       - "5080:8080"

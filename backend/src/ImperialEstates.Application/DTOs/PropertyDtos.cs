@@ -1,0 +1,54 @@
+using ImperialEstates.Domain.Enums;
+
+namespace ImperialEstates.Application.DTOs;
+
+public sealed class PropertyQuery
+{
+    public int Page { get; init; } = 1;
+    public int PageSize { get; init; } = 12;
+    public string? Search { get; init; }
+    public string? BlockId { get; init; }
+    public PropertyType? Type { get; init; }
+    public PropertyStatus? Status { get; init; }
+    public decimal? MinRent { get; init; }
+    public decimal? MaxRent { get; init; }
+    public int? Bedrooms { get; init; }
+    public string? Furnishing { get; init; }
+    public string[] Amenities { get; init; } = [];
+    public string SortBy { get; init; } = "newest";
+    public string SortDirection { get; init; } = "desc";
+}
+
+public sealed record PropertyDto(
+    string Id, int PropertyId, string BlockId, string BlockName, string PropertyName, string? Description,
+    PropertyType Type, string? Storage, decimal Rent, decimal? SecurityDeposit, PropertyStatus Status,
+    int? Bedrooms, int? Bathrooms, int? Floor, decimal? Area, string? FurnishingStatus,
+    IReadOnlyList<string> Amenities, IReadOnlyList<string> Images, string? CurrentTenantId,
+    string? BookedByEnquiryId, string? UnavailableReason, bool IsFeatured, bool IsActive,
+    DateTime CreatedAt, DateTime UpdatedAt);
+
+public sealed record PublicPropertyDto(
+    string Id, int PropertyId, string BlockId, string BlockName, string PropertyName, string? Description,
+    PropertyType Type, string? Storage, decimal Rent, decimal? SecurityDeposit, PropertyStatus Status,
+    int? Bedrooms, int? Bathrooms, int? Floor, decimal? Area, string? FurnishingStatus,
+    IReadOnlyList<string> Amenities, IReadOnlyList<string> Images, bool IsFeatured, DateTime CreatedAt);
+
+public sealed record UpsertPropertyRequest(
+    int PropertyId, string BlockId, string PropertyName, string? Description, PropertyType Type,
+    string? Storage, decimal Rent, decimal? SecurityDeposit, int? Bedrooms, int? Bathrooms,
+    int? Floor, decimal? Area, string? FurnishingStatus, IReadOnlyList<string>? Amenities,
+    IReadOnlyList<string>? Images, bool IsFeatured, bool IsActive = true);
+
+public sealed record ChangePropertyStatusRequest(PropertyStatus Status, string? Reason, string? EnquiryId);
+
+public sealed record AssignTenantRequest(
+    string FullName, string PhoneNumber, string? Cid, string? Email, string? DiscordId,
+    DateTime StartDate, DateTime? ExpectedEndDate, decimal MonthlyRent, decimal? SecurityDeposit,
+    string? EmergencyContact, string? Notes);
+
+public sealed record EvictTenantRequest(string? Reason);
+
+public sealed record PropertyStatusHistoryDto(
+    string Id, PropertyStatus PreviousStatus, PropertyStatus NewStatus, string? Reason,
+    string ChangedByUserId, DateTime CreatedAt);
+

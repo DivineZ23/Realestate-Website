@@ -1,0 +1,26 @@
+# Build output
+**/bin/
+**/obj/
+**/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/.angular/
+frontend/test-results/
+frontend/playwright-report/
+TestResults/
+
+# Local tools and state
+.tools/
+.dotnet-home/
+.nuget/
+.env
+backend/src/ImperialEstates.Api/appsettings.Development.json
+backend/src/ImperialEstates.Api/wwwroot/uploads/
+
+# Editors and OS
+.idea/
+.vs/
+*.user
+*.suo
+.DS_Store
+Thumbs.db

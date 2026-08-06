@@ -1,0 +1,45 @@
+using ImperialEstates.Application.Common;
+using ImperialEstates.Application.Interfaces;
+using ImperialEstates.Domain.Entities;
+using ImperialEstates.Domain.Enums;
+using ImperialEstates.Infrastructure.Persistence;
+using MongoDB.Driver;
+
+namespace ImperialEstates.Infrastructure.Repositories;
+
+public sealed class TenantRepository(MongoContext db) : ITenantRepository
+{
+    public async Task<PagedResult<Tenant>> QueryAsync(int page, int pageSize, CancellationToken ct)
+    {
+        page = Paging.NormalizePage(page); pageSize = Paging.NormalizePageSize(pageSize);
+        var filter = Builders<Tenant>.Filter.Eq(x => x.IsDeleted, false);
+        var total = await db.Tenants.CountDocumentsAsync(filter, cancellationToken: ct);
+        var items = await db.Tenants.Find(filter).SortByDescending(x => x.CreatedAt).Skip((page - 1) * pageSize).Limit(pageSize).ToListAsync(ct);
+        return new(items, page, pageSize, total);
+    }
+    public Task<Tenant?> GetByIdAsync(string id, CancellationToken ct) => db.Tenants.Find(x => x.Id == id && !x.IsDeleted).FirstOrDefaultAsync(ct)!;
+    public Task CreateAsync(Tenant value, CancellationToken ct) { RepositoryHelpers.PrepareForInsert(value); return db.Tenants.InsertOneAsync(value, cancellationToken: ct); }
+    public Task UpdateAsync(Tenant value, CancellationToken ct) => RepositoryHelpers.ReplaceAsync(db.Tenants, value, ct);
+}
+
+public sealed class UserRepository(MongoContext db) : IUserRepository
+{
+    public async Task<PagedResult<User>> QueryAsync(int page, int pageSize, ApprovalStatus? approval, AccessStatus? access, UserRole? role, CancellationToken ct)
+    {
+        page = Paging.NormalizePage(page); pageSize = Paging.NormalizePageSize(pageSize);
+        var f = Builders<User>.Filter; var filter = f.Eq(x => x.IsDeleted, false);
+        if (approval.HasValue) filter &= f.Eq(x => x.ApprovalStatus, approval.Value);
+        if (access.HasValue) filter &= f.Eq(x => x.AccessStatus, access.Value);
+        if (role.HasValue) filter &= f.Eq(x => x.Role, role.Value);
+        var total = await db.Users.CountDocumentsAsync(filter, cancellationToken: ct);
+        var items = await db.Users.Find(filter).SortByDescending(x => x.CreatedAt).Skip((page - 1) * pageSize).Limit(pageSize).ToListAsync(ct);
+        return new(items, page, pageSize, total);
+    }
+    public Task<User?> GetByIdAsync(string id, CancellationToken ct) => db.Users.Find(x => x.Id == id && !x.IsDeleted).FirstOrDefaultAsync(ct)!;
+    public Task<User?> GetByDiscordIdAsync(string id, CancellationToken ct) => db.Users.Find(x => x.DiscordUserId == id && !x.IsDeleted).FirstOrDefaultAsync(ct)!;
+    public Task<long> CountActiveManagersAsync(CancellationToken ct) => db.Users.CountDocumentsAsync(x => !x.IsDeleted && x.Role == UserRole.Manager && x.ApprovalStatus == ApprovalStatus.Approved && x.AccessStatus == AccessStatus.Active, cancellationToken: ct);
+    public Task<long> CountPendingAsync(CancellationToken ct) => db.Users.CountDocumentsAsync(x => !x.IsDeleted && x.ApprovalStatus == ApprovalStatus.Pending, cancellationToken: ct);
+    public Task CreateAsync(User value, CancellationToken ct) { RepositoryHelpers.PrepareForInsert(value); return db.Users.InsertOneAsync(value, cancellationToken: ct); }
+    public Task UpdateAsync(User value, CancellationToken ct) => RepositoryHelpers.ReplaceAsync(db.Users, value, ct);
+}
+

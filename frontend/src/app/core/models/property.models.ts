@@ -1,0 +1,108 @@
+export type PropertyStatus = 'available' | 'booked' | 'owned' | 'unavailable';
+export type PropertyType =
+  'apartment' | 'house' | 'villa' | 'office' | 'shop' | 'warehouse' | 'land' | 'other';
+
+export interface Block {
+  id: string;
+  blockId: number;
+  blockName: string;
+  description?: string;
+  address?: string;
+  imageUrl?: string;
+  numberOfProperties: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Property {
+  id: string;
+  propertyId: number;
+  blockId: string;
+  blockName: string;
+  propertyName: string;
+  description?: string;
+  type: PropertyType;
+  storage?: string;
+  rent: number;
+  securityDeposit?: number;
+  status: PropertyStatus;
+  bedrooms?: number;
+  bathrooms?: number;
+  floor?: number;
+  area?: number;
+  furnishingStatus?: string;
+  amenities: string[];
+  images: string[];
+  currentTenantId?: string;
+  bookedByEnquiryId?: string;
+  unavailableReason?: string;
+  isFeatured: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PublicProperty = Omit<
+  Property,
+  'currentTenantId' | 'bookedByEnquiryId' | 'unavailableReason' | 'isActive' | 'updatedAt'
+>;
+
+export interface PropertyQuery {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  blockId?: string;
+  type?: PropertyType | '';
+  status?: PropertyStatus | '';
+  minRent?: number | null;
+  maxRent?: number | null;
+  bedrooms?: number | null;
+  furnishing?: string;
+  amenities?: string[];
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
+}
+
+export interface UpsertPropertyRequest {
+  propertyId: number;
+  blockId: string;
+  propertyName: string;
+  description?: string | null;
+  type: PropertyType;
+  storage?: string | null;
+  rent: number;
+  securityDeposit?: number | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  floor?: number | null;
+  area?: number | null;
+  furnishingStatus?: string | null;
+  amenities: string[];
+  images: string[];
+  isFeatured: boolean;
+  isActive: boolean;
+}
+
+export interface UpsertBlockRequest {
+  blockId: number;
+  blockName: string;
+  description?: string | null;
+  address?: string | null;
+  imageUrl?: string | null;
+  isActive: boolean;
+}
+
+export interface AssignTenantRequest {
+  fullName: string;
+  phoneNumber: string;
+  cid?: string;
+  email?: string;
+  discordId?: string;
+  startDate: string;
+  expectedEndDate?: string;
+  monthlyRent: number;
+  securityDeposit?: number;
+  emergencyContact?: string;
+  notes?: string;
+}

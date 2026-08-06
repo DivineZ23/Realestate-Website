@@ -1,0 +1,43 @@
+@use '@angular/material' as mat;
+
+:root {
+  --ink: #1d2523;
+  --muted: #66716d;
+  --paper: #f7f5f0;
+  --surface: #fffdf9;
+  --surface-strong: #ffffff;
+  --forest: #173f38;
+  --forest-light: #dce9e3;
+  --bronze: #a16f3b;
+  --border: #dedfd9;
+  --danger: #9f3737;
+  --radius-sm: 10px;
+  --radius-md: 18px;
+  --radius-lg: 28px;
+  --space-page: min(1180px, calc(100% - 40px));
+  --shadow-sm: 0 8px 24px rgba(29, 37, 35, 0.07);
+  --shadow-lg: 0 24px 64px rgba(24, 45, 39, 0.14);
+  --ease: 180ms ease;
+  --breakpoint-mobile: 720px;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  color-scheme: light;
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$green-palette,
+        tertiary: mat.$orange-palette,
+      ),
+      typography: Inter,
+      density: 0,
+    )
+  );
+}

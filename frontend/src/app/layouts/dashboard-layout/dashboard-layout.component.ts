@@ -41,7 +41,9 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
   template: `<div class="shell" [class.collapsed]="collapsed()">
     <aside>
       <div class="aside-head">
-        <a routerLink="/dashboard" class="mark">IE</a><strong>Imperial<br />Estates</strong>
+        <a routerLink="/dashboard" class="mark" aria-label="Imperial Estates dashboard"
+          ><img src="/assets/imperial-estates-logo.png" alt="" /></a
+        ><strong>Imperial<br />Estates</strong>
       </div>
       <nav>
         <p class="first-group">Workspace</p>
@@ -133,13 +135,18 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         border-bottom: 1px solid var(--sidebar-border);
       }
       .mark {
-        display: grid;
-        place-items: center;
-        width: 38px;
-        height: 38px;
-        border: 1px solid var(--sidebar-muted);
+        width: 44px;
+        height: 44px;
         border-radius: 50%;
-        font-family: Georgia, serif;
+        overflow: hidden;
+        flex: 0 0 auto;
+        box-shadow: 0 0 0 1px var(--sidebar-border);
+      }
+      .mark img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
       }
       .aside-head strong {
         font-family: Georgia, serif;

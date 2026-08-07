@@ -19,7 +19,11 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
   template: `
     <header class="site-header">
       <div class="container nav">
-        <a routerLink="/" class="brand"><span>IE</span><strong>Imperial Estates</strong></a>
+        <a routerLink="/" class="brand"
+          ><img src="/assets/imperial-estates-logo.png" alt="" /><strong
+            >Imperial Estates</strong
+          ></a
+        >
         <nav [class.open]="menuOpen()">
           <a
             routerLink="/"
@@ -53,7 +57,11 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
     <footer>
       <div class="container footer-grid">
         <div>
-          <a routerLink="/" class="brand light"><span>IE</span><strong>Imperial Estates</strong></a>
+          <a routerLink="/" class="brand light"
+            ><img src="/assets/imperial-estates-logo.png" alt="" /><strong
+              >Imperial Estates</strong
+            ></a
+          >
           <p>
             Considered homes. Responsive management.<br />Clear relationships from enquiry to
             move-in.
@@ -96,15 +104,12 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         align-items: center;
         gap: 11px;
       }
-      .brand span {
-        display: grid;
-        place-items: center;
-        width: 36px;
-        height: 36px;
-        border: 1px solid var(--ink);
+      .brand img {
+        width: 44px;
+        height: 44px;
+        object-fit: cover;
         border-radius: 50%;
-        font-family: Georgia, serif;
-        font-size: 0.85rem;
+        box-shadow: 0 0 0 1px var(--border);
       }
       .brand strong {
         font-family: Georgia, serif;
@@ -155,8 +160,10 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         grid-template-columns: 2fr 1fr 1.4fr;
         gap: 50px;
       }
-      .brand.light span {
-        border-color: var(--contrast-text);
+      .brand.light img {
+        width: 48px;
+        height: 48px;
+        box-shadow: 0 0 0 1px var(--contrast-border);
       }
       .footer-grid p {
         color: var(--contrast-muted);

@@ -92,15 +92,14 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'notices/sync',
-        canActivate: [managerGuard],
-        data: { mode: 'sync' },
+        path: 'notices/overdue',
+        data: { mode: 'overdueNotice' },
         loadComponent: () =>
           import('./features/notices/notices.component').then((m) => m.NoticesComponent),
       },
       {
-        path: 'notices/active',
-        data: { mode: 'activeList' },
+        path: 'notices/eviction',
+        data: { mode: 'evictionNotice' },
         loadComponent: () =>
           import('./features/notices/notices.component').then((m) => m.NoticesComponent),
       },
@@ -117,14 +116,15 @@ export const routes: Routes = [
           import('./features/notices/notices.component').then((m) => m.NoticesComponent),
       },
       {
-        path: 'notices/overdue',
-        data: { mode: 'overdueNotice' },
+        path: 'notices/sync',
+        canActivate: [managerGuard],
+        data: { mode: 'sync' },
         loadComponent: () =>
           import('./features/notices/notices.component').then((m) => m.NoticesComponent),
       },
       {
-        path: 'notices/eviction',
-        data: { mode: 'evictionNotice' },
+        path: 'notices/synced-data-records',
+        data: { mode: 'syncedDataRecords' },
         loadComponent: () =>
           import('./features/notices/notices.component').then((m) => m.NoticesComponent),
       },

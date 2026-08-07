@@ -93,6 +93,7 @@ export interface RentSyncRecord {
   evictionNotice?: string;
 }
 export interface RentSyncSnapshot {
+  id: string;
   syncedAt?: string;
   total: number;
   active: number;

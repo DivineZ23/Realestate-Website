@@ -1,3 +1,4 @@
+using System.Linq;
 using ImperialEstates.Application.Interfaces;
 using ImperialEstates.Domain.Entities;
 using ImperialEstates.Infrastructure.Persistence;
@@ -10,20 +11,22 @@ public sealed class RentSyncRepository(MongoContext db) : IRentSyncRepository
     public Task<RentSyncSnapshot?> GetCurrentAsync(CancellationToken ct) =>
         db.RentSyncSnapshots.Find(x => !x.IsDeleted).SortByDescending(x => x.UpdatedAt).FirstOrDefaultAsync(ct)!;
 
+    public async Task<IReadOnlyList<RentSyncSnapshot>> GetAllAsync(CancellationToken ct) =>
+        await db.RentSyncSnapshots.Find(x => !x.IsDeleted).SortByDescending(x => x.UpdatedAt).ToListAsync(ct);
+
     public async Task SaveCurrentAsync(RentSyncSnapshot snapshot, CancellationToken ct)
     {
-        var current = await GetCurrentAsync(ct);
-        if (current is null)
-        {
-            RepositoryHelpers.PrepareForInsert(snapshot);
-            await db.RentSyncSnapshots.InsertOneAsync(snapshot, cancellationToken: ct);
-            return;
-        }
+        RepositoryHelpers.PrepareForInsert(snapshot);
+        await db.RentSyncSnapshots.InsertOneAsync(snapshot, cancellationToken: ct);
+    }
 
-        snapshot.Id = current.Id;
-        snapshot.CreatedAt = current.CreatedAt;
-        snapshot.CreatedBy = current.CreatedBy;
+    public async Task DeleteAsync(string id, CancellationToken ct)
+    {
+        var snapshot = await db.RentSyncSnapshots.Find(x => x.Id == id && !x.IsDeleted).FirstOrDefaultAsync(ct);
+        if (snapshot is null) return;
+
+        snapshot.IsDeleted = true;
         snapshot.UpdatedAt = DateTime.UtcNow;
-        await db.RentSyncSnapshots.ReplaceOneAsync(x => x.Id == current.Id, snapshot, cancellationToken: ct);
+        await db.RentSyncSnapshots.ReplaceOneAsync(x => x.Id == id, snapshot, cancellationToken: ct);
     }
 }

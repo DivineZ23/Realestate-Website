@@ -118,8 +118,14 @@ export class NoticeService {
   snapshot(): Observable<RentSyncSnapshot> {
     return this.api.get(API_ENDPOINTS.notices.snapshot);
   }
+  snapshots(): Observable<RentSyncSnapshot[]> {
+    return this.api.get(API_ENDPOINTS.notices.snapshots);
+  }
   sync(rawData: string): Observable<RentSyncSnapshot> {
     return this.api.post(API_ENDPOINTS.notices.sync, { rawData });
+  }
+  deleteSnapshot(id: string): Observable<void> {
+    return this.api.delete<void>(`${API_ENDPOINTS.notices.snapshots}/${id}`);
   }
 }
 @Injectable({ providedIn: 'root' })

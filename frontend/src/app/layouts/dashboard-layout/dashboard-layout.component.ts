@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { NgIf } from '@angular/common';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   LucideBell,
@@ -8,9 +9,9 @@ import {
   LucideClipboardList,
   LucideClockAlert,
   LucideContactRound,
-  LucideDatabaseZap,
   LucideFileWarning,
   LucideGavel,
+  LucideHistory,
   LucideLayoutDashboard,
   LucideList,
   LucideListChecks,
@@ -22,6 +23,7 @@ import {
   LucideScrollText,
   LucideSettings,
   LucideShieldCheck,
+  LucideUploadCloud,
   LucideUsersRound,
 } from '@lucide/angular';
 import { AuthService } from '../../core/services/auth.service';
@@ -29,7 +31,9 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
 
 @Component({
   selector: 'app-dashboard-layout',
+  standalone: true,
   imports: [
+    NgIf,
     RouterLink,
     RouterLinkActive,
     RouterOutlet,
@@ -43,9 +47,10 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
     LucideClockAlert,
     LucideBlocks,
     LucideContactRound,
-    LucideDatabaseZap,
     LucideFileWarning,
     LucideGavel,
+    LucideHistory,
+    LucideUploadCloud,
     LucideList,
     LucideListChecks,
     LucideListX,
@@ -77,13 +82,13 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
             <span><svg lucideGavel></svg><b>Auction</b></span>
             <svg class="chevron" lucideChevronDown [class.rotated]="!auctionOpen()"></svg>
           </button>
-          @if (auctionOpen()) {
+          <ng-container *ngIf="auctionOpen()">
             <div class="section-links" id="auction-navigation">
-              <a routerLink="/dashboard/auction/listings" routerLinkActive="active"
-                ><svg lucideClipboardList></svg><b>Listings</b></a
-              >
+              <a routerLink="/dashboard/auction/listings" routerLinkActive="active">
+                <svg lucideClipboardList></svg><b>Listings</b>
+              </a>
             </div>
-          }
+          </ng-container>
         </section>
         <section class="nav-section">
           <button
@@ -96,17 +101,19 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
             <span><svg lucideBuilding2></svg><b>Portfolio</b></span>
             <svg class="chevron" lucideChevronDown [class.rotated]="!portfolioOpen()"></svg>
           </button>
-          @if (portfolioOpen()) {
+          <ng-container *ngIf="portfolioOpen()">
             <div class="section-links" id="portfolio-navigation">
-              <a routerLink="/dashboard/properties" routerLinkActive="active"
-                ><svg lucideBuilding2></svg><b>Properties</b></a
-              ><a routerLink="/dashboard/blocks" routerLinkActive="active"
-                ><svg lucideBlocks></svg><b>Blocks</b></a
-              ><a routerLink="/dashboard/tenants" routerLinkActive="active"
-                ><svg lucideContactRound></svg><b>Tenants</b></a
-              >
+              <a routerLink="/dashboard/properties" routerLinkActive="active">
+                <svg lucideBuilding2></svg><b>Properties</b>
+              </a>
+              <a routerLink="/dashboard/blocks" routerLinkActive="active">
+                <svg lucideBlocks></svg><b>Blocks</b>
+              </a>
+              <a routerLink="/dashboard/tenants" routerLinkActive="active">
+                <svg lucideContactRound></svg><b>Tenants</b>
+              </a>
             </div>
-          }
+          </ng-container>
         </section>
         <section class="nav-section">
           <button
@@ -119,28 +126,32 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
             <span><svg lucideBell></svg><b>Notices</b></span>
             <svg class="chevron" lucideChevronDown [class.rotated]="!noticesOpen()"></svg>
           </button>
-          @if (noticesOpen()) {
+          <ng-container *ngIf="noticesOpen()">
             <div class="section-links" id="notices-navigation">
-              @if (auth.isManager()) {
-                <a routerLink="/dashboard/notices/sync" routerLinkActive="active"
-                  ><svg lucideDatabaseZap></svg><b>Data Sync</b></a
-                >
-              }
-              <a routerLink="/dashboard/notices/active" routerLinkActive="active"
-                ><svg lucideListChecks></svg><b>Active List</b></a
-              ><a routerLink="/dashboard/notices/overdue-list" routerLinkActive="active"
-                ><svg lucideList></svg><b>Overdue List</b></a
-              ><a routerLink="/dashboard/notices/eviction-list" routerLinkActive="active"
-                ><svg lucideListX></svg><b>Eviction List</b></a
-              ><a routerLink="/dashboard/notices/overdue" routerLinkActive="active"
-                ><svg lucideClockAlert></svg><b>Overdue Notice</b></a
-              ><a routerLink="/dashboard/notices/eviction" routerLinkActive="active"
-                ><svg lucideFileWarning></svg><b>Eviction Notice</b></a
-              >
+              <a routerLink="/dashboard/notices/overdue" routerLinkActive="active">
+                <svg lucideClockAlert></svg><b>Overdue Notice</b>
+              </a>
+              <a routerLink="/dashboard/notices/eviction" routerLinkActive="active">
+                <svg lucideFileWarning></svg><b>Eviction Notice</b>
+              </a>
+              <a routerLink="/dashboard/notices/overdue-list" routerLinkActive="active">
+                <svg lucideList></svg><b>Overdue List</b>
+              </a>
+              <a routerLink="/dashboard/notices/eviction-list" routerLinkActive="active">
+                <svg lucideListX></svg><b>Eviction List</b>
+              </a>
+              <ng-container *ngIf="auth.isManager()">
+                <a routerLink="/dashboard/notices/sync" routerLinkActive="active">
+                  <svg lucideUploadCloud></svg><b>Data Sync</b>
+                </a>
+              </ng-container>
+              <a routerLink="/dashboard/notices/synced-data-records" routerLinkActive="active">
+                <svg lucideHistory></svg><b>Sync History</b>
+              </a>
             </div>
-          }
+          </ng-container>
         </section>
-        @if (auth.isManager()) {
+        <ng-container *ngIf="auth.isManager()">
           <section class="nav-section">
             <button
               class="section-toggle"
@@ -152,26 +163,29 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
               <span><svg lucideShieldCheck></svg><b>Administration</b></span>
               <svg class="chevron" lucideChevronDown [class.rotated]="!administrationOpen()"></svg>
             </button>
-            @if (administrationOpen()) {
+            <ng-container *ngIf="administrationOpen()">
               <div class="section-links" id="administration-navigation">
-                <a routerLink="/dashboard/users" routerLinkActive="active"
-                  ><svg lucideUsersRound></svg><b>User Management</b></a
-                ><a routerLink="/dashboard/audit-logs" routerLinkActive="active"
-                  ><svg lucideScrollText></svg><b>Audit Logs</b></a
-                ><a routerLink="/dashboard/settings" routerLinkActive="active"
-                  ><svg lucideSettings></svg><b>Settings</b></a
-                >
+                <a routerLink="/dashboard/users" routerLinkActive="active">
+                  <svg lucideUsersRound></svg><b>User Management</b>
+                </a>
+                <a routerLink="/dashboard/audit-logs" routerLinkActive="active">
+                  <svg lucideScrollText></svg><b>Audit Logs</b>
+                </a>
+                <a routerLink="/dashboard/settings" routerLinkActive="active">
+                  <svg lucideSettings></svg><b>Settings</b>
+                </a>
               </div>
-            }
+            </ng-container>
           </section>
-        }
+        </ng-container>
       </nav>
       <button class="collapse" (click)="collapsed.update((x) => !x)" aria-label="Toggle sidebar">
-        @if (collapsed()) {
+        <ng-container *ngIf="collapsed(); else expanded">
           <svg lucidePanelLeftOpen></svg>
-        } @else {
+        </ng-container>
+        <ng-template #expanded>
           <svg lucidePanelLeftClose></svg>
-        }
+        </ng-template>
         <b>Collapse</b>
       </button>
     </aside>

@@ -20,6 +20,25 @@ public sealed class RentSyncService(
     public async Task<RentSyncSnapshotDto> GetCurrentAsync(CancellationToken ct) =>
         Map(await snapshots.GetCurrentAsync(ct));
 
+    public async Task<IReadOnlyList<RentSyncSnapshotDto>> GetAllAsync(CancellationToken ct) =>
+        (await snapshots.GetAllAsync(ct)).Select(Map).ToList();
+
+    public async Task DeleteAsync(string id, string actorId, CancellationToken ct)
+    {
+        await snapshots.DeleteAsync(id, ct);
+        await audits.CreateAsync(new AuditLog
+        {
+            Action = "rent-data.snapshot-deleted",
+            EntityType = "rentSyncSnapshot",
+            EntityId = id,
+            PerformedByUserId = actorId,
+            Metadata = new Dictionary<string, object?>
+            {
+                ["snapshotId"] = id,
+            },
+        }, ct);
+    }
+
     public async Task<RentSyncSnapshotDto> SyncAsync(RentSyncRequest request, string actorId, CancellationToken ct)
     {
         var records = Parse(request.RawData);
@@ -141,7 +160,7 @@ public sealed class RentSyncService(
 
     private static RentSyncSnapshotDto Map(RentSyncSnapshot? snapshot)
     {
-        if (snapshot is null) return new(null, 0, 0, 0, 0, 0, 0, []);
+        if (snapshot is null) return new(string.Empty, null, 0, 0, 0, 0, 0, 0, []);
         var evictionDate = snapshot.UpdatedAt.Date.AddDays(7);
         var records = snapshot.Records.Select(record => new RentSyncRecordDto(
             record.RowNumber, record.Status, record.PaidThrough, record.Address, record.Interior,
@@ -150,6 +169,7 @@ public sealed class RentSyncService(
             record.Status == "overdue" ? OverdueNotice(record, evictionDate) : null,
             record.Status == "evictable" ? EvictionNotice(record) : null)).ToList();
         return new(
+            snapshot.Id,
             snapshot.UpdatedAt,
             records.Count,
             records.Count(x => x.Status == "paid"),

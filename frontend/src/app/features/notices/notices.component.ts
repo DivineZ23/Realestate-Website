@@ -9,6 +9,7 @@ import {
   LucideRefreshCw,
   LucideSiren,
   LucideTriangleAlert,
+  LucideTrash2,
 } from '@lucide/angular';
 import { map } from 'rxjs';
 import { RentSyncRecord, RentSyncSnapshot } from '../../core/models/management.models';
@@ -18,6 +19,7 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
 
 type NoticeView =
   | 'sync'
+  | 'syncedDataRecords'
   | 'activeList'
   | 'overdueList'
   | 'evictionList'
@@ -36,6 +38,7 @@ type NoticeView =
     LucideRefreshCw,
     LucideSiren,
     LucideTriangleAlert,
+    LucideTrash2,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div class="page-title">
@@ -98,7 +101,38 @@ type NoticeView =
     }
 
     @if (mode() !== 'sync') {
-      @if (filteredRecords().length) {
+      @if (mode() === 'syncedDataRecords') {
+        @if (success()) {
+          <p class="message success">{{ success() }}</p>
+        }
+        @if (error()) {
+          <p class="message error">{{ error() }}</p>
+        }
+      }
+      @if (isSyncedDataRecords()) {
+        <div class="record-grid">
+          @for (record of snapshotList(); track record.id) {
+            <article class="panel record-card">
+              <header>
+                <div>
+                  <span class="row-number">Synced {{ record.syncedAt ? (record.syncedAt | date: 'medium') : 'Unknown time' }}</span>
+                  <span class="record-status">{{ record.total }} rows</span>
+                </div>
+                @if (auth.isManager()) {
+                  <button class="icon-button" type="button" (click)="deleteSnapshot(record.id)" aria-label="Delete sync history snapshot">
+                    <svg lucideTrash2></svg>
+                  </button>
+                }
+              </header>
+              <div class="record-meta">
+                <span>Active {{ record.active }}</span>
+                <span>Overdue {{ record.overdue }}</span>
+                <span>Evictable {{ record.evictable }}</span>
+              </div>
+            </article>
+          }
+        </div>
+      } @else if (filteredRecords().length) {
         @if (isNoticeView()) {
           <div class="notice-list">
             @for (record of filteredRecords(); track record.rowNumber) {
@@ -193,6 +227,20 @@ type NoticeView =
       .synced { margin: 9px 0 20px; text-align: right; }
       .mapping-warning { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--warning-soft); color: var(--warning-ink); }
       .mapping-warning svg { width: 18px; }
+      .record-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+      .record-card { padding: 14px; display: grid; gap: 8px; min-height: 70px; }
+      .record-card header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .record-card header div { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .record-card .row-number { color: var(--muted); font-size: 0.82rem; }
+      .record-card .record-status { padding: 4px 8px; border-radius: 999px; background: var(--neutral-soft); font-size: 0.72rem; }
+      .icon-button { border: none !important; background: transparent; color: var(--danger); padding: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: none; }
+      .icon-button svg { width: 18px; height: 18px; }
+      .record-card .record-status { padding: 4px 10px; border-radius: 999px; background: var(--neutral-soft); font-size: 0.72rem; }
+      .record-card button:not(.icon-button) { border: 1px solid var(--danger); border-radius: 8px; padding: 8px 12px; background: var(--surface); color: var(--danger); display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+      .record-meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 0.78rem; }
+      .record-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      .record-details div { display: grid; gap: 4px; }
+      .record-details strong { color: var(--muted); font-weight: 700; }
       .notice-list { display: grid; gap: 14px; }
       .notice-card { padding: 20px; }
       .notice-card header, .notice-card header span, .copy { display: flex; align-items: center; gap: 8px; }
@@ -217,6 +265,7 @@ export class NoticesComponent {
     initialValue: 'sync' as NoticeView,
   });
   readonly snapshot = signal<RentSyncSnapshot | null>(null);
+  readonly snapshotList = signal<RentSyncSnapshot[]>([]);
   readonly syncing = signal(false);
   readonly error = signal('');
   readonly success = signal('');
@@ -224,11 +273,17 @@ export class NoticesComponent {
   rawData = '';
 
   readonly title = computed(() => ({
-    sync: 'Data Sync', activeList: 'Active List', overdueList: 'Overdue List',
-    evictionList: 'Eviction List', overdueNotice: 'Overdue Notices', evictionNotice: 'Eviction Notices',
+    sync: 'Data Sync',
+    syncedDataRecords: 'Sync History',
+    activeList: 'Active List',
+    overdueList: 'Overdue List',
+    evictionList: 'Eviction List',
+    overdueNotice: 'Overdue Notices',
+    evictionNotice: 'Eviction Notices',
   })[this.mode()]);
   readonly description = computed(() => ({
     sync: 'Import the latest in-game property export and map renter CIDs to tenant Discord IDs.',
+    syncedDataRecords: 'Review the latest sync history snapshots and remove outdated or incorrect records.',
     activeList: 'Properties whose rent status is currently paid.',
     overdueList: 'Properties currently marked overdue in the latest export.',
     evictionList: 'Properties currently marked evictable in the latest export.',
@@ -237,10 +292,19 @@ export class NoticesComponent {
   })[this.mode()]);
   readonly filteredRecords = computed(() => {
     const records = this.snapshot()?.records ?? [];
-    const status = ({ activeList: 'paid', overdueList: 'overdue', evictionList: 'evictable', overdueNotice: 'overdue', evictionNotice: 'evictable' } as const)[this.mode() as Exclude<NoticeView, 'sync'>];
+    if (this.mode() === 'syncedDataRecords') return [];
+    const statusMap = {
+      activeList: 'paid',
+      overdueList: 'overdue',
+      evictionList: 'evictable',
+      overdueNotice: 'overdue',
+      evictionNotice: 'evictable',
+    } as const;
+    const status = statusMap[this.mode() as Exclude<NoticeView, 'sync' | 'syncedDataRecords'>];
     return status ? records.filter((record) => record.status === status) : [];
   });
   readonly isNoticeView = computed(() => this.mode() === 'overdueNotice' || this.mode() === 'evictionNotice');
+  readonly isSyncedDataRecords = computed(() => this.mode() === 'syncedDataRecords');
 
   constructor() {
     this.load();
@@ -255,6 +319,7 @@ export class NoticesComponent {
       next: (snapshot) => {
         this.snapshot.set(snapshot);
         this.success.set(`Synced ${snapshot.total} property rows successfully.`);
+        this.loadSnapshots();
         this.syncing.set(false);
       },
       error: (response) => {
@@ -279,10 +344,32 @@ export class NoticesComponent {
     window.setTimeout(() => this.copiedRow.set(null), 1600);
   }
 
+  deleteSnapshot(id: string) {
+    this.notices.deleteSnapshot(id).subscribe({
+      next: () => {
+        this.success.set('Deleted synced record successfully.');
+        this.loadSnapshots();
+        window.setTimeout(() => this.success.set(''), 2600);
+      },
+      error: (response) => {
+        this.error.set(response?.error?.detail || response?.error?.message || 'The snapshot could not be deleted.');
+        window.setTimeout(() => this.error.set(''), 2600);
+      },
+    });
+  }
+
   private load() {
     this.notices.snapshot().subscribe({
       next: (snapshot) => this.snapshot.set(snapshot),
-      error: () => this.snapshot.set({ total: 0, active: 0, overdue: 0, evictable: 0, empty: 0, unmappedTenants: 0, records: [] }),
+      error: () => this.snapshot.set({ id: '', total: 0, active: 0, overdue: 0, evictable: 0, empty: 0, unmappedTenants: 0, records: [] }),
+    });
+    this.loadSnapshots();
+  }
+
+  private loadSnapshots() {
+    this.notices.snapshots().subscribe({
+      next: (snapshots) => this.snapshotList.set(snapshots),
+      error: () => this.snapshotList.set([]),
     });
   }
 }

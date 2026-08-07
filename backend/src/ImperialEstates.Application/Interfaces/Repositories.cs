@@ -40,7 +40,9 @@ public interface ITenantRepository
 public interface IRentSyncRepository
 {
     Task<RentSyncSnapshot?> GetCurrentAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<RentSyncSnapshot>> GetAllAsync(CancellationToken cancellationToken);
     Task SaveCurrentAsync(RentSyncSnapshot snapshot, CancellationToken cancellationToken);
+    Task DeleteAsync(string id, CancellationToken cancellationToken);
 }
 
 public interface IUserRepository

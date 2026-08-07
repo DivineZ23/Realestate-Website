@@ -8,7 +8,7 @@ export const API_ENDPOINTS = {
   },
   enquiries: '/enquiries',
   tenants: '/tenants',
-  notices: { snapshot: '/notices/snapshot', sync: '/notices/sync' },
+  notices: { snapshot: '/notices/snapshot', snapshots: '/notices/snapshots', sync: '/notices/sync' },
   users: '/users',
   auditLogs: '/audit-logs',
   dashboard: '/dashboard',

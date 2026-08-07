@@ -48,6 +48,13 @@ public sealed class RentSyncServiceTests
             _snapshot = snapshot;
             return Task.CompletedTask;
         }
+        public Task<RentSyncSnapshot?> DeleteRowAsync(int rowNumber, CancellationToken cancellationToken)
+        {
+            if (_snapshot is null) return Task.FromResult<RentSyncSnapshot?>(null);
+            _snapshot.Records = _snapshot.Records.Where(x => x.RowNumber != rowNumber).ToList();
+            _snapshot.UpdatedAt = DateTime.UtcNow;
+            return Task.FromResult<RentSyncSnapshot?>(_snapshot);
+        }
     }
 
     private sealed class TenantRepository(params Tenant[] values) : ITenantRepository

@@ -290,9 +290,7 @@ test('blocks show combined cost, rent, and profit', async ({ page }) => {
   await expect(row).toContainText('$2,000');
 });
 
-test('tenant assignment requires CID, name, and phone without editing property fields', async ({
-  page,
-}) => {
+test('tenant assignment requires CID, Discord ID, identity, rent, and deposit', async ({ page }) => {
   await authenticate(page);
   await page.route('**/api/v1/properties/available-1/manage', (route) =>
     route.fulfill({ json: property('available-1', 'available') }),
@@ -334,13 +332,20 @@ test('tenant assignment requires CID, name, and phone without editing property f
   await page.getByLabel('Phone number').fill('+1 555 0123');
   await expect(submit).toBeDisabled();
   await page.getByLabel('CID').fill('245');
+  await expect(submit).toBeDisabled();
+  await page.getByLabel('Discord ID').fill('727075012489510944');
+  await expect(submit).toBeDisabled();
+  await page.getByLabel('Security deposit').fill('6000');
   await expect(submit).toBeEnabled();
   await submit.click();
 
   await expect(page).toHaveURL('/dashboard/properties');
   expect(assignment?.['cid']).toBe(245);
+  expect(assignment?.['discordId']).toBe('727075012489510944');
   expect(assignment?.['fullName']).toBe('Alex Mercer');
   expect(assignment?.['phoneNumber']).toBe('+1 555 0123');
+  expect(assignment?.['monthlyRent']).toBe(0);
+  expect(assignment?.['securityDeposit']).toBe(6000);
   expect(assignment).not.toHaveProperty('email');
 });
 

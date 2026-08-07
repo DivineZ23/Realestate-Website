@@ -92,28 +92,41 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'notices/overdue',
-        data: {
-          section: 'Notices',
-          title: 'Overdue Notice',
-          description: 'Review and prepare overdue notices for tenants.',
-        },
+        path: 'notices/sync',
+        canActivate: [managerGuard],
+        data: { mode: 'sync' },
         loadComponent: () =>
-          import('./features/workspace-placeholder/workspace-placeholder.component').then(
-            (m) => m.WorkspacePlaceholderComponent,
-          ),
+          import('./features/notices/notices.component').then((m) => m.NoticesComponent),
+      },
+      {
+        path: 'notices/active',
+        data: { mode: 'activeList' },
+        loadComponent: () =>
+          import('./features/notices/notices.component').then((m) => m.NoticesComponent),
+      },
+      {
+        path: 'notices/overdue-list',
+        data: { mode: 'overdueList' },
+        loadComponent: () =>
+          import('./features/notices/notices.component').then((m) => m.NoticesComponent),
+      },
+      {
+        path: 'notices/eviction-list',
+        data: { mode: 'evictionList' },
+        loadComponent: () =>
+          import('./features/notices/notices.component').then((m) => m.NoticesComponent),
+      },
+      {
+        path: 'notices/overdue',
+        data: { mode: 'overdueNotice' },
+        loadComponent: () =>
+          import('./features/notices/notices.component').then((m) => m.NoticesComponent),
       },
       {
         path: 'notices/eviction',
-        data: {
-          section: 'Notices',
-          title: 'Eviction Notice',
-          description: 'Review and prepare eviction notices for tenants.',
-        },
+        data: { mode: 'evictionNotice' },
         loadComponent: () =>
-          import('./features/workspace-placeholder/workspace-placeholder.component').then(
-            (m) => m.WorkspacePlaceholderComponent,
-          ),
+          import('./features/notices/notices.component').then((m) => m.NoticesComponent),
       },
       {
         path: 'users',

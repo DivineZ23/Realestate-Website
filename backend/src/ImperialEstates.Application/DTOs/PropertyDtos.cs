@@ -45,8 +45,8 @@ public sealed record UpsertPropertyRequest(
 public sealed record ChangePropertyStatusRequest(PropertyStatus Status, string? Reason, string? EnquiryId);
 
 public sealed record AssignTenantRequest(
-    int Cid, string FullName, string PhoneNumber, string? DiscordId,
-    DateTime StartDate, DateTime? ExpectedEndDate, decimal MonthlyRent, decimal? SecurityDeposit,
+    int Cid, string FullName, string PhoneNumber, string DiscordId,
+    DateTime StartDate, DateTime? ExpectedEndDate, decimal? MonthlyRent, decimal? SecurityDeposit,
     string? EmergencyContact, string? Notes);
 
 public sealed record EvictTenantRequest(string? Reason);

@@ -8,9 +8,13 @@ import {
   LucideClipboardList,
   LucideClockAlert,
   LucideContactRound,
+  LucideDatabaseZap,
   LucideFileWarning,
   LucideGavel,
   LucideLayoutDashboard,
+  LucideList,
+  LucideListChecks,
+  LucideListX,
   LucideLogOut,
   LucideMenu,
   LucidePanelLeftClose,
@@ -39,8 +43,12 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
     LucideClockAlert,
     LucideBlocks,
     LucideContactRound,
+    LucideDatabaseZap,
     LucideFileWarning,
     LucideGavel,
+    LucideList,
+    LucideListChecks,
+    LucideListX,
     LucideShieldCheck,
     LucideScrollText,
     LucideSettings,
@@ -113,7 +121,18 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
           </button>
           @if (noticesOpen()) {
             <div class="section-links" id="notices-navigation">
-              <a routerLink="/dashboard/notices/overdue" routerLinkActive="active"
+              @if (auth.isManager()) {
+                <a routerLink="/dashboard/notices/sync" routerLinkActive="active"
+                  ><svg lucideDatabaseZap></svg><b>Data Sync</b></a
+                >
+              }
+              <a routerLink="/dashboard/notices/active" routerLinkActive="active"
+                ><svg lucideListChecks></svg><b>Active List</b></a
+              ><a routerLink="/dashboard/notices/overdue-list" routerLinkActive="active"
+                ><svg lucideList></svg><b>Overdue List</b></a
+              ><a routerLink="/dashboard/notices/eviction-list" routerLinkActive="active"
+                ><svg lucideListX></svg><b>Eviction List</b></a
+              ><a routerLink="/dashboard/notices/overdue" routerLinkActive="active"
                 ><svg lucideClockAlert></svg><b>Overdue Notice</b></a
               ><a routerLink="/dashboard/notices/eviction" routerLinkActive="active"
                 ><svg lucideFileWarning></svg><b>Eviction Notice</b></a

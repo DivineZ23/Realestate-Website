@@ -73,3 +73,32 @@ export interface DashboardSummary {
   pendingUsers: number;
   recentStatusChanges: StatusHistory[];
 }
+
+export type RentSyncStatus = 'paid' | 'overdue' | 'evictable' | 'empty';
+export interface RentSyncRecord {
+  rowNumber: number;
+  status: RentSyncStatus;
+  paidThrough?: string;
+  address: string;
+  interior: string;
+  cid?: number;
+  renterName?: string;
+  phone?: string;
+  income: number;
+  cost: number;
+  tenantId?: string;
+  discordId?: string;
+  tenantMatched: boolean;
+  overdueNotice?: string;
+  evictionNotice?: string;
+}
+export interface RentSyncSnapshot {
+  syncedAt?: string;
+  total: number;
+  active: number;
+  overdue: number;
+  evictable: number;
+  empty: number;
+  unmappedTenants: number;
+  records: RentSyncRecord[];
+}

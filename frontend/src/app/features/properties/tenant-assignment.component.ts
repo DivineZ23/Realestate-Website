@@ -62,7 +62,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
             <div>
               <p class="eyebrow">Tenant information</p>
               <h2>Occupant details</h2>
-              <p>CID, full name, and phone number are required.</p>
+              <p>CID, Discord ID, full name, phone number, rent, and deposit are required.</p>
             </div>
 
             <label class="field">
@@ -70,6 +70,13 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
               <input type="number" min="1" step="1" formControlName="cid" />
               @if (invalid('cid')) {
                 <small class="error">Enter a valid integer CID.</small>
+              }
+            </label>
+            <label class="field">
+              <span>Discord ID</span>
+              <input inputmode="numeric" autocomplete="off" formControlName="discordId" />
+              @if (invalid('discordId')) {
+                <small class="error">Enter a valid numeric Discord ID.</small>
               }
             </label>
             <label class="field">
@@ -94,11 +101,17 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
               <label class="field">
                 <span>Monthly rent</span>
                 <input type="number" min="0" formControlName="monthlyRent" />
+                @if (invalid('monthlyRent')) {
+                  <small class="error">Monthly rent is required.</small>
+                }
               </label>
             </div>
             <label class="field">
-              <span>Security deposit <i>optional</i></span>
+              <span>Security deposit</span>
               <input type="number" min="0" formControlName="securityDeposit" />
+              @if (invalid('securityDeposit')) {
+                <small class="error">Security deposit is required.</small>
+              }
             </label>
             <label class="field">
               <span>Notes <i>optional</i></span>
@@ -260,6 +273,10 @@ export class TenantAssignmentComponent {
       Validators.min(1),
       Validators.pattern(/^\d+$/),
     ]),
+    discordId: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(/^\d+$/), Validators.maxLength(32)],
+    }),
     fullName: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required, Validators.maxLength(160)],
@@ -273,7 +290,7 @@ export class TenantAssignmentComponent {
       validators: Validators.required,
     }),
     monthlyRent: new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
-    securityDeposit: new FormControl<number | null>(null, Validators.min(0)),
+    securityDeposit: new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
     notes: new FormControl('', { nonNullable: true }),
   });
 
@@ -293,7 +310,9 @@ export class TenantAssignmentComponent {
     });
   }
 
-  invalid(name: 'cid' | 'fullName' | 'phoneNumber') {
+  invalid(
+    name: 'cid' | 'discordId' | 'fullName' | 'phoneNumber' | 'monthlyRent' | 'securityDeposit',
+  ) {
     const control = this.form.controls[name];
     return control.invalid && (control.dirty || control.touched);
   }
@@ -309,11 +328,12 @@ export class TenantAssignmentComponent {
     const raw = this.form.getRawValue();
     const request: AssignTenantRequest = {
       cid: raw.cid!,
+      discordId: raw.discordId,
       fullName: raw.fullName,
       phoneNumber: raw.phoneNumber,
       startDate: raw.startDate,
       monthlyRent: raw.monthlyRent!,
-      securityDeposit: raw.securityDeposit ?? undefined,
+      securityDeposit: raw.securityDeposit!,
       notes: raw.notes || undefined,
     };
     this.properties.assignTenant(property.id, request).subscribe({

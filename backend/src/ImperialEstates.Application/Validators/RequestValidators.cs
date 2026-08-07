@@ -37,10 +37,12 @@ public sealed class AssignTenantRequestValidator : AbstractValidator<AssignTenan
     public AssignTenantRequestValidator()
     {
         RuleFor(x => x.Cid).GreaterThan(0);
+        RuleFor(x => x.DiscordId).NotEmpty().Matches(@"^\d+$").MaximumLength(32);
         RuleFor(x => x.FullName).NotEmpty().MaximumLength(160);
         RuleFor(x => x.PhoneNumber).NotEmpty().Matches(@"^[+0-9()\-\s]{7,24}$");
         RuleFor(x => x.StartDate).NotEmpty();
-        RuleFor(x => x.MonthlyRent).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.MonthlyRent).NotNull().GreaterThanOrEqualTo(0);
+        RuleFor(x => x.SecurityDeposit).NotNull().GreaterThanOrEqualTo(0);
     }
 }
 

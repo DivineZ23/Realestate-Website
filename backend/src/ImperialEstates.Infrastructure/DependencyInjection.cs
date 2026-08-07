@@ -27,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<IBlockRepository, BlockRepository>();
         services.AddScoped<IPropertyRepository, PropertyRepository>();
         services.AddScoped<ITenantRepository, TenantRepository>();
+        services.AddScoped<IRentSyncRepository, RentSyncRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IEnquiryRepository, EnquiryRepository>();
         services.AddScoped<IAuditRepository, AuditRepository>();

@@ -18,6 +18,12 @@ public sealed class TenantRepository(MongoContext db) : ITenantRepository
         return new(items, page, pageSize, total);
     }
     public Task<Tenant?> GetByIdAsync(string id, CancellationToken ct) => db.Tenants.Find(x => x.Id == id && !x.IsDeleted).FirstOrDefaultAsync(ct)!;
+    public async Task<IReadOnlyList<Tenant>> GetByCidsAsync(IReadOnlyCollection<int> cids, CancellationToken ct)
+    {
+        if (cids.Count == 0) return [];
+        var filter = Builders<Tenant>.Filter.Eq(x => x.IsDeleted, false) & Builders<Tenant>.Filter.In(x => x.Cid, cids.Select(cid => (int?)cid));
+        return await db.Tenants.Find(filter).SortByDescending(x => x.CreatedAt).ToListAsync(ct);
+    }
     public Task CreateAsync(Tenant value, CancellationToken ct) { RepositoryHelpers.PrepareForInsert(value); return db.Tenants.InsertOneAsync(value, cancellationToken: ct); }
     public Task UpdateAsync(Tenant value, CancellationToken ct) => RepositoryHelpers.ReplaceAsync(db.Tenants, value, ct);
 }
@@ -42,4 +48,3 @@ public sealed class UserRepository(MongoContext db) : IUserRepository
     public Task CreateAsync(User value, CancellationToken ct) { RepositoryHelpers.PrepareForInsert(value); return db.Users.InsertOneAsync(value, cancellationToken: ct); }
     public Task UpdateAsync(User value, CancellationToken ct) => RepositoryHelpers.ReplaceAsync(db.Users, value, ct);
 }
-

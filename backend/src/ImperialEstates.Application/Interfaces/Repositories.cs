@@ -32,8 +32,15 @@ public interface ITenantRepository
 {
     Task<PagedResult<Tenant>> QueryAsync(int page, int pageSize, CancellationToken cancellationToken);
     Task<Tenant?> GetByIdAsync(string id, CancellationToken cancellationToken);
+    Task<IReadOnlyList<Tenant>> GetByCidsAsync(IReadOnlyCollection<int> cids, CancellationToken cancellationToken);
     Task CreateAsync(Tenant tenant, CancellationToken cancellationToken);
     Task UpdateAsync(Tenant tenant, CancellationToken cancellationToken);
+}
+
+public interface IRentSyncRepository
+{
+    Task<RentSyncSnapshot?> GetCurrentAsync(CancellationToken cancellationToken);
+    Task SaveCurrentAsync(RentSyncSnapshot snapshot, CancellationToken cancellationToken);
 }
 
 public interface IUserRepository

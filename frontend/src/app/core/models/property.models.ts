@@ -122,11 +122,11 @@ export interface AssignTenantRequest {
   cid: number;
   fullName: string;
   phoneNumber: string;
-  discordId?: string;
+  discordId: string;
   startDate: string;
   expectedEndDate?: string;
   monthlyRent: number;
-  securityDeposit?: number;
+  securityDeposit: number;
   emergencyContact?: string;
   notes?: string;
 }

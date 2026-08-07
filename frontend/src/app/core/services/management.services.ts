@@ -8,6 +8,7 @@ import {
   DashboardSummary,
   Enquiry,
   EnquiryStatus,
+  RentSyncSnapshot,
   Tenant,
 } from '../models/management.models';
 import { Block, UpsertBlockRequest } from '../models/property.models';
@@ -109,6 +110,16 @@ export class TenantService {
   private api = inject(ApiService);
   all(): Observable<PagedResult<Tenant>> {
     return this.api.get(API_ENDPOINTS.tenants, { page: 1, pageSize: 100 });
+  }
+}
+@Injectable({ providedIn: 'root' })
+export class NoticeService {
+  private api = inject(ApiService);
+  snapshot(): Observable<RentSyncSnapshot> {
+    return this.api.get(API_ENDPOINTS.notices.snapshot);
+  }
+  sync(rawData: string): Observable<RentSyncSnapshot> {
+    return this.api.post(API_ENDPOINTS.notices.sync, { rawData });
   }
 }
 @Injectable({ providedIn: 'root' })

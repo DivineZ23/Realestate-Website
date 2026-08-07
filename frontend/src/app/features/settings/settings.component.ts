@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { LucidePlus, LucideSave, LucideTrash2 } from '@lucide/angular';
 import { TeamMember } from '../../core/models/user.models';
 import { SettingsService } from '../../core/services/management.services';
 @Component({
   selector: 'app-settings',
-  imports: [FormsModule],
+  imports: [FormsModule, LucidePlus, LucideSave, LucideTrash2],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div class="page-title">
       <p class="eyebrow">Administration</p>
@@ -18,7 +19,9 @@ import { SettingsService } from '../../core/services/management.services';
             <h2>Public team</h2>
             <p>These cards appear on the About page.</p>
           </div>
-          <button class="btn btn-secondary" (click)="add()">Add member</button>
+          <button class="btn btn-secondary" (click)="add()">
+            <svg lucidePlus></svg>Add member
+          </button>
         </header>
         <div class="members">
           @for (member of members(); track member.id; let index = $index) {
@@ -32,12 +35,12 @@ import { SettingsService } from '../../core/services/management.services';
               <label class="field wide"
                 ><span>Image URL</span><input [(ngModel)]="member.imageUrl"
               /></label>
-              <button class="remove" (click)="remove(index)">Remove</button>
+              <button class="remove" (click)="remove(index)"><svg lucideTrash2></svg>Remove</button>
             </article>
           }
         </div>
         <button class="btn btn-primary save" [disabled]="saving()" (click)="save()">
-          {{ saving() ? 'Saving…' : 'Save public team' }}
+          <svg lucideSave></svg>{{ saving() ? 'Saving…' : 'Save public team' }}
         </button>
       </section>
       <section class="panel">
@@ -124,6 +127,13 @@ import { SettingsService } from '../../core/services/management.services';
         background: none;
         color: var(--danger);
         cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .remove svg {
+        width: 15px;
+        height: 15px;
       }
       .save {
         margin-top: 16px;

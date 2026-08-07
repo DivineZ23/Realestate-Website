@@ -1,13 +1,14 @@
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { HttpEventType } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { LucideUpload, LucideX } from '@lucide/angular';
 import { API_ENDPOINTS } from '../../../core/config/api-endpoints';
 import { ALLOWED_IMAGE_TYPES, MAX_UPLOAD_BYTES } from '../../../core/constants/app.constants';
 import { ApiService } from '../../../core/services/api.service';
 
 @Component({
   selector: 'app-image-uploader',
-  imports: [DragDropModule],
+  imports: [DragDropModule, LucideUpload, LucideX],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div class="drop" (dragover)="$event.preventDefault()" (drop)="dropFiles($event)">
       <input
@@ -18,7 +19,7 @@ import { ApiService } from '../../../core/services/api.service';
         hidden
         (change)="choose($event)"
       /><button type="button" class="btn btn-secondary" (click)="picker.click()">
-        Choose images
+        <svg lucideUpload></svg>Choose images
       </button>
       <p>or drag and drop · JPG, PNG, WebP or AVIF · 10 MB max</p>
       @if (progress() !== null) {
@@ -41,7 +42,7 @@ import { ApiService } from '../../../core/services/api.service';
             (click)="remove(i)"
             aria-label="Remove image"
           >
-            ×
+            <svg lucideX></svg>
           </button>
           @if (i === 0) {
             <span>Featured</span>
@@ -109,6 +110,13 @@ import { ApiService } from '../../../core/services/api.service';
         width: 25px;
         height: 25px;
         cursor: pointer;
+        display: grid;
+        place-items: center;
+        padding: 0;
+      }
+      .preview button svg {
+        width: 14px;
+        height: 14px;
       }
       .preview span {
         position: absolute;

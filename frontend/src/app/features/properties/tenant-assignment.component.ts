@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { LucideArrowLeft, LucideUserPlus } from '@lucide/angular';
 import {
   propertyTypeCapacity,
   propertyTypeLabel,
@@ -11,10 +12,12 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
 
 @Component({
   selector: 'app-tenant-assignment',
-  imports: [ReactiveFormsModule, RouterLink, StatusBadgeComponent],
+  imports: [ReactiveFormsModule, RouterLink, StatusBadgeComponent, LucideArrowLeft, LucideUserPlus],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="back"><a routerLink="/dashboard/properties">← Back to properties</a></div>
+    <div class="back">
+      <a routerLink="/dashboard/properties"><svg lucideArrowLeft></svg>Back to properties</a>
+    </div>
     <div class="page-title">
       <div>
         <p class="eyebrow">Tenant assignment</p>
@@ -104,7 +107,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
             <div class="actions">
               <a class="btn btn-secondary" routerLink="/dashboard/properties">Cancel</a>
               <button class="btn btn-primary" [disabled]="form.invalid || saving()">
-                {{ saving() ? 'Assigning…' : 'Assign tenant' }}
+                <svg lucideUserPlus></svg>{{ saving() ? 'Assigning…' : 'Assign tenant' }}
               </button>
             </div>
           </form>
@@ -126,6 +129,15 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         margin-bottom: 20px;
         color: var(--muted);
         font-size: 0.8rem;
+      }
+      .back a {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .back svg {
+        width: 16px;
+        height: 16px;
       }
       .page-title {
         margin-bottom: 24px;

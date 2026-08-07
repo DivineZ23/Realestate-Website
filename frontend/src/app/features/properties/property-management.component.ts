@@ -4,6 +4,17 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { RouterLink } from '@angular/router';
+import {
+  LucideCalendarPlus,
+  LucideChevronLeft,
+  LucideChevronRight,
+  LucidePencil,
+  LucidePlus,
+  LucideTrash2,
+  LucideUndo2,
+  LucideUserMinus,
+  LucideUserPlus,
+} from '@lucide/angular';
 import { debounceTime, finalize, startWith, switchMap } from 'rxjs';
 import {
   PROPERTY_STATUSES,
@@ -29,6 +40,15 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
     RouterLink,
     StatusBadgeComponent,
     EmptyStateComponent,
+    LucideCalendarPlus,
+    LucideChevronLeft,
+    LucideChevronRight,
+    LucidePencil,
+    LucidePlus,
+    LucideTrash2,
+    LucideUndo2,
+    LucideUserMinus,
+    LucideUserPlus,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div class="page-title">
@@ -38,7 +58,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         <p>Search, update, and progress every property through its lifecycle.</p>
       </div>
       @if (auth.isManager()) {
-        <a class="btn btn-primary" routerLink="new">Add property</a>
+        <a class="btn btn-primary" routerLink="new"><svg lucidePlus></svg>Add property</a>
       }
     </div>
     <form [formGroup]="filters" class="toolbar panel">
@@ -100,15 +120,17 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
               <td>
                 <div class="row-actions">
                   @if (property.status === 'available' || property.status === 'booked') {
-                    <a [routerLink]="[property.id, 'assign']">Assign</a>
+                    <a [routerLink]="[property.id, 'assign']"><svg lucideUserPlus></svg>Assign</a>
                   } @else if (property.status === 'owned') {
-                    <button class="danger" (click)="evict(property)">Evict</button>
+                    <button class="danger" (click)="evict(property)">
+                      <svg lucideUserMinus></svg>Evict
+                    </button>
                   }
                   @if (property.status === 'available') {
-                    <button (click)="book(property)">Book</button>
+                    <button (click)="book(property)"><svg lucideCalendarPlus></svg>Book</button>
                   }
                   @if (property.status === 'booked') {
-                    <button (click)="release(property)">Release</button>
+                    <button (click)="release(property)"><svg lucideUndo2></svg>Release</button>
                   }
                   @if (auth.isManager()) {
                     <a
@@ -117,12 +139,11 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
                       [attr.aria-label]="'Edit ' + property.propertyName"
                       title="Edit property"
                     >
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M4 20h4l11-11-4-4L4 16v4Z" />
-                        <path d="m13.5 6.5 4 4" />
-                      </svg>
+                      <svg lucidePencil></svg>
                     </a>
-                    <button class="danger" (click)="remove(property)">Delete</button>
+                    <button class="danger" (click)="remove(property)">
+                      <svg lucideTrash2></svg>Delete
+                    </button>
                   }
                 </div>
               </td>
@@ -146,14 +167,14 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         [disabled]="!result().hasPreviousPage"
         (click)="page(result().page - 1)"
       >
-        Previous</button
+        <svg lucideChevronLeft></svg>Previous</button
       ><span>Page {{ result().page }} of {{ result().totalPages || 1 }}</span
       ><button
         class="btn btn-secondary"
         [disabled]="!result().hasNextPage"
         (click)="page(result().page + 1)"
       >
-        Next
+        Next<svg lucideChevronRight></svg>
       </button>
     </div>`,
   styles: [
@@ -211,6 +232,15 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         font-weight: 700;
         font-size: 0.78rem;
         cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+      }
+      .row-actions svg {
+        width: 14px;
+        height: 14px;
+        stroke-width: 1.9;
       }
       .row-actions .danger {
         color: var(--danger);
@@ -229,14 +259,9 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         border-color: var(--forest);
         color: var(--forest);
       }
-      .edit-action svg {
+      .row-actions .edit-action svg {
         width: 14px;
         height: 14px;
-        fill: none;
-        stroke: currentColor;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        stroke-width: 1.8;
       }
       .pagination {
         display: flex;

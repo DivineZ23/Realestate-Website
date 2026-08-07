@@ -1,14 +1,21 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import {
+  LucideClock3,
+  LucideHouse,
+  LucideLoaderCircle,
+  LucideRotateCcw,
+  LucideShieldX,
+} from '@lucide/angular';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-pending-approval',
-  imports: [RouterLink],
+  imports: [RouterLink, LucideClock3, LucideHouse, LucideRotateCcw],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<section class="state">
     <div>
-      <span>⌛</span>
+      <span><svg lucideClock3></svg></span>
       <p class="eyebrow">Registration received</p>
       <h1>Awaiting approval.</h1>
       <p>
@@ -16,8 +23,10 @@ import { AuthService } from '../../core/services/auth.service';
         workspace becomes available.
       </p>
       <div class="actions">
-        <a routerLink="/" class="btn btn-secondary">Return home</a
-        ><button class="btn btn-primary" (click)="refresh()">Check status</button>
+        <a routerLink="/" class="btn btn-secondary"><svg lucideHouse></svg>Return home</a
+        ><button class="btn btn-primary" (click)="refresh()">
+          <svg lucideRotateCcw></svg>Check status
+        </button>
       </div>
     </div>
   </section>`,
@@ -42,7 +51,10 @@ import { AuthService } from '../../core/services/auth.service';
         margin: 0 auto 26px;
         border-radius: 50%;
         background: var(--forest-light);
-        font-size: 1.6rem;
+      }
+      .state > div > span svg {
+        width: 30px;
+        height: 30px;
       }
       .state h1 {
         font-size: clamp(2.8rem, 7vw, 5rem);
@@ -75,18 +87,18 @@ export class PendingApprovalComponent {
 
 @Component({
   selector: 'app-access-revoked',
-  imports: [RouterLink],
+  imports: [RouterLink, LucideHouse, LucideShieldX],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<section class="state">
     <div>
-      <span>!</span>
+      <span><svg lucideShieldX></svg></span>
       <p class="eyebrow">Access unavailable</p>
       <h1>Your workspace access is inactive.</h1>
       <p>
         If you believe this is unexpected, contact an Imperial Estates manager. Public property
         pages remain available.
       </p>
-      <a routerLink="/" class="btn btn-primary">Return to public site</a>
+      <a routerLink="/" class="btn btn-primary"><svg lucideHouse></svg>Return to public site</a>
     </div>
   </section>`,
   styles: [
@@ -110,8 +122,10 @@ export class PendingApprovalComponent {
         border-radius: 50%;
         background: var(--danger-soft);
         color: var(--danger);
-        font-size: 1.6rem;
-        font-weight: 800;
+      }
+      .state span svg {
+        width: 30px;
+        height: 30px;
       }
       .state h1 {
         font-size: clamp(2.6rem, 7vw, 4.7rem);
@@ -128,8 +142,9 @@ export class AccessRevokedComponent {}
 
 @Component({
   selector: 'app-auth-callback',
+  imports: [LucideLoaderCircle],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<div class="loading">Completing secure sign-in…</div>`,
+  template: `<div class="loading"><svg lucideLoaderCircle></svg>Completing secure sign-in…</div>`,
   styles: [
     `
       .loading {
@@ -137,6 +152,16 @@ export class AccessRevokedComponent {}
         display: grid;
         place-items: center;
         color: var(--muted);
+      }
+      .loading svg {
+        width: 26px;
+        height: 26px;
+        animation: spin 0.9s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
       }
     `,
   ],

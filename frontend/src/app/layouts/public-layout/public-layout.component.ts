@@ -1,11 +1,20 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { LucideLogIn, LucideMenu, LucideX } from '@lucide/angular';
 import { AuthService } from '../../core/services/auth.service';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 
 @Component({
   selector: 'app-public-layout',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, ThemeToggleComponent],
+  imports: [
+    RouterLink,
+    RouterLinkActive,
+    RouterOutlet,
+    ThemeToggleComponent,
+    LucideLogIn,
+    LucideMenu,
+    LucideX,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="site-header">
@@ -22,7 +31,7 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
             >Properties</a
           ><a routerLink="/about" routerLinkActive="active" (click)="menuOpen.set(false)">About</a
           ><app-theme-toggle /><button class="btn btn-primary" (click)="signIn()">
-            Team sign in
+            <svg lucideLogIn></svg>Team sign in
           </button>
         </nav>
         <button
@@ -32,7 +41,11 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
           [attr.aria-expanded]="menuOpen()"
           aria-label="Toggle navigation"
         >
-          <span></span><span></span>
+          @if (menuOpen()) {
+            <svg lucideX></svg>
+          } @else {
+            <svg lucideMenu></svg>
+          }
         </button>
       </div>
     </header>
@@ -117,13 +130,20 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         border: 0;
         background: transparent;
         padding: 10px;
+        color: var(--ink);
       }
-      .menu span {
-        display: block;
+      .menu svg {
         width: 23px;
-        height: 1px;
-        background: var(--ink);
-        margin: 6px;
+        height: 23px;
+      }
+      .menu:focus-visible {
+        border-radius: 10px;
+        outline: 3px solid var(--focus-ring);
+        outline-offset: 2px;
+      }
+      .btn svg {
+        width: 17px;
+        height: 17px;
       }
       footer {
         background: var(--contrast-surface);

@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { LucideArrowLeft, LucideSave } from '@lucide/angular';
 import {
   isSupportedPropertyType,
   PROPERTY_TYPE_OPTIONS,
@@ -28,9 +29,13 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
     RouterLink,
     ImageUploaderComponent,
     StatusBadgeComponent,
+    LucideArrowLeft,
+    LucideSave,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<div class="back"><a routerLink="/dashboard/properties">← Back to properties</a></div>
+  template: `<div class="back">
+      <a routerLink="/dashboard/properties"><svg lucideArrowLeft></svg>Back to properties</a>
+    </div>
     <div class="page-title">
       <div>
         <p class="eyebrow">{{ id() ? 'Manage property' : 'New property' }}</p>
@@ -40,7 +45,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         }
       </div>
       <button class="btn btn-primary" (click)="save()" [disabled]="form.invalid || saving()">
-        {{ saving() ? 'Saving…' : 'Save property' }}
+        <svg lucideSave></svg>{{ saving() ? 'Saving…' : 'Save property' }}
       </button>
     </div>
     <div class="editor-grid">
@@ -110,6 +115,15 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         font-size: 0.8rem;
         color: var(--muted);
         margin-bottom: 20px;
+      }
+      .back a {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .back svg {
+        width: 16px;
+        height: 16px;
       }
       .page-title {
         display: flex;

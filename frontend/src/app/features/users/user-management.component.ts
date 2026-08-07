@@ -1,6 +1,15 @@
 import { DatePipe, TitleCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
+import {
+  LucideBan,
+  LucideRotateCcw,
+  LucideShieldCheck,
+  LucideShieldMinus,
+  LucideTrash2,
+  LucideUserCheck,
+  LucideUserX,
+} from '@lucide/angular';
 import { User } from '../../core/models/user.models';
 import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/management.services';
@@ -9,7 +18,18 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
 
 @Component({
   selector: 'app-user-management',
-  imports: [DatePipe, TitleCasePipe, EmptyStateComponent],
+  imports: [
+    DatePipe,
+    TitleCasePipe,
+    EmptyStateComponent,
+    LucideBan,
+    LucideRotateCcw,
+    LucideShieldCheck,
+    LucideShieldMinus,
+    LucideTrash2,
+    LucideUserCheck,
+    LucideUserX,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div class="page-title">
       <div>
@@ -53,8 +73,10 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
           </dl>
           <div class="actions">
             @if (user.approvalStatus === 'pending') {
-              <button (click)="simple(user, 'approve')">Approve</button
-              ><button class="danger" (click)="reason(user, 'reject')">Reject</button>
+              <button (click)="simple(user, 'approve')"><svg lucideUserCheck></svg>Approve</button
+              ><button class="danger" (click)="reason(user, 'reject')">
+                <svg lucideUserX></svg>Reject
+              </button>
             }
             @if (
               user.approvalStatus === 'approved' &&
@@ -62,23 +84,29 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
               user.role === 'agent' &&
               auth.isOwner()
             ) {
-              <button (click)="simple(user, 'promote')">Promote to Manager</button>
+              <button (click)="simple(user, 'promote')">
+                <svg lucideShieldCheck></svg>Promote to Manager
+              </button>
             }
             @if (user.role === 'manager' && auth.isOwner()) {
-              <button class="danger" (click)="reason(user, 'demote')">Demote</button>
+              <button class="danger" (click)="reason(user, 'demote')">
+                <svg lucideShieldMinus></svg>Demote
+              </button>
             }
             @if (user.accessStatus === 'active' && canChangeAccess(user)) {
-              <button class="danger" (click)="reason(user, 'revoke')">Revoke</button>
+              <button class="danger" (click)="reason(user, 'revoke')">
+                <svg lucideBan></svg>Revoke
+              </button>
             }
             @if (
               user.accessStatus === 'revoked' &&
               user.approvalStatus === 'approved' &&
               canChangeAccess(user)
             ) {
-              <button (click)="simple(user, 'restore')">Restore</button>
+              <button (click)="simple(user, 'restore')"><svg lucideRotateCcw></svg>Restore</button>
             }
             @if (canChangeAccess(user)) {
-              <button class="danger" (click)="remove(user)">Delete</button>
+              <button class="danger" (click)="remove(user)"><svg lucideTrash2></svg>Delete</button>
             }
           </div>
         </article>
@@ -205,6 +233,14 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
         font-size: 0.72rem;
         font-weight: 700;
         cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .actions button svg {
+        width: 14px;
+        height: 14px;
+        stroke-width: 1.9;
       }
       .actions .danger {
         background: var(--danger-soft);

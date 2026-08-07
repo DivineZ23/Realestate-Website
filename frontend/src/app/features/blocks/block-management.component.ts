@@ -2,6 +2,7 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
+import { LucidePencil, LucidePlus, LucideSave, LucideTrash2, LucideX } from '@lucide/angular';
 import { AuthService } from '../../core/services/auth.service';
 import { Block } from '../../core/models/property.models';
 import { BlockService } from '../../core/services/management.services';
@@ -10,7 +11,17 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
 
 @Component({
   selector: 'app-block-management',
-  imports: [CurrencyPipe, DatePipe, ReactiveFormsModule, EmptyStateComponent],
+  imports: [
+    CurrencyPipe,
+    DatePipe,
+    ReactiveFormsModule,
+    EmptyStateComponent,
+    LucidePencil,
+    LucidePlus,
+    LucideSave,
+    LucideTrash2,
+    LucideX,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div class="page-title">
       <div>
@@ -19,7 +30,7 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
         <p>Group properties by location and estate collection.</p>
       </div>
       @if (auth.isManager()) {
-        <button class="btn btn-primary" (click)="openNew()">Add block</button>
+        <button class="btn btn-primary" (click)="openNew()"><svg lucidePlus></svg>Add block</button>
       }
     </div>
     <div class="layout" [class.editing]="editing()">
@@ -62,8 +73,10 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
                 <td>{{ block.updatedAt | date: 'mediumDate' }}</td>
                 @if (auth.isManager()) {
                   <td>
-                    <button (click)="edit(block)">Edit</button
-                    ><button class="danger" (click)="remove(block)">Delete</button>
+                    <button (click)="edit(block)"><svg lucidePencil></svg>Edit</button
+                    ><button class="danger" (click)="remove(block)">
+                      <svg lucideTrash2></svg>Delete
+                    </button>
                   </td>
                 }
               </tr>
@@ -84,7 +97,7 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
         <aside class="panel">
           <div class="aside-head">
             <h2>{{ selected() ? 'Edit block' : 'New block' }}</h2>
-            <button (click)="close()">×</button>
+            <button (click)="close()" aria-label="Close block editor"><svg lucideX></svg></button>
           </div>
           <form [formGroup]="form" (ngSubmit)="save()">
             <label class="field"
@@ -98,7 +111,7 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
             ><label class="field"><span>Image URL</span><input formControlName="imageUrl" /></label
             ><label class="check"><input type="checkbox" formControlName="isActive" /> Active</label
             ><button class="btn btn-primary" [disabled]="form.invalid || saving()">
-              {{ saving() ? 'Saving…' : 'Save block' }}
+              <svg lucideSave></svg>{{ saving() ? 'Saving…' : 'Save block' }}
             </button>
           </form>
         </aside>
@@ -138,6 +151,13 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
         color: var(--forest);
         font-weight: 700;
         cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+      td button svg {
+        width: 14px;
+        height: 14px;
       }
       .data-table .danger {
         color: var(--danger);
@@ -168,6 +188,13 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
         background: none;
         font-size: 1.4rem;
         cursor: pointer;
+        display: grid;
+        place-items: center;
+        color: var(--muted);
+      }
+      .aside-head button svg {
+        width: 20px;
+        height: 20px;
       }
       aside form {
         display: grid;

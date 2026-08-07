@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { LucideArrowRight, LucideSearch, LucideUsersRound } from '@lucide/angular';
 import { catchError, of } from 'rxjs';
 import { PropertyService } from '../../core/services/property.service';
 import { PropertyCardComponent } from '../../shared/components/property-card/property-card.component';
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, PropertyCardComponent],
+  imports: [RouterLink, PropertyCardComponent, LucideArrowRight, LucideSearch, LucideUsersRound],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="hero">
@@ -20,8 +21,11 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
             the keys change hands.
           </p>
           <div class="actions">
-            <a routerLink="/properties" class="btn btn-primary">Browse properties</a
-            ><a routerLink="/about" class="btn btn-secondary">Meet our team</a>
+            <a routerLink="/properties" class="btn btn-primary"
+              ><svg lucideSearch></svg>Browse properties</a
+            ><a routerLink="/about" class="btn btn-secondary"
+              ><svg lucideUsersRound></svg>Meet our team</a
+            >
           </div>
           <div class="trust">
             <span><b>12+</b> years of local care</span><span><b>96%</b> enquiry response rate</span
@@ -35,7 +39,7 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
           />
           <div class="note">
             <span>Now available</span><strong>Riverside Collection</strong
-            ><a routerLink="/properties">View homes →</a>
+            ><a routerLink="/properties">View homes <svg lucideArrowRight></svg></a>
           </div>
         </div>
       </div>
@@ -47,7 +51,7 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
             <p class="eyebrow">Selected residences</p>
             <h2>Homes that make room for life.</h2>
           </div>
-          <a routerLink="/properties">View every property →</a>
+          <a routerLink="/properties">View every property <svg lucideArrowRight></svg></a>
         </div>
         <div class="grid">
           @for (property of featured(); track property.id) {
@@ -209,6 +213,9 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
         font-size: 0.78rem;
         margin-top: 8px;
         font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
       }
       .heading-row {
         display: flex;
@@ -218,6 +225,14 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
       .heading-row > a {
         margin-bottom: 44px;
         font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .note a svg,
+      .heading-row > a svg {
+        width: 16px;
+        height: 16px;
       }
       .grid {
         display: grid;

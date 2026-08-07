@@ -1,11 +1,42 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import {
+  LucideBlocks,
+  LucideBuilding2,
+  LucideContactRound,
+  LucideLayoutDashboard,
+  LucideLogOut,
+  LucideMenu,
+  LucidePanelLeftClose,
+  LucidePanelLeftOpen,
+  LucideScrollText,
+  LucideSettings,
+  LucideShieldCheck,
+  LucideUsersRound,
+} from '@lucide/angular';
 import { AuthService } from '../../core/services/auth.service';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 
 @Component({
   selector: 'app-dashboard-layout',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, ThemeToggleComponent],
+  imports: [
+    RouterLink,
+    RouterLinkActive,
+    RouterOutlet,
+    ThemeToggleComponent,
+    LucideLayoutDashboard,
+    LucideUsersRound,
+    LucideBuilding2,
+    LucideBlocks,
+    LucideContactRound,
+    LucideShieldCheck,
+    LucideScrollText,
+    LucideSettings,
+    LucidePanelLeftClose,
+    LucidePanelLeftOpen,
+    LucideMenu,
+    LucideLogOut,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div class="shell" [class.collapsed]="collapsed()">
     <aside>
@@ -18,30 +49,45 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
           routerLink="/dashboard"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
-          ><span>⌂</span><b>Overview</b></a
+          ><svg lucideLayoutDashboard></svg><b>Overview</b></a
         ><a routerLink="/dashboard/team" routerLinkActive="active"
-          ><span>♦</span><b>About the Team</b></a
+          ><svg lucideUsersRound></svg><b>About the Team</b></a
         ><a routerLink="/dashboard/properties" routerLinkActive="active"
-          ><span>◇</span><b>Properties</b></a
-        ><a routerLink="/dashboard/blocks" routerLinkActive="active"><span>▦</span><b>Blocks</b></a
+          ><svg lucideBuilding2></svg><b>Properties</b></a
+        ><a routerLink="/dashboard/blocks" routerLinkActive="active"
+          ><svg lucideBlocks></svg><b>Blocks</b></a
         ><a routerLink="/dashboard/tenants" routerLinkActive="active"
-          ><span>♙</span><b>Tenants</b></a
+          ><svg lucideContactRound></svg><b>Tenants</b></a
         >
         @if (auth.isManager()) {
           <p>Administration</p>
-          <a routerLink="/dashboard/users" routerLinkActive="active"><span>♚</span><b>Users</b></a
+          <a routerLink="/dashboard/users" routerLinkActive="active"
+            ><svg lucideShieldCheck></svg><b>Users</b></a
           ><a routerLink="/dashboard/audit-logs" routerLinkActive="active"
-            ><span>≡</span><b>Audit logs</b></a
+            ><svg lucideScrollText></svg><b>Audit logs</b></a
           ><a routerLink="/dashboard/settings" routerLinkActive="active"
-            ><span>⚙</span><b>Settings</b></a
+            ><svg lucideSettings></svg><b>Settings</b></a
           >
         }
       </nav>
-      <button class="collapse" (click)="collapsed.update((x) => !x)">‹ <b>Collapse</b></button>
+      <button class="collapse" (click)="collapsed.update((x) => !x)" aria-label="Toggle sidebar">
+        @if (collapsed()) {
+          <svg lucidePanelLeftOpen></svg>
+        } @else {
+          <svg lucidePanelLeftClose></svg>
+        }
+        <b>Collapse</b>
+      </button>
     </aside>
     <section class="workspace">
       <header>
-        <button class="mobile-menu" (click)="collapsed.update((x) => !x)">☰</button>
+        <button
+          class="mobile-menu"
+          (click)="collapsed.update((x) => !x)"
+          aria-label="Toggle dashboard navigation"
+        >
+          <svg lucideMenu></svg>
+        </button>
         <div>
           <span class="overline">Management workspace</span
           ><strong>Good {{ greeting() }}, {{ auth.user()?.displayName }}</strong>
@@ -53,7 +99,7 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
               ><b>{{ auth.user()?.displayName }}</b
               ><small>{{ auth.user()?.role }}</small></span
             ></a
-          ><button (click)="auth.logout()">Sign out</button>
+          ><button (click)="auth.logout()"><svg lucideLogOut></svg><span>Sign out</span></button>
         </div>
       </header>
       <main><router-outlet /></main>
@@ -116,10 +162,11 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         border-radius: 10px;
         font-size: 0.84rem;
       }
-      nav a span {
+      nav a svg {
         width: 20px;
-        text-align: center;
-        font-size: 1rem;
+        height: 20px;
+        flex: 0 0 auto;
+        stroke-width: 1.8;
       }
       nav a b {
         font-weight: 600;
@@ -148,6 +195,10 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         display: flex;
         gap: 14px;
         cursor: pointer;
+      }
+      .collapse svg {
+        width: 18px;
+        height: 18px;
       }
       .workspace {
         min-width: 0;
@@ -202,6 +253,14 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         margin-left: 10px;
         padding-left: 18px;
         cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        color: var(--ink);
+      }
+      .account button svg {
+        width: 16px;
+        height: 16px;
       }
       .workspace main {
         padding: 32px;
@@ -210,6 +269,10 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
       }
       .mobile-menu {
         display: none;
+      }
+      .mobile-menu svg {
+        width: 21px;
+        height: 21px;
       }
       .collapsed {
         grid-template-columns: 78px 1fr;
@@ -265,7 +328,7 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         .workspace main {
           padding: 20px 14px;
         }
-        .account span,
+        .account a span,
         .account button {
           display: none;
         }

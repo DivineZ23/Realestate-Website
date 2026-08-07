@@ -2,6 +2,7 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { LucideArrowRight } from '@lucide/angular';
 import { catchError, of } from 'rxjs';
 import { DashboardSummary } from '../../core/models/management.models';
 import { DashboardService } from '../../core/services/management.services';
@@ -9,7 +10,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
 
 @Component({
   selector: 'app-dashboard-overview',
-  imports: [CurrencyPipe, DatePipe, RouterLink, StatusBadgeComponent],
+  imports: [CurrencyPipe, DatePipe, RouterLink, StatusBadgeComponent, LucideArrowRight],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div class="page-title">
       <div>
@@ -79,7 +80,8 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
               <div>
                 <b>Property status updated</b>
                 <p>
-                  <app-status-badge [status]="item.previousStatus" /> <span>→</span>
+                  <app-status-badge [status]="item.previousStatus" />
+                  <svg class="status-arrow" lucideArrowRight></svg>
                   <app-status-badge [status]="item.newStatus" />
                 </p>
               </div>
@@ -244,6 +246,12 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         align-items: center;
         gap: 7px;
         margin: 7px 0 0;
+      }
+      .status-arrow {
+        width: 15px;
+        height: 15px;
+        flex: 0 0 auto;
+        color: var(--muted);
       }
       .event time {
         color: var(--muted);

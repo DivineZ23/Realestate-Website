@@ -1,6 +1,7 @@
 import { CurrencyPipe, NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { LucideArrowRight } from '@lucide/angular';
 import { PublicProperty } from '../../../core/models/property.models';
 import {
   propertyTypeCapacity,
@@ -10,7 +11,7 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
 
 @Component({
   selector: 'app-property-card',
-  imports: [CurrencyPipe, NgOptimizedImage, RouterLink, StatusBadgeComponent],
+  imports: [CurrencyPipe, NgOptimizedImage, RouterLink, StatusBadgeComponent, LucideArrowRight],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="card">
@@ -48,8 +49,8 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
           >
         </div>
         <a class="link" [routerLink]="['/properties', property().id]"
-          >Explore property <span aria-hidden="true">→</span></a
-        >
+          >Explore property <svg lucideArrowRight></svg
+        ></a>
       </div>
     </article>
   `,
@@ -82,6 +83,19 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
       }
       .card:hover img {
         transform: scale(1.025);
+      }
+      .link {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .link svg {
+        width: 16px;
+        height: 16px;
+        transition: transform var(--ease);
+      }
+      .link:hover svg {
+        transform: translateX(3px);
       }
       app-status-badge {
         position: absolute;

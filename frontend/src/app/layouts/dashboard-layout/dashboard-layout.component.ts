@@ -1,9 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
+  LucideBell,
   LucideBlocks,
   LucideBuilding2,
+  LucideChevronDown,
+  LucideClipboardList,
+  LucideClockAlert,
   LucideContactRound,
+  LucideFileWarning,
+  LucideGavel,
   LucideLayoutDashboard,
   LucideLogOut,
   LucideMenu,
@@ -24,11 +30,17 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
     RouterLinkActive,
     RouterOutlet,
     ThemeToggleComponent,
+    LucideBell,
     LucideLayoutDashboard,
     LucideUsersRound,
     LucideBuilding2,
+    LucideChevronDown,
+    LucideClipboardList,
+    LucideClockAlert,
     LucideBlocks,
     LucideContactRound,
+    LucideFileWarning,
+    LucideGavel,
     LucideShieldCheck,
     LucideScrollText,
     LucideSettings,
@@ -45,31 +57,94 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
           ><img src="/assets/imperial-estates-logo.png" alt="" /></a
         ><strong>Imperial<br />Estates</strong>
       </div>
-      <nav>
-        <p class="first-group">Workspace</p>
-        <a
-          routerLink="/dashboard"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
-          ><svg lucideLayoutDashboard></svg><b>Overview</b></a
-        ><a routerLink="/dashboard/team" routerLinkActive="active"
-          ><svg lucideUsersRound></svg><b>About the Team</b></a
-        ><a routerLink="/dashboard/properties" routerLinkActive="active"
-          ><svg lucideBuilding2></svg><b>Properties</b></a
-        ><a routerLink="/dashboard/blocks" routerLinkActive="active"
-          ><svg lucideBlocks></svg><b>Blocks</b></a
-        ><a routerLink="/dashboard/tenants" routerLinkActive="active"
-          ><svg lucideContactRound></svg><b>Tenants</b></a
-        >
-        @if (auth.isManager()) {
-          <p>Administration</p>
-          <a routerLink="/dashboard/users" routerLinkActive="active"
-            ><svg lucideShieldCheck></svg><b>Users</b></a
-          ><a routerLink="/dashboard/audit-logs" routerLinkActive="active"
-            ><svg lucideScrollText></svg><b>Audit logs</b></a
-          ><a routerLink="/dashboard/settings" routerLinkActive="active"
-            ><svg lucideSettings></svg><b>Settings</b></a
+      <nav aria-label="Dashboard sections">
+        <section class="nav-section">
+          <button
+            class="section-toggle"
+            type="button"
+            [attr.aria-expanded]="auctionOpen()"
+            aria-controls="auction-navigation"
+            (click)="auctionOpen.update((open) => !open)"
           >
+            <span><svg lucideGavel></svg><b>Auction</b></span>
+            <svg class="chevron" lucideChevronDown [class.rotated]="!auctionOpen()"></svg>
+          </button>
+          @if (auctionOpen()) {
+            <div class="section-links" id="auction-navigation">
+              <a routerLink="/dashboard/auction/listings" routerLinkActive="active"
+                ><svg lucideClipboardList></svg><b>Listings</b></a
+              >
+            </div>
+          }
+        </section>
+        <section class="nav-section">
+          <button
+            class="section-toggle"
+            type="button"
+            [attr.aria-expanded]="portfolioOpen()"
+            aria-controls="portfolio-navigation"
+            (click)="portfolioOpen.update((open) => !open)"
+          >
+            <span><svg lucideBuilding2></svg><b>Portfolio</b></span>
+            <svg class="chevron" lucideChevronDown [class.rotated]="!portfolioOpen()"></svg>
+          </button>
+          @if (portfolioOpen()) {
+            <div class="section-links" id="portfolio-navigation">
+              <a routerLink="/dashboard/properties" routerLinkActive="active"
+                ><svg lucideBuilding2></svg><b>Properties</b></a
+              ><a routerLink="/dashboard/blocks" routerLinkActive="active"
+                ><svg lucideBlocks></svg><b>Blocks</b></a
+              ><a routerLink="/dashboard/tenants" routerLinkActive="active"
+                ><svg lucideContactRound></svg><b>Tenants</b></a
+              >
+            </div>
+          }
+        </section>
+        <section class="nav-section">
+          <button
+            class="section-toggle"
+            type="button"
+            [attr.aria-expanded]="noticesOpen()"
+            aria-controls="notices-navigation"
+            (click)="noticesOpen.update((open) => !open)"
+          >
+            <span><svg lucideBell></svg><b>Notices</b></span>
+            <svg class="chevron" lucideChevronDown [class.rotated]="!noticesOpen()"></svg>
+          </button>
+          @if (noticesOpen()) {
+            <div class="section-links" id="notices-navigation">
+              <a routerLink="/dashboard/notices/overdue" routerLinkActive="active"
+                ><svg lucideClockAlert></svg><b>Overdue Notice</b></a
+              ><a routerLink="/dashboard/notices/eviction" routerLinkActive="active"
+                ><svg lucideFileWarning></svg><b>Eviction Notice</b></a
+              >
+            </div>
+          }
+        </section>
+        @if (auth.isManager()) {
+          <section class="nav-section">
+            <button
+              class="section-toggle"
+              type="button"
+              [attr.aria-expanded]="administrationOpen()"
+              aria-controls="administration-navigation"
+              (click)="administrationOpen.update((open) => !open)"
+            >
+              <span><svg lucideShieldCheck></svg><b>Administration</b></span>
+              <svg class="chevron" lucideChevronDown [class.rotated]="!administrationOpen()"></svg>
+            </button>
+            @if (administrationOpen()) {
+              <div class="section-links" id="administration-navigation">
+                <a routerLink="/dashboard/users" routerLinkActive="active"
+                  ><svg lucideUsersRound></svg><b>User Management</b></a
+                ><a routerLink="/dashboard/audit-logs" routerLinkActive="active"
+                  ><svg lucideScrollText></svg><b>Audit Logs</b></a
+                ><a routerLink="/dashboard/settings" routerLinkActive="active"
+                  ><svg lucideSettings></svg><b>Settings</b></a
+                >
+              </div>
+            }
+          </section>
         }
       </nav>
       <button class="collapse" (click)="collapsed.update((x) => !x)" aria-label="Toggle sidebar">
@@ -90,10 +165,19 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         >
           <svg lucideMenu></svg>
         </button>
-        <div>
-          <span class="overline">Management workspace</span
-          ><strong>Good {{ greeting() }}, {{ auth.user()?.displayName }}</strong>
+        <div class="header-greeting">
+          <strong>Good {{ greeting() }}, {{ auth.user()?.displayName }}</strong>
         </div>
+        <nav class="breadcrumb" aria-label="Dashboard breadcrumb">
+          <a
+            routerLink="/dashboard"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            ><svg lucideLayoutDashboard></svg>Overview</a
+          ><a routerLink="/dashboard/team" routerLinkActive="active"
+            ><svg lucideUsersRound></svg>Team</a
+          >
+        </nav>
         <div class="account">
           <app-theme-toggle />
           <a routerLink="/dashboard/profile"
@@ -124,7 +208,7 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         padding: 24px 16px;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
+        overflow-y: auto;
       }
       .aside-head {
         height: 54px;
@@ -156,10 +240,11 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
       nav {
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 10px;
         padding-top: 24px;
         flex: 1;
       }
+      .section-toggle,
       nav a {
         display: flex;
         align-items: center;
@@ -169,11 +254,36 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         border-radius: 10px;
         font-size: 0.84rem;
       }
-      nav a svg {
+      .section-toggle {
+        width: 100%;
+        justify-content: space-between;
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+      }
+      .section-toggle > span {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+      }
+      .section-toggle:hover {
+        background: var(--sidebar-active);
+        color: var(--sidebar-active-text);
+      }
+      .section-links {
+        padding-left: 13px;
+        border-left: 1px solid var(--sidebar-border);
+        margin-left: 22px;
+      }
+      nav a svg,
+      .section-toggle svg {
         width: 20px;
         height: 20px;
         flex: 0 0 auto;
         stroke-width: 1.8;
+      }
+      .section-toggle .chevron.rotated {
+        transform: rotate(-90deg);
       }
       nav a b {
         font-weight: 600;
@@ -182,16 +292,6 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
       nav a:hover {
         background: var(--sidebar-active);
         color: var(--sidebar-active-text);
-      }
-      nav p {
-        margin: 24px 13px 6px;
-        color: var(--sidebar-subtle);
-        font-size: 0.66rem;
-        text-transform: uppercase;
-        letter-spacing: 0.14em;
-      }
-      nav p.first-group {
-        margin-top: 0;
       }
       .collapse {
         border: 0;
@@ -214,31 +314,42 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         height: 82px;
         background: var(--surface);
         border-bottom: 1px solid var(--border);
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
         align-items: center;
-        justify-content: space-between;
         padding: 0 32px;
         position: sticky;
         top: 0;
         z-index: 20;
       }
-      .workspace > header > div:first-of-type {
-        display: grid;
+      .breadcrumb {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 24px;
+        padding: 0;
       }
-      .overline {
-        font-size: 0.68rem;
+      .breadcrumb a {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0;
         color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
+        font-size: 0.92rem;
       }
-      .workspace > header strong {
-        font-size: 0.94rem;
+      .breadcrumb a:hover,
+      .breadcrumb a.active {
+        color: var(--ink);
+        background: transparent;
       }
       .account,
       .account a {
         display: flex;
         align-items: center;
         gap: 10px;
+      }
+      .account {
+        justify-self: end;
       }
       .account img {
         width: 38px;
@@ -286,15 +397,21 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
       }
       .collapsed .aside-head strong,
       .collapsed nav b,
-      .collapsed nav p,
+      .collapsed .section-toggle .chevron,
       .collapsed .collapse b {
         display: none;
       }
       .collapsed .aside-head {
         padding-inline: 4px;
       }
-      .collapsed nav a {
+      .collapsed nav a,
+      .collapsed .section-toggle {
         justify-content: center;
+      }
+      .collapsed .section-links {
+        padding-left: 0;
+        margin-left: 0;
+        border-left: 0;
       }
       .collapsed .collapse {
         justify-content: center;
@@ -316,12 +433,21 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         }
         .collapsed .aside-head strong,
         .collapsed nav b,
-        .collapsed nav p,
+        .collapsed .section-toggle .chevron,
         .collapsed .collapse b {
           display: block;
         }
-        .collapsed nav a {
+        .collapsed nav a,
+        .collapsed .section-toggle {
           justify-content: flex-start;
+        }
+        .collapsed .section-toggle {
+          justify-content: space-between;
+        }
+        .collapsed .section-links {
+          padding-left: 13px;
+          margin-left: 22px;
+          border-left: 1px solid var(--sidebar-border);
         }
         .mobile-menu {
           display: block;
@@ -330,7 +456,11 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
           font-size: 1.3rem;
         }
         .workspace > header {
+          grid-template-columns: auto 1fr auto;
           padding: 0 18px;
+        }
+        .header-greeting {
+          display: none;
         }
         .workspace main {
           padding: 20px 14px;
@@ -346,6 +476,10 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
 export class DashboardLayoutComponent {
   readonly auth = inject(AuthService);
   readonly collapsed = signal(false);
+  readonly portfolioOpen = signal(true);
+  readonly auctionOpen = signal(true);
+  readonly noticesOpen = signal(true);
+  readonly administrationOpen = signal(true);
   readonly fallback = 'https://api.dicebear.com/9.x/initials/svg?seed=Imperial';
   readonly greeting = computed(() =>
     new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening',

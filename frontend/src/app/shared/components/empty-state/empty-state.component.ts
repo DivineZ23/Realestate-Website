@@ -1,9 +1,12 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { LucideInbox } from '@lucide/angular';
+
 @Component({
   selector: 'app-empty-state',
+  imports: [LucideInbox],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div class="empty">
-    <span aria-hidden="true">⌂</span>
+    <svg lucideInbox aria-hidden="true"></svg>
     <h3>{{ title() }}</h3>
     <p>{{ message() }}</p>
     <ng-content />
@@ -15,7 +18,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
         padding: 64px 20px;
         color: var(--muted);
       }
-      span {
+      .empty > svg {
         display: grid;
         place-items: center;
         width: 52px;
@@ -23,7 +26,8 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
         border-radius: 50%;
         background: var(--forest-light);
         color: var(--forest);
-        font-size: 1.4rem;
+        padding: 14px;
+        stroke-width: 1.8;
         margin: 0 auto 18px;
       }
       h3 {

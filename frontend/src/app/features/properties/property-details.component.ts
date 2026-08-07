@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { LucideCheck } from '@lucide/angular';
 import { catchError, of, switchMap } from 'rxjs';
 import { PublicProperty } from '../../core/models/property.models';
 import { EnquiryService } from '../../core/services/management.services';
@@ -24,6 +25,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
     StatusBadgeComponent,
     PropertyCardComponent,
     EmptyStateComponent,
+    LucideCheck,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `@if (property(); as p) {
@@ -101,7 +103,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
               <h2>Amenities</h2>
               <div class="amenities">
                 @for (item of p.amenities; track item) {
-                  <span>✓ {{ item }}</span>
+                  <span><svg lucideCheck></svg>{{ item }}</span>
                 }
               </div>
             </section>
@@ -301,11 +303,19 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         gap: 10px;
       }
       .amenities span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
         padding: 9px 12px;
         background: var(--forest-light);
         border-radius: 99px;
         color: var(--forest);
         font-size: 0.8rem;
+      }
+      .amenities svg {
+        width: 14px;
+        height: 14px;
+        stroke-width: 2;
       }
       .enquiry {
         height: max-content;

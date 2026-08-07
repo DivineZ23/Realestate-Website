@@ -67,6 +67,9 @@ test('overview omits property creation and unavailable status', async ({ page })
       ],
     }),
   );
+  await page.route('**/api/v1/tenants**', (route) =>
+    route.fulfill({ json: { items: [], page: 1, pageSize: 100, totalCount: 0 } }),
+  );
   await page.route('**/api/v1/dashboard', (route) =>
     route.fulfill({
       json: {
@@ -97,22 +100,64 @@ test('overview omits property creation and unavailable status', async ({ page })
   await expect(page.getByText('Total profit')).toBeVisible();
   await expect(page.getByText(/Rent − Cost/)).toBeVisible();
   await expect(page.getByText('Central Block')).toBeVisible();
-  const navigation = page.locator('aside nav');
-  await expect(navigation.getByRole('link', { name: 'Overview' })).toHaveAttribute(
+  const breadcrumb = page.getByRole('navigation', { name: 'Dashboard breadcrumb' });
+  await expect(breadcrumb.getByRole('link', { name: 'Overview' })).toHaveAttribute(
     'href',
     '/dashboard',
   );
-  await expect(navigation.getByRole('link', { name: 'About the Team' })).toHaveAttribute(
+  await expect(breadcrumb.getByRole('link', { name: 'Team' })).toHaveAttribute(
     'href',
     '/dashboard/team',
   );
+  const navigation = page.getByRole('navigation', { name: 'Dashboard sections' });
+  await expect(navigation.locator('.section-toggle').first()).toContainText('Auction');
+  await expect(navigation.getByRole('button', { name: 'Portfolio' })).toHaveAttribute(
+    'aria-expanded',
+    'true',
+  );
+  await expect(navigation.getByRole('button', { name: 'Administration' })).toHaveAttribute(
+    'aria-expanded',
+    'true',
+  );
+  await expect(navigation.getByRole('button', { name: 'Auction' })).toHaveAttribute(
+    'aria-expanded',
+    'true',
+  );
+  await expect(navigation.getByRole('button', { name: 'Notices' })).toHaveAttribute(
+    'aria-expanded',
+    'true',
+  );
+  await expect(navigation.getByRole('link', { name: 'Listings' })).toHaveAttribute(
+    'href',
+    '/dashboard/auction/listings',
+  );
+  await expect(navigation.getByRole('link', { name: 'Overdue Notice' })).toHaveAttribute(
+    'href',
+    '/dashboard/notices/overdue',
+  );
+  await expect(navigation.getByRole('link', { name: 'Eviction Notice' })).toHaveAttribute(
+    'href',
+    '/dashboard/notices/eviction',
+  );
+  await expect(navigation.getByRole('link', { name: 'User Management' })).toBeVisible();
+  await navigation.getByRole('button', { name: 'Administration' }).click();
+  await expect(navigation.getByRole('link', { name: 'User Management' })).toHaveCount(0);
+  await navigation.getByRole('button', { name: 'Administration' }).click();
   await expect(navigation.getByRole('link', { name: 'Enquiries' })).toHaveCount(0);
   await expect(page.getByText('New enquiries')).toHaveCount(0);
 
-  await navigation.getByRole('link', { name: 'About the Team' }).click();
+  await navigation.getByRole('link', { name: 'Listings' }).click();
+  await expect(page).toHaveURL('/dashboard/auction/listings');
+  await expect(page.getByRole('heading', { name: 'Listings' })).toBeVisible();
+
+  await breadcrumb.getByRole('link', { name: 'Team' }).click();
   await expect(page).toHaveURL('/dashboard/team');
   await expect(page.getByRole('heading', { name: 'About the Team' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Maya Thorne' })).toBeVisible();
+
+  await page.goto('/dashboard/tenants');
+  await expect(page.getByRole('heading', { name: 'No tenancy records' })).toBeVisible();
+  await expect(page.locator('app-empty-state svg.lucide-inbox')).toBeVisible();
 });
 
 test('theme can be changed and is remembered', async ({ page }) => {

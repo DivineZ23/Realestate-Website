@@ -80,6 +80,42 @@ export const routes: Routes = [
           import('./features/tenants/tenants.component').then((m) => m.TenantsComponent),
       },
       {
+        path: 'auction/listings',
+        data: {
+          section: 'Auction',
+          title: 'Listings',
+          description: 'Manage properties prepared for future auction workflows.',
+        },
+        loadComponent: () =>
+          import('./features/workspace-placeholder/workspace-placeholder.component').then(
+            (m) => m.WorkspacePlaceholderComponent,
+          ),
+      },
+      {
+        path: 'notices/overdue',
+        data: {
+          section: 'Notices',
+          title: 'Overdue Notice',
+          description: 'Review and prepare overdue notices for tenants.',
+        },
+        loadComponent: () =>
+          import('./features/workspace-placeholder/workspace-placeholder.component').then(
+            (m) => m.WorkspacePlaceholderComponent,
+          ),
+      },
+      {
+        path: 'notices/eviction',
+        data: {
+          section: 'Notices',
+          title: 'Eviction Notice',
+          description: 'Review and prepare eviction notices for tenants.',
+        },
+        loadComponent: () =>
+          import('./features/workspace-placeholder/workspace-placeholder.component').then(
+            (m) => m.WorkspacePlaceholderComponent,
+          ),
+      },
+      {
         path: 'users',
         canActivate: [managerGuard],
         loadComponent: () =>

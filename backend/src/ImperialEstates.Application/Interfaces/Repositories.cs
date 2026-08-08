@@ -19,6 +19,7 @@ public interface IPropertyRepository
 {
     Task<PagedResult<Property>> QueryAsync(PropertyQuery query, bool publicOnly, CancellationToken cancellationToken);
     Task<Property?> GetByIdAsync(string id, CancellationToken cancellationToken);
+    Task<IReadOnlyList<Property>> GetByIdsAsync(IReadOnlyCollection<string> ids, CancellationToken cancellationToken);
     Task<Property?> GetByBusinessIdAsync(int propertyId, CancellationToken cancellationToken);
     Task<IReadOnlyList<Property>> GetAllAsync(CancellationToken cancellationToken);
     Task<IReadOnlyList<Property>> GetFeaturedAsync(int limit, CancellationToken cancellationToken);

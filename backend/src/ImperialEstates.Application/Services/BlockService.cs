@@ -10,15 +10,17 @@ public sealed class BlockService(IBlockRepository blocks, IPropertyRepository pr
 {
     public async Task<IReadOnlyList<BlockDto>> GetAllAsync(bool activeOnly, CancellationToken cancellationToken)
     {
-        var values = await blocks.GetAllAsync(activeOnly, cancellationToken);
-        var allProperties = await properties.GetAllAsync(cancellationToken);
-        return values.Select(value => FinancialDto(value, allProperties)).ToList();
+        var blocksTask = blocks.GetAllAsync(activeOnly, cancellationToken);
+        var propertiesTask = properties.GetAllAsync(cancellationToken);
+        await Task.WhenAll(blocksTask, propertiesTask);
+        var financials = BuildFinancials(propertiesTask.Result);
+        return blocksTask.Result.Select(value => FinancialDto(value, financials)).ToList();
     }
 
     public async Task<BlockDto> GetAsync(string id, CancellationToken cancellationToken)
     {
         var value = await GetEntityAsync(id, cancellationToken);
-        return FinancialDto(value, await properties.GetAllAsync(cancellationToken));
+        return FinancialDto(value, BuildFinancials(await properties.GetAllAsync(cancellationToken)));
     }
 
     public async Task<BlockDto> CreateAsync(UpsertBlockRequest request, string actorId, CancellationToken cancellationToken)
@@ -53,7 +55,7 @@ public sealed class BlockService(IBlockRepository blocks, IPropertyRepository pr
         value.UpdatedBy = actorId;
         await blocks.UpdateAsync(value, cancellationToken);
         await audits.CreateAsync(NewAudit("block.updated", value.Id, actorId), cancellationToken);
-        return FinancialDto(value, await properties.GetAllAsync(cancellationToken));
+        return FinancialDto(value, BuildFinancials(await properties.GetAllAsync(cancellationToken)));
     }
 
     public async Task DeleteAsync(string id, string actorId, CancellationToken cancellationToken)
@@ -75,11 +77,21 @@ public sealed class BlockService(IBlockRepository blocks, IPropertyRepository pr
     private static AuditLog NewAudit(string action, string entityId, string actorId) =>
         new() { Action = action, EntityType = "block", EntityId = entityId, PerformedByUserId = actorId };
 
-    private static BlockDto FinancialDto(Block block, IEnumerable<Property> allProperties)
+    private static IReadOnlyDictionary<string, BlockFinancials> BuildFinancials(IEnumerable<Property> properties) =>
+        properties
+            .GroupBy(property => property.BlockId)
+            .ToDictionary(
+                group => group.Key,
+                group => new BlockFinancials(
+                    group.LongCount(),
+                    group.Sum(property => property.Type.StateCost() ?? 0),
+                    group.Sum(property => property.Rent)));
+
+    private static BlockDto FinancialDto(Block block, IReadOnlyDictionary<string, BlockFinancials> financials)
     {
-        var blockProperties = allProperties.Where(property => property.BlockId == block.Id).ToList();
-        var cost = blockProperties.Sum(property => property.Type.StateCost() ?? 0);
-        var rent = blockProperties.Sum(property => property.Rent);
-        return block.ToDto(blockProperties.Count, cost, rent);
+        var financialsForBlock = financials.GetValueOrDefault(block.Id);
+        return block.ToDto(financialsForBlock?.Count ?? 0, financialsForBlock?.Cost ?? 0, financialsForBlock?.Rent ?? 0);
     }
+
+    private sealed record BlockFinancials(long Count, decimal Cost, decimal Rent);
 }

@@ -44,13 +44,20 @@ public sealed class PropertyRepository(MongoContext db) : IPropertyRepository
             filter &= f.Or(searchFilters);
         }
         var page = Paging.NormalizePage(query.Page); var pageSize = Paging.NormalizePageSize(query.PageSize);
-        var total = await db.Properties.CountDocumentsAsync(filter, cancellationToken: ct);
         var sort = BuildSort(query.SortBy, query.SortDirection);
-        var items = await db.Properties.Find(filter).Sort(sort).Skip((page - 1) * pageSize).Limit(pageSize).ToListAsync(ct);
-        return new(items, page, pageSize, total);
+        var totalTask = db.Properties.CountDocumentsAsync(filter, cancellationToken: ct);
+        var itemsTask = db.Properties.Find(filter).Sort(sort).Skip((page - 1) * pageSize).Limit(pageSize).ToListAsync(ct);
+        await Task.WhenAll(totalTask, itemsTask);
+        return new(itemsTask.Result, page, pageSize, totalTask.Result);
     }
 
     public Task<Property?> GetByIdAsync(string id, CancellationToken ct) => db.Properties.Find(x => x.Id == id && !x.IsDeleted).FirstOrDefaultAsync(ct)!;
+    public async Task<IReadOnlyList<Property>> GetByIdsAsync(IReadOnlyCollection<string> ids, CancellationToken ct)
+    {
+        if (ids.Count == 0) return [];
+        var filter = Builders<Property>.Filter.Eq(x => x.IsDeleted, false) & Builders<Property>.Filter.In(x => x.Id, ids);
+        return await db.Properties.Find(filter).ToListAsync(ct);
+    }
     public Task<Property?> GetByBusinessIdAsync(int id, CancellationToken ct) => db.Properties.Find(x => x.PropertyId == id && !x.IsDeleted).FirstOrDefaultAsync(ct)!;
     public async Task<IReadOnlyList<Property>> GetAllAsync(CancellationToken ct) =>
         await db.Properties.Find(x => !x.IsDeleted).ToListAsync(ct);

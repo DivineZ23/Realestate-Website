@@ -13,9 +13,10 @@ public sealed class TenantRepository(MongoContext db) : ITenantRepository
     {
         page = Paging.NormalizePage(page); pageSize = Paging.NormalizePageSize(pageSize);
         var filter = Builders<Tenant>.Filter.Eq(x => x.IsDeleted, false);
-        var total = await db.Tenants.CountDocumentsAsync(filter, cancellationToken: ct);
-        var items = await db.Tenants.Find(filter).SortByDescending(x => x.CreatedAt).Skip((page - 1) * pageSize).Limit(pageSize).ToListAsync(ct);
-        return new(items, page, pageSize, total);
+        var totalTask = db.Tenants.CountDocumentsAsync(filter, cancellationToken: ct);
+        var itemsTask = db.Tenants.Find(filter).SortByDescending(x => x.CreatedAt).Skip((page - 1) * pageSize).Limit(pageSize).ToListAsync(ct);
+        await Task.WhenAll(totalTask, itemsTask);
+        return new(itemsTask.Result, page, pageSize, totalTask.Result);
     }
     public Task<Tenant?> GetByIdAsync(string id, CancellationToken ct) => db.Tenants.Find(x => x.Id == id && !x.IsDeleted).FirstOrDefaultAsync(ct)!;
     public async Task<IReadOnlyList<Tenant>> GetByCidsAsync(IReadOnlyCollection<int> cids, CancellationToken ct)
@@ -37,9 +38,10 @@ public sealed class UserRepository(MongoContext db) : IUserRepository
         if (approval.HasValue) filter &= f.Eq(x => x.ApprovalStatus, approval.Value);
         if (access.HasValue) filter &= f.Eq(x => x.AccessStatus, access.Value);
         if (role.HasValue) filter &= f.Eq(x => x.Role, role.Value);
-        var total = await db.Users.CountDocumentsAsync(filter, cancellationToken: ct);
-        var items = await db.Users.Find(filter).SortByDescending(x => x.CreatedAt).Skip((page - 1) * pageSize).Limit(pageSize).ToListAsync(ct);
-        return new(items, page, pageSize, total);
+        var totalTask = db.Users.CountDocumentsAsync(filter, cancellationToken: ct);
+        var itemsTask = db.Users.Find(filter).SortByDescending(x => x.CreatedAt).Skip((page - 1) * pageSize).Limit(pageSize).ToListAsync(ct);
+        await Task.WhenAll(totalTask, itemsTask);
+        return new(itemsTask.Result, page, pageSize, totalTask.Result);
     }
     public Task<User?> GetByIdAsync(string id, CancellationToken ct) => db.Users.Find(x => x.Id == id && !x.IsDeleted).FirstOrDefaultAsync(ct)!;
     public Task<User?> GetByDiscordIdAsync(string id, CancellationToken ct) => db.Users.Find(x => x.DiscordUserId == id && !x.IsDeleted).FirstOrDefaultAsync(ct)!;

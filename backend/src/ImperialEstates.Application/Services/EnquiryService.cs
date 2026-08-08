@@ -27,9 +27,12 @@ public sealed class EnquiryService(IEnquiryRepository enquiries, IPropertyReposi
     public async Task<PagedResult<EnquiryDto>> QueryAsync(int page, int pageSize, EnquiryStatus? status, CancellationToken cancellationToken)
     {
         var values = await enquiries.QueryAsync(page, pageSize, status, cancellationToken);
-        var result = new List<EnquiryDto>();
-        foreach (var value in values.Items)
-            result.Add(Map(value, (await properties.GetByIdAsync(value.PropertyId, cancellationToken))?.PropertyName ?? "Inactive property"));
+        var propertyIds = values.Items.Select(value => value.PropertyId).Distinct().ToArray();
+        var propertyNames = (await properties.GetByIdsAsync(propertyIds, cancellationToken))
+            .ToDictionary(property => property.Id, property => property.PropertyName);
+        var result = values.Items
+            .Select(value => Map(value, propertyNames.GetValueOrDefault(value.PropertyId, "Inactive property")))
+            .ToList();
         return new(result, values.Page, values.PageSize, values.TotalItems);
     }
 

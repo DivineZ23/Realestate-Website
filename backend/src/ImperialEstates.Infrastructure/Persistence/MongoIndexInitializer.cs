@@ -22,10 +22,14 @@ public sealed class MongoIndexInitializer(MongoContext db)
             new CreateIndexModel<User>(Builders<User>.IndexKeys.Ascending(x => x.DiscordUserId), new() { Unique = true, Name = "ux_user_discord" }),
             new CreateIndexModel<User>(Builders<User>.IndexKeys.Ascending(x => x.ApprovalStatus).Ascending(x => x.AccessStatus).Ascending(x => x.Role), new() { Name = "ix_user_state" })
         ], cancellationToken);
-        await db.Tenants.Indexes.CreateOneAsync(new CreateIndexModel<Tenant>(Builders<Tenant>.IndexKeys.Ascending(x => x.PropertyId).Ascending(x => x.Status), new() { Name = "ix_tenant_property_status" }), cancellationToken: cancellationToken);
+        await db.Tenants.Indexes.CreateManyAsync([
+            new CreateIndexModel<Tenant>(Builders<Tenant>.IndexKeys.Ascending(x => x.PropertyId).Ascending(x => x.Status), new() { Name = "ix_tenant_property_status" }),
+            new CreateIndexModel<Tenant>(Builders<Tenant>.IndexKeys.Ascending(x => x.Cid).Descending(x => x.CreatedAt), new() { Name = "ix_tenant_cid_date" })
+        ], cancellationToken);
         await db.Enquiries.Indexes.CreateOneAsync(new CreateIndexModel<Enquiry>(Builders<Enquiry>.IndexKeys.Ascending(x => x.PropertyId).Ascending(x => x.Status).Descending(x => x.CreatedAt), new() { Name = "ix_enquiry_property_status" }), cancellationToken: cancellationToken);
         await db.StatusHistory.Indexes.CreateOneAsync(new CreateIndexModel<PropertyStatusHistory>(Builders<PropertyStatusHistory>.IndexKeys.Ascending(x => x.PropertyId).Descending(x => x.CreatedAt), new() { Name = "ix_history_property_date" }), cancellationToken: cancellationToken);
         await db.AuditLogs.Indexes.CreateOneAsync(new CreateIndexModel<AuditLog>(Builders<AuditLog>.IndexKeys.Ascending(x => x.EntityType).Ascending(x => x.EntityId).Descending(x => x.CreatedAt), new() { Name = "ix_audit_entity_date" }), cancellationToken: cancellationToken);
         await db.Settings.Indexes.CreateOneAsync(new CreateIndexModel<ApplicationSetting>(Builders<ApplicationSetting>.IndexKeys.Ascending(x => x.Key), new() { Name = "ux_setting_key", Unique = true }), cancellationToken: cancellationToken);
+        await db.RentSyncSnapshots.Indexes.CreateOneAsync(new CreateIndexModel<RentSyncSnapshot>(Builders<RentSyncSnapshot>.IndexKeys.Descending(x => x.UpdatedAt), new() { Name = "ix_rent_sync_updated" }), cancellationToken: cancellationToken);
     }
 }

@@ -42,8 +42,14 @@ public sealed class DashboardService(IBlockRepository blocks, IPropertyRepositor
 {
     public async Task<DashboardSummaryDto> GetAsync(CancellationToken ct)
     {
-        var activeBlocks = await blocks.GetAllAsync(true, ct);
-        var allProperties = await properties.GetAllAsync(ct);
+        var blocksTask = blocks.GetAllAsync(true, ct);
+        var propertiesTask = properties.GetAllAsync(ct);
+        var pendingEnquiriesTask = enquiries.CountPendingAsync(ct);
+        var pendingUsersTask = users.CountPendingAsync(ct);
+        var recentHistoryTask = history.GetRecentAsync(8, ct);
+        await Task.WhenAll(blocksTask, propertiesTask, pendingEnquiriesTask, pendingUsersTask, recentHistoryTask);
+        var activeBlocks = blocksTask.Result;
+        var allProperties = propertiesTask.Result;
         var totalCost = allProperties.Sum(property => property.Type.StateCost() ?? 0);
         var totalRevenue = allProperties.Sum(property => property.Rent);
         var totalProfit = totalRevenue - totalCost;
@@ -71,9 +77,9 @@ public sealed class DashboardService(IBlockRepository blocks, IPropertyRepositor
             allProperties.Count == 0 ? 0 : totalProfit / allProperties.Count,
             blockFinancials?.Name,
             blockFinancials?.Profit ?? 0,
-            await enquiries.CountPendingAsync(ct),
-            await users.CountPendingAsync(ct),
-            (await history.GetRecentAsync(8, ct))
+            pendingEnquiriesTask.Result,
+            pendingUsersTask.Result,
+            recentHistoryTask.Result
                 .Where(x => x.PreviousStatus != PropertyStatus.Unavailable && x.NewStatus != PropertyStatus.Unavailable)
                 .Select(x => x.ToDto()).ToList());
     }

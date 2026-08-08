@@ -24,7 +24,7 @@ import { ApiService } from './api.service';
 
 @Injectable({ providedIn: 'root' })
 export class BlockService {
-  private api = inject(ApiService);
+  private readonly api = inject(ApiService);
   public(): Observable<Block[]> {
     return this.api.get(API_ENDPOINTS.blocks.public);
   }
@@ -44,7 +44,7 @@ export class BlockService {
 
 @Injectable({ providedIn: 'root' })
 export class EnquiryService {
-  private api = inject(ApiService);
+  private readonly api = inject(ApiService);
   create(body: CreateEnquiryRequest): Observable<Enquiry> {
     return this.api.post(API_ENDPOINTS.enquiries, body);
   }
@@ -61,7 +61,7 @@ export class EnquiryService {
 
 @Injectable({ providedIn: 'root' })
 export class TeamService {
-  private api = inject(ApiService);
+  private readonly api = inject(ApiService);
   agents(): Observable<AgentSummary[]> {
     return this.api.get(API_ENDPOINTS.teamAgents);
   }
@@ -69,7 +69,7 @@ export class TeamService {
 
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
-  private api = inject(ApiService);
+  private readonly api = inject(ApiService);
   team(): Observable<TeamMember[]> {
     return this.api.get(API_ENDPOINTS.settingsTeam);
   }
@@ -80,7 +80,7 @@ export class SettingsService {
 
 @Injectable({ providedIn: 'root' })
 export class UserService {
-  private api = inject(ApiService);
+  private readonly api = inject(ApiService);
   all(
     filters: { approval?: ApprovalStatus; access?: AccessStatus; role?: UserRole } = {},
   ): Observable<PagedResult<User>> {
@@ -100,21 +100,21 @@ export class UserService {
 
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
-  private api = inject(ApiService);
+  private readonly api = inject(ApiService);
   get(): Observable<DashboardSummary> {
     return this.api.get(API_ENDPOINTS.dashboard);
   }
 }
 @Injectable({ providedIn: 'root' })
 export class TenantService {
-  private api = inject(ApiService);
+  private readonly api = inject(ApiService);
   all(): Observable<PagedResult<Tenant>> {
     return this.api.get(API_ENDPOINTS.tenants, { page: 1, pageSize: 100 });
   }
 }
 @Injectable({ providedIn: 'root' })
 export class NoticeService {
-  private api = inject(ApiService);
+  private readonly api = inject(ApiService);
   snapshot(): Observable<RentSyncSnapshot> {
     return this.api.get(API_ENDPOINTS.notices.snapshot);
   }

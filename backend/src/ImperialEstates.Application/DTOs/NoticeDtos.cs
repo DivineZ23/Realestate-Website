@@ -9,5 +9,5 @@ public sealed record RentSyncRecordDto(
     string? OverdueNotice, string? EvictionNotice);
 
 public sealed record RentSyncSnapshotDto(
-    string Id, DateTime? SyncedAt, int Total, int Active, int Overdue, int Evictable, int Empty,
+    string Id, string? CreatedBy, DateTime? SyncedAt, int Total, int Active, int Overdue, int Evictable, int Empty,
     int UnmappedTenants, IReadOnlyList<RentSyncRecordDto> Records);

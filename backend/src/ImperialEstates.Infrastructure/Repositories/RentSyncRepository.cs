@@ -22,11 +22,6 @@ public sealed class RentSyncRepository(MongoContext db) : IRentSyncRepository
 
     public async Task DeleteAsync(string id, CancellationToken ct)
     {
-        var snapshot = await db.RentSyncSnapshots.Find(x => x.Id == id && !x.IsDeleted).FirstOrDefaultAsync(ct);
-        if (snapshot is null) return;
-
-        snapshot.IsDeleted = true;
-        snapshot.UpdatedAt = DateTime.UtcNow;
-        await db.RentSyncSnapshots.ReplaceOneAsync(x => x.Id == id, snapshot, cancellationToken: ct);
+        await db.RentSyncSnapshots.DeleteOneAsync(x => x.Id == id, cancellationToken: ct);
     }
 }

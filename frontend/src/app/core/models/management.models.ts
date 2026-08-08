@@ -94,6 +94,7 @@ export interface RentSyncRecord {
 }
 export interface RentSyncSnapshot {
   id: string;
+  createdBy?: string;
   syncedAt?: string;
   total: number;
   active: number;

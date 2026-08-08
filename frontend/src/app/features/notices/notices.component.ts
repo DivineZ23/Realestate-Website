@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import {
   LucideClipboardPaste,
   LucideCopy,
@@ -13,7 +14,7 @@ import {
 } from '@lucide/angular';
 import { map } from 'rxjs';
 import { RentSyncRecord, RentSyncSnapshot } from '../../core/models/management.models';
-import { NoticeService } from '../../core/services/management.services';
+import { NoticeService, UserService } from '../../core/services/management.services';
 import { AuthService } from '../../core/services/auth.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 
@@ -83,20 +84,16 @@ type NoticeView =
     }
 
     @if (snapshot(); as data) {
-      <div class="summary-grid">
-        <div class="panel"><b>{{ data.total }}</b><span>Total rows</span></div>
-        <div class="panel active"><b>{{ data.active }}</b><span>Active</span></div>
-        <div class="panel overdue"><b>{{ data.overdue }}</b><span>Overdue</span></div>
-        <div class="panel eviction"><b>{{ data.evictable }}</b><span>Evictable</span></div>
-      </div>
+      @if (!isSyncedDataRecords()) {
+        <div class="summary-grid">
+          <div class="panel"><b>{{ data.total }}</b><span>Total rows</span></div>
+          <div class="panel active"><b>{{ data.active }}</b><span>Active</span></div>
+          <div class="panel overdue"><b>{{ data.overdue }}</b><span>Overdue</span></div>
+          <div class="panel eviction"><b>{{ data.evictable }}</b><span>Evictable</span></div>
+        </div>
+      }
       @if (data.syncedAt) {
         <p class="synced">Last synced {{ data.syncedAt | date: 'medium' }}</p>
-      }
-      @if (data.unmappedTenants) {
-        <p class="mapping-warning">
-          <svg lucideTriangleAlert></svg>{{ data.unmappedTenants }} renter(s) could not be mapped to a
-          tenant Discord ID. Confirm their CID in tenant records.
-        </p>
       }
     }
 
@@ -110,27 +107,37 @@ type NoticeView =
         }
       }
       @if (isSyncedDataRecords()) {
-        <div class="record-grid">
-          @for (record of snapshotList(); track record.id) {
-            <article class="panel record-card">
-              <header>
-                <div>
-                  <span class="row-number">Synced {{ record.syncedAt ? (record.syncedAt | date: 'medium') : 'Unknown time' }}</span>
-                  <span class="record-status">{{ record.total }} rows</span>
-                </div>
-                @if (auth.isManager()) {
-                  <button class="icon-button" type="button" (click)="deleteSnapshot(record.id)" aria-label="Delete sync history snapshot">
-                    <svg lucideTrash2></svg>
-                  </button>
-                }
-              </header>
-              <div class="record-meta">
-                <span>Active {{ record.active }}</span>
-                <span>Overdue {{ record.overdue }}</span>
-                <span>Evictable {{ record.evictable }}</span>
-              </div>
-            </article>
-          }
+        <div class="panel table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Active</th>
+                <th>Overdue</th>
+                <th>Evictable</th>
+                <th>Synced by</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (record of snapshotList(); track record.id) {
+                <tr>
+                  <td>{{ record.syncedAt ? (record.syncedAt | date: 'medium') : 'Unknown time' }}</td>
+                  <td>{{ record.active }}</td>
+                  <td>{{ record.overdue }}</td>
+                  <td>{{ record.evictable }}</td>
+                  <td><code>{{ userDisplayName(record.createdBy) }}</code></td>
+                  <td>
+                    @if (auth.isManager()) {
+                      <button class="icon-button" type="button" (click)="deleteSnapshot(record.id)" aria-label="Delete sync history snapshot">
+                        <svg lucideTrash2></svg>
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
         </div>
       } @else if (filteredRecords().length) {
         @if (isNoticeView()) {
@@ -225,19 +232,17 @@ type NoticeView =
       .summary-grid .overdue b { color: var(--warning); }
       .summary-grid .eviction b { color: var(--danger); }
       .synced { margin: 9px 0 20px; text-align: right; }
-      .mapping-warning { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--warning-soft); color: var(--warning-ink); }
-      .mapping-warning svg { width: 18px; }
       .record-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
-      .record-card { padding: 14px; display: grid; gap: 8px; min-height: 70px; }
-      .record-card header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-      .record-card header div { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .record-card { padding: 14px; display: grid; gap: 8px; min-width: 50px; min-height: 50px; }
+      .record-card header { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+      .record-card .record-header-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; min-width: 0; }
       .record-card .row-number { color: var(--muted); font-size: 0.82rem; }
-      .record-card .record-status { padding: 4px 8px; border-radius: 999px; background: var(--neutral-soft); font-size: 0.72rem; }
+      .record-card .record-status { padding: 4px 10px; border-radius: 999px; background: var(--neutral-soft); font-size: 0.72rem; }
+      .record-card .record-meta-item { color: var(--muted); font-size: 0.78rem; }
       .icon-button { border: none !important; background: transparent; color: var(--danger); padding: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: none; }
       .icon-button svg { width: 18px; height: 18px; }
-      .record-card .record-status { padding: 4px 10px; border-radius: 999px; background: var(--neutral-soft); font-size: 0.72rem; }
       .record-card button:not(.icon-button) { border: 1px solid var(--danger); border-radius: 8px; padding: 8px 12px; background: var(--surface); color: var(--danger); display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
-      .record-meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 0.78rem; }
+      .record-meta { display: none; }
       .record-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
       .record-details div { display: grid; gap: 4px; }
       .record-details strong { color: var(--muted); font-weight: 700; }
@@ -261,6 +266,7 @@ export class NoticesComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly notices = inject(NoticeService);
   readonly auth = inject(AuthService);
+  private readonly snackBar = inject(MatSnackBar);
   readonly mode = toSignal(this.route.data.pipe(map((data) => data['mode'] as NoticeView)), {
     initialValue: 'sync' as NoticeView,
   });
@@ -270,6 +276,8 @@ export class NoticesComponent {
   readonly error = signal('');
   readonly success = signal('');
   readonly copiedRow = signal<number | null>(null);
+  readonly userService = inject(UserService);
+  readonly users = toSignal(this.userService.all().pipe(map((x) => x.items)), { initialValue: [] });
   rawData = '';
 
   readonly title = computed(() => ({
@@ -310,6 +318,12 @@ export class NoticesComponent {
     this.load();
   }
 
+  userDisplayName(userId?: string | null) {
+    if (!userId) return 'Unknown';
+    const user = this.users().find((user) => user.id === userId);
+    return user?.displayName ?? user?.username ?? 'Unknown';
+  }
+
   sync() {
     if (!this.rawData.trim() || this.syncing()) return;
     this.syncing.set(true);
@@ -319,6 +333,13 @@ export class NoticesComponent {
       next: (snapshot) => {
         this.snapshot.set(snapshot);
         this.success.set(`Synced ${snapshot.total} property rows successfully.`);
+        if (snapshot.unmappedTenants > 0) {
+          this.snackBar.open(
+            `${snapshot.unmappedTenants} renter(s) could not be mapped to a tenant Discord ID.`,
+            'Dismiss',
+            { duration: 7000, panelClass: ['warning-toast'] },
+          );
+        }
         this.loadSnapshots();
         this.syncing.set(false);
       },

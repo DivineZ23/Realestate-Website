@@ -160,7 +160,7 @@ public sealed class RentSyncService(
 
     private static RentSyncSnapshotDto Map(RentSyncSnapshot? snapshot)
     {
-        if (snapshot is null) return new(string.Empty, null, 0, 0, 0, 0, 0, 0, []);
+        if (snapshot is null) return new(string.Empty, null, null, 0, 0, 0, 0, 0, 0, Array.Empty<RentSyncRecordDto>());
         var evictionDate = snapshot.UpdatedAt.Date.AddDays(7);
         var records = snapshot.Records.Select(record => new RentSyncRecordDto(
             record.RowNumber, record.Status, record.PaidThrough, record.Address, record.Interior,
@@ -170,6 +170,7 @@ public sealed class RentSyncService(
             record.Status == "evictable" ? EvictionNotice(record) : null)).ToList();
         return new(
             snapshot.Id,
+            snapshot.CreatedBy,
             snapshot.UpdatedAt,
             records.Count,
             records.Count(x => x.Status == "paid"),

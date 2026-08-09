@@ -54,7 +54,8 @@ public static class PropertyTypeMetadata
     };
 }
 public enum TenantStatus { Active, Evicted, Ended }
-public enum UserRole { Agent, Manager, Owner }
+// Explicit values preserve the roles already stored as numeric enum values in MongoDB.
+public enum UserRole { Agent = 0, Manager = 1, Owner = 2, SeniorAgent = 3 }
 public enum ApprovalStatus { Pending, Approved, Rejected }
 public enum AccessStatus { Active, Pending, Revoked }
 public enum EnquiryStatus { New, Contacted, ViewingScheduled, Booked, Closed, Rejected }

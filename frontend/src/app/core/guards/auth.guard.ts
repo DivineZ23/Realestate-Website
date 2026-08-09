@@ -1,7 +1,8 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import { ActivatedRouteSnapshot, CanActivateFn, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { AuthService } from '../services/auth.service';
+import { PageAccessService } from '../services/page-access.service';
 
 export const authGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
@@ -32,4 +33,12 @@ export const managerGuard: CanActivateFn = () => {
           : router.createUrlTree(['/dashboard']),
       ),
     );
+};
+
+export const pageAccessGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
+  const access = inject(PageAccessService);
+  const router = inject(Router);
+  const resource = route.data['accessKey'] as string | undefined;
+  if (!resource) return true;
+  return access.load().pipe(map(() => access.canAccess(resource) ? true : router.createUrlTree(['/dashboard'])));
 };

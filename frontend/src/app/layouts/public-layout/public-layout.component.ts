@@ -3,6 +3,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { LucideLogIn, LucideMenu, LucideX } from '@lucide/angular';
 import { AuthService } from '../../core/services/auth.service';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
+import { SiteCreditComponent } from '../../shared/components/site-credit/site-credit.component';
 
 @Component({
   selector: 'app-public-layout',
@@ -11,6 +12,7 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
     RouterLinkActive,
     RouterOutlet,
     ThemeToggleComponent,
+    SiteCreditComponent,
     LucideLogIn,
     LucideMenu,
     LucideX,
@@ -54,47 +56,28 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
       </div>
     </header>
     <main><router-outlet /></main>
-    <footer>
-      <div class="container footer-grid">
-        <div>
-          <a routerLink="/" class="brand light"
-            ><img src="/assets/imperial-estates-logo.png" alt="" /><strong
-              >Imperial Estates</strong
-            ></a
-          >
-          <p>
-            Considered homes. Responsive management.<br />Clear relationships from enquiry to
-            move-in.
-          </p>
-        </div>
-        <div>
-          <h3>Explore</h3>
-          <a routerLink="/properties">Available properties</a
-          ><a routerLink="/about">About our team</a>
-        </div>
-        <div>
-          <h3>Contact</h3>
-          <a href="mailto:hello@imperialestates.example">hello@imperialestates.example</a
-          ><a href="tel:+15550194000">+1 555 019 4000</a>
-        </div>
-      </div>
-      <div class="container legal">
-        <span>© {{ year }} Imperial Estates</span><span>Privacy · Accessibility</span>
-      </div>
-    </footer>
+    <app-site-credit />
   `,
   styles: [
     `
+      :host {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      main {
+        flex: 1;
+      }
       .site-header {
         position: sticky;
         top: 0;
         z-index: 30;
         background: var(--header-bg);
-        backdrop-filter: blur(16px);
+        backdrop-filter: blur(18px);
         border-bottom: 1px solid var(--header-border);
       }
       .nav {
-        height: 78px;
+        height: 70px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -105,30 +88,34 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         gap: 11px;
       }
       .brand img {
-        width: 44px;
-        height: 44px;
+        width: 40px;
+        height: 40px;
         object-fit: cover;
-        border-radius: 50%;
+        border-radius: 10px;
         box-shadow: 0 0 0 1px var(--border);
       }
       .brand strong {
-        font-family: Georgia, serif;
-        font-size: 1.08rem;
-        font-weight: 500;
+        font-size: 1rem;
+        font-weight: 750;
+        letter-spacing: -.02em;
       }
       nav {
         display: flex;
         align-items: center;
-        gap: 30px;
+        gap: 8px;
       }
       nav > a {
         font-size: 0.87rem;
         color: var(--muted);
         font-weight: 650;
+        position: relative;
+        padding: 7px 10px;
+        border-radius: 7px;
       }
       nav > a.active,
       nav > a:hover {
-        color: var(--ink);
+        color: var(--forest);
+        background: var(--forest-light);
       }
       .menu {
         display: none;
@@ -150,49 +137,6 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         width: 17px;
         height: 17px;
       }
-      footer {
-        background: var(--contrast-surface);
-        color: var(--contrast-text);
-        padding: 72px 0 24px;
-      }
-      .footer-grid {
-        display: grid;
-        grid-template-columns: 2fr 1fr 1.4fr;
-        gap: 50px;
-      }
-      .brand.light img {
-        width: 48px;
-        height: 48px;
-        box-shadow: 0 0 0 1px var(--contrast-border);
-      }
-      .footer-grid p {
-        color: var(--contrast-muted);
-        margin-top: 22px;
-      }
-      .footer-grid h3 {
-        color: var(--contrast-subtle);
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-        font-size: 0.72rem;
-      }
-      .footer-grid > div:not(:first-child) {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-      .footer-grid a:not(.brand) {
-        color: var(--contrast-link);
-        font-size: 0.86rem;
-      }
-      .legal {
-        display: flex;
-        justify-content: space-between;
-        border-top: 1px solid var(--contrast-border);
-        margin-top: 64px;
-        padding-top: 24px;
-        color: var(--contrast-subtle);
-        font-size: 0.75rem;
-      }
       @media (max-width: 720px) {
         .menu {
           display: block;
@@ -202,7 +146,7 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
           position: absolute;
           left: 14px;
           right: 14px;
-          top: 70px;
+          top: 66px;
           padding: 24px;
           background: var(--surface);
           border: 1px solid var(--border);
@@ -215,21 +159,12 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         nav.open {
           display: flex;
         }
-        .footer-grid {
-          grid-template-columns: 1fr;
-          gap: 32px;
-        }
-        .legal {
-          gap: 20px;
-          flex-direction: column;
-        }
       }
     `,
   ],
 })
 export class PublicLayoutComponent {
   readonly menuOpen = signal(false);
-  readonly year = new Date().getFullYear();
   private auth = inject(AuthService);
   signIn() {
     this.auth.signIn();

@@ -146,8 +146,8 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
       }
       .financial-stats article {
         display: grid;
-        min-height: 142px;
-        padding: 20px;
+        min-height: 124px;
+        padding: 18px;
       }
       .financial-stats span,
       .financial-stats small {
@@ -161,8 +161,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         text-overflow: ellipsis;
       }
       .financial-stats .profit {
-        border-color: var(--forest);
-        background: var(--forest-light);
+        border-left: 3px solid var(--forest);
       }
       .financial-stats .negative {
         border-color: var(--danger);
@@ -177,8 +176,8 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
       .stats article {
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 20px;
+        border-radius: var(--radius-md);
+        padding: 17px;
         display: grid;
       }
       .stats span,
@@ -191,20 +190,22 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         margin: 10px 0;
       }
       .stats .available {
-        background: var(--forest);
-        color: var(--on-primary);
+        border-left: 3px solid var(--forest);
+        background: var(--surface);
+        color: var(--ink);
       }
       .stats .available span,
       .stats .available small {
-        color: inherit;
+        color: var(--muted);
       }
+      .stats .available b { color: var(--forest); }
       .dashboard-grid {
         display: grid;
         grid-template-columns: 1.4fr 0.6fr;
         gap: 20px;
       }
       .activity {
-        padding: 24px;
+        padding: 20px;
       }
       .panel-head {
         display: flex;
@@ -266,7 +267,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         gap: 20px;
       }
       .actions {
-        padding: 24px;
+        padding: 20px;
       }
       .actions a {
         display: flex;
@@ -290,7 +291,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         font-size: 0.8rem;
       }
       .occupancy {
-        padding: 24px;
+        padding: 20px;
         display: flex;
         align-items: center;
         gap: 20px;

@@ -15,6 +15,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/management.services';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
+import { USER_ROLES } from '../../core/constants/user-role.constants';
 
 @Component({
   selector: 'app-user-management',
@@ -54,7 +55,7 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
             <h2>{{ user.displayName }}</h2>
             <p>@{{ user.username }}</p>
             <div class="badges">
-              <span [class.owner]="user.role === 'owner'">{{ user.role | titlecase }}</span
+              <span [class.owner]="user.role === 'owner'">{{ roleLabel(user.role) }}</span
               ><span>{{ user.approvalStatus | titlecase }}</span
               ><span [class.revoked]="user.accessStatus === 'revoked'">{{
                 user.accessStatus | titlecase
@@ -81,14 +82,14 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
             @if (
               user.approvalStatus === 'approved' &&
               user.accessStatus === 'active' &&
-              user.role === 'agent' &&
+              (user.role === 'agent' || user.role === 'seniorAgent') &&
               auth.isOwner()
             ) {
               <button (click)="simple(user, 'promote')">
-                <svg lucideShieldCheck></svg>Promote to Manager
+                <svg lucideShieldCheck></svg>{{ user.role === 'agent' ? 'Promote to Senior Agent' : 'Promote to Manager' }}
               </button>
             }
-            @if (user.role === 'manager' && auth.isOwner()) {
+            @if ((user.role === 'manager' || user.role === 'seniorAgent') && auth.isOwner()) {
               <button class="danger" (click)="reason(user, 'demote')">
                 <svg lucideShieldMinus></svg>Demote
               </button>
@@ -273,6 +274,7 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
   ],
 })
 export class UserManagementComponent {
+  readonly roleLabel = (role: keyof typeof USER_ROLES) => USER_ROLES[role];
   readonly auth = inject(AuthService);
   private service = inject(UserService);
   private dialog = inject(MatDialog);
@@ -283,6 +285,7 @@ export class UserManagementComponent {
   readonly tabs = [
     { key: 'pending', label: 'Pending approval' },
     { key: 'agents', label: 'Active agents' },
+    { key: 'seniorAgents', label: 'Senior agents' },
     { key: 'managers', label: 'Managers' },
     { key: 'owners', label: 'Owner' },
     { key: 'revoked', label: 'Revoked' },
@@ -298,6 +301,8 @@ export class UserManagementComponent {
         ? { approval: 'pending' as const }
         : this.activeTab() === 'agents'
           ? { approval: 'approved' as const, access: 'active' as const, role: 'agent' as const }
+          : this.activeTab() === 'seniorAgents'
+            ? { approval: 'approved' as const, access: 'active' as const, role: 'seniorAgent' as const }
           : this.activeTab() === 'managers'
             ? { approval: 'approved' as const, role: 'manager' as const }
             : this.activeTab() === 'owners'
@@ -309,7 +314,7 @@ export class UserManagementComponent {
   }
   canChangeAccess(user: User): boolean {
     if (user.role === 'owner' || user.id === this.auth.user()?.id) return false;
-    return this.auth.isOwner() || user.role === 'agent';
+    return this.auth.isOwner() || user.role === 'agent' || user.role === 'seniorAgent';
   }
   simple(user: User, action: 'approve' | 'promote' | 'restore') {
     this.confirm(user, action, false);

@@ -21,4 +21,8 @@ public sealed class NoticesController(RentSyncService service) : ControllerBase
 
     [Authorize(Policy = "Manager"), HttpDelete("snapshots/{id}")]
     public Task Delete(string id, CancellationToken ct) => service.DeleteAsync(id, User.UserId(), ct);
+
+    [Authorize(Policy = "ApprovedUser"), HttpPatch("snapshots/{snapshotId}/records/{rowNumber:int}/resolution")]
+    public Task<RentSyncSnapshotDto> SetResolution(string snapshotId, int rowNumber, SetNoticeResolutionRequest request, CancellationToken ct) =>
+        service.SetResolutionAsync(snapshotId, rowNumber, request.IsResolved, User.UserId(), ct);
 }

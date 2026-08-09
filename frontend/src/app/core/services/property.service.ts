@@ -4,6 +4,7 @@ import { API_ENDPOINTS } from '../config/api-endpoints';
 import { PagedResult } from '../models/api.models';
 import {
   AssignTenantRequest,
+  EvictTenantRequest,
   Property,
   PropertyQuery,
   PublicProperty,
@@ -51,8 +52,8 @@ export class PropertyService {
   assignTenant(id: string, body: AssignTenantRequest): Observable<Property> {
     return this.api.post(`${API_ENDPOINTS.properties.root}/${id}/assign-tenant`, body);
   }
-  evict(id: string, reason?: string): Observable<Property> {
-    return this.api.post(`${API_ENDPOINTS.properties.root}/${id}/evict`, { reason });
+  evict(id: string, request: EvictTenantRequest): Observable<Property> {
+    return this.api.post(`${API_ENDPOINTS.properties.root}/${id}/evict`, request);
   }
   history(id: string): Observable<StatusHistory[]> {
     return this.api.get(`${API_ENDPOINTS.properties.root}/${id}/history`);

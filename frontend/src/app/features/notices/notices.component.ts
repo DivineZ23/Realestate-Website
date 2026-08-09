@@ -6,15 +6,17 @@ import { ActivatedRoute } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import {
   LucideClipboardPaste,
+  LucideChevronDown,
+  LucideCircleCheck,
   LucideCopy,
+  LucideImages,
+  LucidePhone,
   LucideRefreshCw,
-  LucideSiren,
-  LucideTriangleAlert,
   LucideTrash2,
 } from '@lucide/angular';
 import { map } from 'rxjs';
-import { RentSyncRecord, RentSyncSnapshot } from '../../core/models/management.models';
-import { NoticeService, UserService } from '../../core/services/management.services';
+import { EvictionHistory, RentSyncRecord, RentSyncSnapshot } from '../../core/models/management.models';
+import { NoticeService, TenantService, UserService } from '../../core/services/management.services';
 import { AuthService } from '../../core/services/auth.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 
@@ -27,6 +29,15 @@ type NoticeView =
   | 'overdueNotice'
   | 'evictionNotice';
 
+interface NoticeDayGroup {
+  key: string;
+  snapshotId: string;
+  syncedAt?: string;
+  records: RentSyncRecord[];
+  unresolved: number;
+}
+interface EvictionDayGroup { key: string; date: string; records: EvictionHistory[]; }
+
 @Component({
   selector: 'app-notices',
   imports: [
@@ -35,10 +46,12 @@ type NoticeView =
     FormsModule,
     EmptyStateComponent,
     LucideClipboardPaste,
+    LucideChevronDown,
+    LucideCircleCheck,
     LucideCopy,
+    LucideImages,
+    LucidePhone,
     LucideRefreshCw,
-    LucideSiren,
-    LucideTriangleAlert,
     LucideTrash2,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -111,7 +124,7 @@ type NoticeView =
         </div>
       }
       @if (data.syncedAt) {
-        <p class="synced">Last synced {{ data.syncedAt | date: 'medium' }}</p>
+        <p class="synced">Last synced {{ data.syncedAt | date: 'mediumDate' }} at {{ data.syncedAt | date: 'shortTime' }}</p>
       }
     }
 
@@ -124,7 +137,30 @@ type NoticeView =
           <p class="message error">{{ error() }}</p>
         }
       }
-      @if (isSyncedDataRecords()) {
+      @if (mode() === 'evictionList') {
+        @if (evictionGroups().length) {
+          <div class="notice-groups eviction-history">
+            @for (group of evictionGroups(); track group.key) {
+              <section class="panel day-section">
+                <button class="day-header" type="button" (click)="toggleEvictionGroup(group.key)" [attr.aria-expanded]="isEvictionGroupOpen(group.key)">
+                  <span class="day-title"><svg lucideChevronDown [class.closed]="!isEvictionGroupOpen(group.key)"></svg><span><b>{{ group.date | date: 'fullDate' }}</b><small>{{ group.records.length }} {{ group.records.length === 1 ? 'eviction' : 'evictions' }}</small></span></span>
+                </button>
+                @if (isEvictionGroupOpen(group.key)) {
+                  <div class="day-content">
+                    @for (eviction of group.records; track eviction.id) {
+                      <article class="eviction-history-card">
+                        <time>{{ eviction.evictedAt | date: 'shortTime' }}</time>
+                        <div class="eviction-row"><div><small>Property name</small><b>{{ eviction.propertyName || 'Unknown property' }}</b></div><div><small>Owner name</small><b>{{ eviction.tenantName }}</b></div><div><small>CID</small><b>{{ eviction.cid || 'N/A' }}</b></div><div><small>Number</small><b>{{ eviction.phoneNumber }}</b></div><div><small>Storage images</small>@if (eviction.storageImageUrls.length) { <button class="image-toggle" type="button" (click)="toggleImages(eviction.id)"><svg lucideImages></svg>{{ eviction.storageImageUrls.length }}</button> } @else { <span class="no-evidence">None</span> }</div></div>
+                        @if (imagesOpen()[eviction.id]) { <div class="evidence-grid">@for (image of eviction.storageImageUrls; track image) { <a [href]="image" target="_blank" rel="noopener"><img [src]="image" alt="Storage evidence" /></a> }</div> }
+                      </article>
+                    }
+                  </div>
+                }
+              </section>
+            }
+          </div>
+        } @else { <div class="panel"><app-empty-state title="No completed evictions" message="Completed eviction records will appear here." /></div> }
+      } @else if (isSyncedDataRecords()) {
         <div class="panel table-wrap">
           <table class="data-table">
             <thead>
@@ -141,7 +177,7 @@ type NoticeView =
               @for (record of snapshotList(); track record.id) {
                 <tr>
                   <td>
-                    {{ record.syncedAt ? (record.syncedAt | date: 'medium') : 'Unknown time' }}
+                    {{ record.syncedAt ? (record.syncedAt | date: 'mediumDate') : 'Unknown date' }} @if (record.syncedAt) { at {{ record.syncedAt | date: 'shortTime' }} }
                   </td>
                   <td>{{ record.active }}</td>
                   <td>{{ record.overdue }}</td>
@@ -166,30 +202,52 @@ type NoticeView =
             </tbody>
           </table>
         </div>
+      } @else if (isNoticeView() && noticeGroups().length) {
+        <div class="notice-groups">
+          @for (group of noticeGroups(); track group.key) {
+            <section class="panel day-section" [class.complete]="group.unresolved === 0">
+              <button class="day-header" type="button" (click)="toggleGroup(group.key)" [attr.aria-expanded]="isGroupOpen(group.key)">
+                <span class="day-title"><svg lucideChevronDown [class.closed]="!isGroupOpen(group.key)"></svg><span><b>{{ group.syncedAt | date: 'fullDate' }}</b><small>{{ group.records.length }} {{ group.records.length === 1 ? 'notice' : 'notices' }}</small></span></span>
+                @if (group.unresolved === 0) {
+                  <span class="group-status resolved"><svg lucideCircleCheck></svg>Complete</span>
+                } @else {
+                  <span class="group-status">{{ group.unresolved }} unresolved</span>
+                }
+              </button>
+              @if (isGroupOpen(group.key)) {
+                <div class="day-content">
+                  @for (record of group.records; track record.rowNumber) {
+                    <article class="notice-card" [class.resolved-card]="record.isResolved">
+                      <div class="notice-message">
+                        <div class="notice-text">{{ noticeText(record) }}</div>
+                        <button class="copy message-action" type="button" (click)="copyNotice(group.snapshotId, record)">
+                          <svg lucideCopy></svg>{{ copiedRow() === recordKey(group.snapshotId, record) ? 'Copied' : 'Copy' }}
+                        </button>
+                        @if (mode() === 'overdueNotice') {
+                          <button class="phone-copy message-action" type="button" [disabled]="!record.phone" (click)="copyPhone(record)">
+                            <svg lucidePhone></svg>{{ copiedPhone() === recordKey(group.snapshotId, record) ? 'Copied' : (record.phone || 'No number') }}
+                          </button>
+                        }
+                        <label class="resolve-control message-resolve">
+                          <input type="checkbox" [checked]="record.isResolved" [disabled]="resolvingRow() === recordKey(group.snapshotId, record)" (change)="setResolution(group, record, $any($event.target).checked)" />
+                          <span>Mark as resolved</span>
+                        </label>
+                      </div>
+                      @if (record.isResolved) {
+                        <p class="resolved-by"><svg lucideCircleCheck></svg>Resolved by <b>{{ record.resolvedByDisplayName || 'Unknown user' }}</b>@if (record.resolvedAt) { <span>&middot; {{ record.resolvedAt | date: 'mediumDate' }} at {{ record.resolvedAt | date: 'shortTime' }}</span> }</p>
+                      }
+                      @if (!record.discordId && mode() === 'evictionNotice') {
+                        <p class="unmapped">Discord ID not found for CID {{ record.cid }}.</p>
+                      }
+                    </article>
+                  }
+                </div>
+              }
+            </section>
+          }
+        </div>
       } @else if (filteredRecords().length) {
         @if (isNoticeView()) {
-          <div class="notice-list">
-            @for (record of filteredRecords(); track record.rowNumber) {
-              <article class="panel notice-card">
-                <header>
-                  <span>
-                    @if (mode() === 'overdueNotice') {
-                      <svg lucideTriangleAlert></svg>Overdue Payment Notice
-                    } @else {
-                      <svg lucideSiren></svg>Eviction Notice
-                    }
-                  </span>
-                  <button class="copy" (click)="copyNotice(record)">
-                    <svg lucideCopy></svg>{{ copiedRow() === record.rowNumber ? 'Copied' : 'Copy' }}
-                  </button>
-                </header>
-                <pre>{{ noticeText(record) }}</pre>
-                @if (!record.discordId && mode() === 'evictionNotice') {
-                  <p class="unmapped">Discord ID not found for CID {{ record.cid }}.</p>
-                }
-              </article>
-            }
-          </div>
         } @else {
           <div class="panel table-wrap">
             <table class="data-table">
@@ -431,48 +489,6 @@ type NoticeView =
         color: var(--muted);
         font-weight: 700;
       }
-      .notice-list {
-        display: grid;
-        gap: 14px;
-      }
-      .notice-card {
-        padding: 20px;
-      }
-      .notice-card header,
-      .notice-card header span,
-      .copy {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .notice-card header {
-        justify-content: space-between;
-        color: var(--ink);
-        font-weight: 700;
-      }
-      .notice-card header svg,
-      .copy svg {
-        width: 17px;
-        height: 17px;
-      }
-      .copy {
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 7px 10px;
-        background: transparent;
-        color: var(--ink);
-        cursor: pointer;
-      }
-      pre {
-        margin: 18px 0 0;
-        padding: 16px;
-        white-space: pre-wrap;
-        overflow-wrap: anywhere;
-        border-radius: var(--radius-sm);
-        background: var(--surface-soft);
-        color: var(--muted);
-        font: 0.8rem/1.7 monospace;
-      }
       .unmapped {
         margin: 10px 0 0;
         font-size: 0.78rem;
@@ -517,10 +533,17 @@ export class NoticesComponent {
   });
   readonly snapshot = signal<RentSyncSnapshot | null>(null);
   readonly snapshotList = signal<RentSyncSnapshot[]>([]);
+  readonly evictionHistory = signal<EvictionHistory[]>([]);
   readonly syncing = signal(false);
   readonly error = signal('');
   readonly success = signal('');
-  readonly copiedRow = signal<number | null>(null);
+  readonly copiedRow = signal<string | null>(null);
+  readonly copiedPhone = signal<string | null>(null);
+  readonly resolvingRow = signal<string | null>(null);
+  readonly expandedDays = signal<Record<string, boolean>>({});
+  readonly expandedEvictionDays = signal<Record<string, boolean>>({});
+  readonly imagesOpen = signal<Record<string, boolean>>({});
+  private readonly tenantService = inject(TenantService);
   readonly userService = inject(UserService);
   readonly users = toSignal(this.userService.all().pipe(map((x) => x.items)), { initialValue: [] });
   rawData = '';
@@ -567,9 +590,46 @@ export class NoticesComponent {
     () => this.mode() === 'overdueNotice' || this.mode() === 'evictionNotice',
   );
   readonly isSyncedDataRecords = computed(() => this.mode() === 'syncedDataRecords');
+  readonly noticeGroups = computed<NoticeDayGroup[]>(() => {
+    if (!this.isNoticeView()) return [];
+    const status = this.mode() === 'overdueNotice' ? 'overdue' : 'evictable';
+    const latestByDay = new Map<string, RentSyncSnapshot>();
+    for (const snapshot of this.snapshotList()) {
+      const key = this.dayKey(snapshot.syncedAt, snapshot.id);
+      if (!latestByDay.has(key)) latestByDay.set(key, snapshot);
+    }
+    return Array.from(latestByDay.entries())
+      .map(([key, snapshot]) => {
+        const records = snapshot.records.filter((record) => record.status === status);
+        return {
+          key,
+          snapshotId: snapshot.id,
+          syncedAt: snapshot.syncedAt,
+          records,
+          unresolved: records.filter((record) => !record.isResolved).length,
+        };
+      })
+      .filter((group) => group.records.length > 0);
+  });
+  readonly evictionGroups = computed<EvictionDayGroup[]>(() => {
+    const groups = new Map<string, EvictionHistory[]>();
+    for (const record of this.evictionHistory()) {
+      const key = this.dayKey(record.evictedAt, record.id);
+      groups.set(key, [...(groups.get(key) ?? []), record]);
+    }
+    return Array.from(groups.entries()).map(([key, records]) => ({ key, date: records[0].evictedAt, records }));
+  });
 
   constructor() {
     this.load();
+    this.tenantService.evictions().subscribe({
+      next: (values) => {
+        this.evictionHistory.set(values);
+        const first = this.evictionGroups()[0]?.key;
+        if (first) this.expandedEvictionDays.set({ [first]: true });
+      },
+      error: () => this.evictionHistory.set([]),
+    });
   }
 
   userDisplayName(userId?: string | null) {
@@ -618,10 +678,55 @@ export class NoticesComponent {
       : (record.evictionNotice ?? '');
   }
 
-  async copyNotice(record: RentSyncRecord) {
+  async copyNotice(snapshotId: string, record: RentSyncRecord) {
     await navigator.clipboard.writeText(this.noticeText(record));
-    this.copiedRow.set(record.rowNumber);
+    this.copiedRow.set(this.recordKey(snapshotId, record));
     window.setTimeout(() => this.copiedRow.set(null), 1600);
+  }
+
+  async copyPhone(record: RentSyncRecord) {
+    if (!record.phone) return;
+    const group = this.noticeGroups().find((value) => value.records.includes(record));
+    if (!group) return;
+    const key = this.recordKey(group.snapshotId, record);
+    await navigator.clipboard.writeText(record.phone);
+    this.copiedPhone.set(key);
+    window.setTimeout(() => this.copiedPhone.set(null), 1600);
+  }
+
+  recordKey(snapshotId: string, record: RentSyncRecord) {
+    return `${snapshotId}:${record.rowNumber}`;
+  }
+
+  isGroupOpen(key: string) {
+    return this.expandedDays()[key] ?? false;
+  }
+
+  toggleGroup(key: string) {
+    this.expandedDays.update((values) => ({ ...values, [key]: !values[key] }));
+  }
+  isEvictionGroupOpen(key: string) { return this.expandedEvictionDays()[key] ?? false; }
+  toggleEvictionGroup(key: string) { this.expandedEvictionDays.update((values) => ({ ...values, [key]: !values[key] })); }
+  toggleImages(id: string) { this.imagesOpen.update((values) => ({ ...values, [id]: !values[id] })); }
+
+  setResolution(group: NoticeDayGroup, record: RentSyncRecord, isResolved: boolean) {
+    const key = this.recordKey(group.snapshotId, record);
+    if (this.resolvingRow()) return;
+    this.resolvingRow.set(key);
+    this.notices.setResolution(group.snapshotId, record.rowNumber, isResolved).subscribe({
+      next: (updated) => {
+        this.snapshotList.update((values) => values.map((value) => value.id === updated.id ? updated : value));
+        if (this.snapshot()?.id === updated.id) this.snapshot.set(updated);
+        const status = this.mode() === 'overdueNotice' ? 'overdue' : 'evictable';
+        const unresolved = updated.records.filter((value) => value.status === status && !value.isResolved).length;
+        this.expandedDays.update((values) => ({ ...values, [group.key]: unresolved > 0 }));
+        this.resolvingRow.set(null);
+      },
+      error: () => {
+        this.snackBar.open('The notice resolution could not be updated.', 'Dismiss', { duration: 4000, panelClass: ['error-toast'] });
+        this.resolvingRow.set(null);
+      },
+    });
   }
 
   deleteSnapshot(id: string) {
@@ -662,8 +767,20 @@ export class NoticesComponent {
 
   private loadSnapshots() {
     this.notices.snapshots().subscribe({
-      next: (snapshots) => this.snapshotList.set(snapshots),
+      next: (snapshots) => {
+        this.snapshotList.set(snapshots);
+        const defaults = { ...this.expandedDays() };
+        for (const group of this.noticeGroups())
+          if (defaults[group.key] === undefined) defaults[group.key] = group.unresolved > 0;
+        this.expandedDays.set(defaults);
+      },
       error: () => this.snapshotList.set([]),
     });
+  }
+
+  private dayKey(value: string | undefined, fallback: string) {
+    if (!value) return fallback;
+    const date = new Date(value);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   }
 }

@@ -26,6 +26,7 @@ public sealed record PropertyDto(
     string? Storage, decimal Rent, decimal? SecurityDeposit, PropertyStatus Status,
     int? Bedrooms, int? Bathrooms, int? Floor, decimal? Area, string? FurnishingStatus,
     IReadOnlyList<string> Amenities, IReadOnlyList<string> Images, string? CurrentTenantId,
+    string? TenantName, int? TenantCid, string? TenantPhoneNumber, DateTime? RentPaidThrough, string? RentalStatus,
     string? BookedByEnquiryId, string? UnavailableReason, bool IsFeatured, bool IsActive,
     DateTime CreatedAt, DateTime UpdatedAt);
 
@@ -49,7 +50,7 @@ public sealed record AssignTenantRequest(
     DateTime StartDate, DateTime? ExpectedEndDate, decimal? MonthlyRent, decimal? SecurityDeposit,
     string? EmergencyContact, string? Notes);
 
-public sealed record EvictTenantRequest(string? Reason);
+public sealed record EvictTenantRequest(string? Reason, IReadOnlyList<string>? StorageImageUrls);
 
 public sealed record PropertyStatusHistoryDto(
     string Id, PropertyStatus PreviousStatus, PropertyStatus NewStatus, string? Reason,

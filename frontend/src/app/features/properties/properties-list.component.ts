@@ -24,10 +24,11 @@ import { BlockService } from '../../core/services/management.services';
 import { PropertyService } from '../../core/services/property.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { PropertyCardComponent } from '../../shared/components/property-card/property-card.component';
+import { LucideSearch, LucideSlidersHorizontal, LucideX } from '@lucide/angular';
 
 @Component({
   selector: 'app-properties-list',
-  imports: [ReactiveFormsModule, PropertyCardComponent, EmptyStateComponent],
+  imports: [ReactiveFormsModule, PropertyCardComponent, EmptyStateComponent, LucideSearch, LucideSlidersHorizontal, LucideX],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<section class="page-head">
       <div class="container">
@@ -37,9 +38,10 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
       </div>
     </section>
     <section class="container listing">
+      <div class="filter-heading"><div><svg lucideSlidersHorizontal></svg><b>Refine your search</b></div><button type="button" (click)="clear()"><svg lucideX></svg>Clear filters</button></div>
       <form [formGroup]="filters" class="filters">
         <label class="search"
-          ><span>⌕</span
+          ><svg lucideSearch></svg
           ><input
             formControlName="search"
             placeholder="Search property, block or ID"
@@ -87,7 +89,7 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
           <option value="rent:asc">Rent: low to high</option>
           <option value="rent:desc">Rent: high to low</option>
           <option value="name:asc">Name</option></select
-        ><button type="button" (click)="clear()">Clear filters</button>
+        >
       </form>
       <div class="result-bar">
         <span
@@ -156,9 +158,32 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
         font-size: 1.04rem;
       }
       .listing {
-        padding: 34px 0 90px;
+        padding: 38px 0 90px;
       }
+      .filter-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .filter-heading > div,
+      .filter-heading button {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .filter-heading b { font-size: .86rem; }
+      .filter-heading svg { width: 16px; height: 16px; }
+      .filter-heading button {
+        border: 0; padding: 7px 9px; border-radius: 8px; background: transparent;
+        color: var(--muted); cursor: pointer; font-size: .78rem; font-weight: 650;
+      }
+      .filter-heading button:hover { color: var(--ink); background: var(--surface-muted); }
       .filters {
+        padding: 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--surface);
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
         gap: 10px;
@@ -168,26 +193,21 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
         width: 100%;
         height: 48px;
         border: 1px solid var(--border);
-        background: var(--surface);
-        border-radius: 10px;
+        background: var(--surface-strong);
+        border-radius: var(--radius-sm);
         padding: 0 12px;
         color: var(--ink);
-      }
-      .filters button {
-        border: 0;
-        background: transparent;
-        color: var(--muted);
-        cursor: pointer;
       }
       .search {
         position: relative;
         grid-column: span 2;
       }
-      .search span {
+      .search svg {
         position: absolute;
         left: 14px;
-        top: 10px;
-        font-size: 1.3rem;
+        top: 15px;
+        width: 18px;
+        height: 18px;
         color: var(--muted);
       }
       .search input {

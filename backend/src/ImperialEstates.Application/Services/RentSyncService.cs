@@ -11,6 +11,7 @@ namespace ImperialEstates.Application.Services;
 public sealed class RentSyncService(
     IRentSyncRepository snapshots,
     ITenantRepository tenants,
+    IUserRepository users,
     IAuditRepository audits)
 {
     private static readonly Regex RowPattern = new(
@@ -39,6 +40,43 @@ public sealed class RentSyncService(
         }, ct);
     }
 
+    public async Task<RentSyncSnapshotDto> SetResolutionAsync(string snapshotId, int rowNumber, bool isResolved, string actorId, CancellationToken ct)
+    {
+        var snapshot = await snapshots.GetByIdAsync(snapshotId, ct) ?? throw new KeyNotFoundException("Rent sync snapshot not found.");
+        var record = snapshot.Records.FirstOrDefault(x => x.RowNumber == rowNumber)
+            ?? throw new KeyNotFoundException("Notice record not found.");
+        if (record.Status is not ("overdue" or "evictable"))
+            throw new DomainRuleException("Only overdue and eviction notices can be resolved.", "NOTICE_NOT_RESOLVABLE");
+
+        if (isResolved)
+        {
+            var actor = await users.GetByIdAsync(actorId, ct) ?? throw new UnauthorizedAccessException();
+            record.IsResolved = true;
+            record.ResolvedByUserId = actorId;
+            record.ResolvedByDisplayName = actor.DisplayName;
+            record.ResolvedAt = DateTime.UtcNow;
+        }
+        else
+        {
+            record.IsResolved = false;
+            record.ResolvedByUserId = null;
+            record.ResolvedByDisplayName = null;
+            record.ResolvedAt = null;
+        }
+
+        snapshot.UpdatedBy = actorId;
+        await snapshots.UpdateAsync(snapshot, ct);
+        await audits.CreateAsync(new AuditLog
+        {
+            Action = isResolved ? "notice.resolved" : "notice.reopened",
+            EntityType = "rentSyncRecord",
+            EntityId = $"{snapshotId}:{rowNumber}",
+            PerformedByUserId = actorId,
+            Metadata = new Dictionary<string, object?> { ["status"] = record.Status, ["address"] = record.Address },
+        }, ct);
+        return Map(snapshot);
+    }
+
     public async Task<RentSyncSnapshotDto> SyncAsync(RentSyncRequest request, string actorId, CancellationToken ct)
     {
         var records = Parse(request.RawData);
@@ -56,6 +94,23 @@ public sealed class RentSyncService(
             if (!tenantByCid.TryGetValue(record.Cid!.Value, out var tenant)) continue;
             record.TenantId = tenant.Id;
             record.DiscordId = tenant.DiscordId;
+            var tenantChanged = false;
+            if (record.PaidThrough.HasValue && tenant.RentPaidThrough != record.PaidThrough)
+            {
+                tenant.RentPaidThrough = record.PaidThrough;
+                tenantChanged = true;
+            }
+            if (!string.Equals(tenant.RentalStatus, record.Status, StringComparison.OrdinalIgnoreCase))
+            {
+                tenant.RentalStatus = record.Status;
+                tenantChanged = true;
+            }
+            if (tenantChanged)
+            {
+                tenant.UpdatedAt = DateTime.UtcNow;
+                tenant.UpdatedBy = actorId;
+                await tenants.UpdateAsync(tenant, ct);
+            }
         }
 
         var snapshot = new RentSyncSnapshot
@@ -167,7 +222,8 @@ public sealed class RentSyncService(
             record.Cid, record.RenterName, record.Phone, record.Income, record.Cost,
             record.TenantId, record.DiscordId, !string.IsNullOrWhiteSpace(record.TenantId),
             record.Status == "overdue" ? OverdueNotice(record, evictionDate) : null,
-            record.Status == "evictable" ? EvictionNotice(record) : null)).ToList();
+            record.Status == "evictable" ? EvictionNotice(record) : null,
+            record.IsResolved, record.ResolvedByUserId, record.ResolvedByDisplayName, record.ResolvedAt)).ToList();
         return new(
             snapshot.Id,
             snapshot.CreatedBy,

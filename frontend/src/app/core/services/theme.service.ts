@@ -1,7 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { effect, inject, Injectable, signal } from '@angular/core';
 
-export type AppTheme = 'light' | 'dark';
+export type AppTheme = 'light' | 'dark' | 'graphite';
 
 const THEME_STORAGE_KEY = 'imperial-estates-theme';
 
@@ -15,7 +15,7 @@ export class ThemeService {
   }
 
   toggle() {
-    this.theme.update((theme) => (theme === 'light' ? 'dark' : 'light'));
+    this.theme.update((theme) => theme === 'light' ? 'dark' : theme === 'dark' ? 'graphite' : 'light');
   }
 
   setTheme(theme: AppTheme) {
@@ -28,7 +28,7 @@ export class ThemeService {
 
     try {
       const savedTheme = browserWindow.localStorage.getItem(THEME_STORAGE_KEY);
-      if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme;
+      if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'graphite') return savedTheme;
     } catch {
       // Browsers can disable storage; the system preference remains a safe fallback.
     }
@@ -39,9 +39,9 @@ export class ThemeService {
   private applyTheme(theme: AppTheme) {
     const root = this.document.documentElement;
     root.dataset['theme'] = theme;
-    root.style.colorScheme = theme;
+    root.style.colorScheme = theme === 'light' ? 'light' : 'dark';
 
-    const themeColor = theme === 'dark' ? '#080908' : '#173f38';
+    const themeColor = theme === 'light' ? '#f4f5f7' : theme === 'graphite' ? '#111214' : '#080908';
     this.document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeColor);
 
     try {

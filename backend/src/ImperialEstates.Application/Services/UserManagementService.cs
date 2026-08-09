@@ -47,9 +47,10 @@ public sealed class UserManagementService(IUserRepository users, IAuditRepositor
         RequireOwner(actor);
         if (id == actorId) throw new DomainRuleException("You cannot promote yourself.", "SELF_ROLE_CHANGE_FORBIDDEN");
         var target = await GetEntityAsync(id, ct);
-        if (target.Role != UserRole.Agent || target.ApprovalStatus != ApprovalStatus.Approved || target.AccessStatus != AccessStatus.Active)
-            throw new DomainRuleException("Only an approved active agent can be promoted.", "USER_NOT_ACTIVE");
-        return await MutateAsync(target, actorId, "user.promoted", user => user.Role = UserRole.Manager, null, ct);
+        if (target.Role is not (UserRole.Agent or UserRole.SeniorAgent) || target.ApprovalStatus != ApprovalStatus.Approved || target.AccessStatus != AccessStatus.Active)
+            throw new DomainRuleException("Only an approved active agent or senior agent can be promoted.", "USER_NOT_ACTIVE");
+        var nextRole = target.Role == UserRole.Agent ? UserRole.SeniorAgent : UserRole.Manager;
+        return await MutateAsync(target, actorId, "user.promoted", user => user.Role = nextRole, null, ct);
     }
 
     public async Task<UserDto> DemoteAsync(string id, string actorId, string? reason, CancellationToken ct)
@@ -60,9 +61,10 @@ public sealed class UserManagementService(IUserRepository users, IAuditRepositor
         RequireOwner(actor);
         var target = await GetEntityAsync(id, ct);
         ProtectOwner(target);
-        if (target.Role != UserRole.Manager)
-            throw new DomainRuleException("Only a manager can be demoted.", "USER_NOT_MANAGER");
-        return await MutateAsync(target, actorId, "user.demoted", user => user.Role = UserRole.Agent, reason, ct);
+        if (target.Role is not (UserRole.Manager or UserRole.SeniorAgent))
+            throw new DomainRuleException("Only a manager or senior agent can be demoted.", "USER_NOT_MANAGER");
+        var nextRole = target.Role == UserRole.Manager ? UserRole.SeniorAgent : UserRole.Agent;
+        return await MutateAsync(target, actorId, "user.demoted", user => user.Role = nextRole, reason, ct);
     }
 
     public async Task<UserDto> RevokeAsync(string id, string actorId, string? reason, CancellationToken ct)

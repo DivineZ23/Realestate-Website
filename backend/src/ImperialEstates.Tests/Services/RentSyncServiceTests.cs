@@ -3,6 +3,7 @@ using ImperialEstates.Application.DTOs;
 using ImperialEstates.Application.Interfaces;
 using ImperialEstates.Application.Services;
 using ImperialEstates.Domain.Entities;
+using ImperialEstates.Domain.Enums;
 
 namespace ImperialEstates.Tests.Services;
 
@@ -15,6 +16,7 @@ public sealed class RentSyncServiceTests
         var service = new RentSyncService(
             snapshots,
             new TenantRepository(new Tenant { Id = "tenant-1", Cid = 1258, DiscordId = "727075012489510944" }),
+            new UserRepository(new User { Id = "owner-1", DisplayName = "Divine", Role = UserRole.Owner }),
             new AuditRepository());
         const string export = """
             Status,Address,Interior,Renter CID,Renter Name,Phone,Income,Cost
@@ -35,12 +37,20 @@ public sealed class RentSyncServiceTests
         Assert.Equal("727075012489510944", eviction.DiscordId);
         Assert.Contains("Notify : <@727075012489510944>", eviction.EvictionNotice);
         Assert.Contains("Rent : $3,000", eviction.EvictionNotice);
+
+        var resolved = await service.SetResolutionAsync(result.Id, eviction.RowNumber, true, "owner-1", CancellationToken.None);
+        var resolvedEviction = Assert.Single(resolved.Records.Where(x => x.Status == "evictable"));
+        Assert.True(resolvedEviction.IsResolved);
+        Assert.Equal("Divine", resolvedEviction.ResolvedByDisplayName);
     }
 
     private sealed class SnapshotRepository : IRentSyncRepository
     {
         private RentSyncSnapshot? _snapshot;
         public Task<RentSyncSnapshot?> GetCurrentAsync(CancellationToken cancellationToken) => Task.FromResult(_snapshot);
+        public Task<RentSyncSnapshot?> GetByIdAsync(string id, CancellationToken cancellationToken) => Task.FromResult(_snapshot?.Id == id ? _snapshot : null);
+        public Task<IReadOnlyList<RentSyncSnapshot>> GetAllAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<RentSyncSnapshot>>(_snapshot is null ? [] : [_snapshot]);
         public Task SaveCurrentAsync(RentSyncSnapshot snapshot, CancellationToken cancellationToken)
         {
             snapshot.Id = "snapshot-1";
@@ -48,19 +58,27 @@ public sealed class RentSyncServiceTests
             _snapshot = snapshot;
             return Task.CompletedTask;
         }
-        public Task<RentSyncSnapshot?> DeleteRowAsync(int rowNumber, CancellationToken cancellationToken)
-        {
-            if (_snapshot is null) return Task.FromResult<RentSyncSnapshot?>(null);
-            _snapshot.Records = _snapshot.Records.Where(x => x.RowNumber != rowNumber).ToList();
-            _snapshot.UpdatedAt = DateTime.UtcNow;
-            return Task.FromResult<RentSyncSnapshot?>(_snapshot);
-        }
+        public Task UpdateAsync(RentSyncSnapshot snapshot, CancellationToken cancellationToken) { _snapshot = snapshot; return Task.CompletedTask; }
+        public Task DeleteAsync(string id, CancellationToken cancellationToken) { _snapshot = null; return Task.CompletedTask; }
+    }
+
+    private sealed class UserRepository(params User[] values) : IUserRepository
+    {
+        public Task<User?> GetByIdAsync(string id, CancellationToken ct) => Task.FromResult(values.FirstOrDefault(x => x.Id == id));
+        public Task<PagedResult<User>> QueryAsync(int page, int pageSize, ApprovalStatus? approval, AccessStatus? access, UserRole? role, CancellationToken ct) => throw new NotSupportedException();
+        public Task<User?> GetByDiscordIdAsync(string id, CancellationToken ct) => throw new NotSupportedException();
+        public Task<long> CountActiveManagersAsync(CancellationToken ct) => throw new NotSupportedException();
+        public Task<long> CountPendingAsync(CancellationToken ct) => throw new NotSupportedException();
+        public Task CreateAsync(User user, CancellationToken ct) => throw new NotSupportedException();
+        public Task UpdateAsync(User user, CancellationToken ct) => throw new NotSupportedException();
     }
 
     private sealed class TenantRepository(params Tenant[] values) : ITenantRepository
     {
+        public Task<IReadOnlyList<Tenant>> GetAllAsync(CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<Tenant>>(values);
         public Task<IReadOnlyList<Tenant>> GetByCidsAsync(IReadOnlyCollection<int> cids, CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<Tenant>>(values.Where(x => x.Cid.HasValue && cids.Contains(x.Cid.Value)).ToList());
+        public Task<IReadOnlyList<Tenant>> GetEvictedAsync(CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<Tenant>>([]);
         public Task<PagedResult<Tenant>> QueryAsync(int page, int pageSize, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Tenant?> GetByIdAsync(string id, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task CreateAsync(Tenant tenant, CancellationToken cancellationToken) => throw new NotSupportedException();

@@ -19,4 +19,8 @@ public sealed class RentSyncRecord
     public decimal Cost { get; set; }
     public string? TenantId { get; set; }
     public string? DiscordId { get; set; }
+    public bool IsResolved { get; set; }
+    public string? ResolvedByUserId { get; set; }
+    public string? ResolvedByDisplayName { get; set; }
+    public DateTime? ResolvedAt { get; set; }
 }

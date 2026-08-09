@@ -59,6 +59,11 @@ export interface Property {
   amenities: string[];
   images: string[];
   currentTenantId?: string;
+  tenantName?: string;
+  tenantCid?: number;
+  tenantPhoneNumber?: string;
+  rentPaidThrough?: string;
+  rentalStatus?: 'paid' | 'overdue' | 'evictable';
   bookedByEnquiryId?: string;
   unavailableReason?: string;
   isFeatured: boolean;
@@ -69,7 +74,15 @@ export interface Property {
 
 export type PublicProperty = Omit<
   Property,
-  'currentTenantId' | 'bookedByEnquiryId' | 'unavailableReason' | 'isActive' | 'updatedAt'
+  | 'currentTenantId'
+  | 'tenantName'
+  | 'tenantCid'
+  | 'tenantPhoneNumber'
+  | 'rentPaidThrough'
+  | 'bookedByEnquiryId'
+  | 'unavailableReason'
+  | 'isActive'
+  | 'updatedAt'
 >;
 
 export interface PropertyQuery {
@@ -129,4 +142,9 @@ export interface AssignTenantRequest {
   securityDeposit: number;
   emergencyContact?: string;
   notes?: string;
+}
+
+export interface EvictTenantRequest {
+  reason: string;
+  storageImageUrls: string[];
 }

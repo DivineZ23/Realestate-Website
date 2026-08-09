@@ -9,7 +9,7 @@ namespace ImperialEstates.Application.Services;
 
 public sealed class PropertyService(
     IPropertyRepository properties, IBlockRepository blocks, ITenantRepository tenants,
-    IStatusHistoryRepository history, IAuditRepository audits, IPropertyLifecycleStore lifecycle)
+    IUserRepository users, IStatusHistoryRepository history, IAuditRepository audits, IPropertyLifecycleStore lifecycle)
 {
     public async Task<PagedResult<PublicPropertyDto>> GetAvailableAsync(PropertyQuery query, CancellationToken cancellationToken)
     {
@@ -29,7 +29,9 @@ public sealed class PropertyService(
     {
         var values = await properties.QueryAsync(query, false, cancellationToken);
         var names = await BlockNamesAsync(values.Items, cancellationToken);
-        return new PagedResult<PropertyDto>(values.Items.Select(p => p.ToDto(names[p.BlockId])).ToList(), values.Page, values.PageSize, values.TotalItems);
+        var items = new List<PropertyDto>();
+        foreach (var property in values.Items) items.Add(await ToManagementDtoAsync(property, names[property.BlockId], cancellationToken));
+        return new PagedResult<PropertyDto>(items, values.Page, values.PageSize, values.TotalItems);
     }
 
     public async Task<PublicPropertyDto> GetPublicAsync(string id, CancellationToken cancellationToken)
@@ -44,7 +46,7 @@ public sealed class PropertyService(
     public async Task<PropertyDto> GetAsync(string id, CancellationToken cancellationToken)
     {
         var value = await GetEntityAsync(id, cancellationToken);
-        return value.ToDto((await GetBlockAsync(value.BlockId, cancellationToken)).BlockName);
+        return await ToManagementDtoAsync(value, (await GetBlockAsync(value.BlockId, cancellationToken)).BlockName, cancellationToken);
     }
 
     public async Task<PropertyDto> CreateAsync(UpsertPropertyRequest request, string actorId, CancellationToken cancellationToken)
@@ -100,6 +102,7 @@ public sealed class PropertyService(
             PropertyId = value.Id, FullName = request.FullName.Trim(), PhoneNumber = request.PhoneNumber.Trim(),
             Cid = request.Cid, DiscordId = request.DiscordId.Trim(),
             StartDate = request.StartDate, ExpectedEndDate = request.ExpectedEndDate, MonthlyRent = request.MonthlyRent.Value,
+            RentPaidThrough = request.StartDate.Date.AddDays(7),
             SecurityDeposit = request.SecurityDeposit!.Value, EmergencyContact = request.EmergencyContact?.Trim(),
             Notes = request.Notes?.Trim(), CreatedBy = actorId
         };
@@ -114,13 +117,24 @@ public sealed class PropertyService(
 
     public async Task<PropertyDto> EvictAsync(string id, EvictTenantRequest request, string actorId, CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(request.Reason))
+            throw new DomainRuleException("An eviction reason is required.", "REASON_REQUIRED");
+        var storageImages = request.StorageImageUrls?.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()).Distinct().ToList() ?? [];
+        if (storageImages.Any(url => !Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https")))
+            throw new DomainRuleException("Every storage image must be a valid HTTP or HTTPS URL.", "INVALID_STORAGE_IMAGE_URL");
         var value = await GetEntityAsync(id, cancellationToken);
         var previous = value.Status;
         var tenantId = value.EvictTenant();
         var tenant = await tenants.GetByIdAsync(tenantId, cancellationToken) ?? throw new DomainRuleException("Active tenant record was not found.", "TENANT_NOT_FOUND");
         tenant.Status = TenantStatus.Evicted;
         tenant.EndDate = DateTime.UtcNow;
-        tenant.EndReason = request.Reason?.Trim();
+        var actor = await users.GetByIdAsync(actorId, cancellationToken) ?? throw new UnauthorizedAccessException();
+        tenant.EndReason = request.Reason.Trim();
+        tenant.EvictionStorageImages = storageImages;
+        tenant.EvictedByUserId = actorId;
+        tenant.EvictedByDisplayName = actor.DisplayName;
+        tenant.EvictedPropertyName = value.PropertyName;
+        tenant.EvictedPropertyId = value.PropertyId;
         tenant.UpdatedAt = DateTime.UtcNow;
         tenant.UpdatedBy = actorId;
         value.UpdatedBy = actorId;
@@ -179,5 +193,10 @@ public sealed class PropertyService(
         var result = new Dictionary<string, string>();
         foreach (var id in values.Select(x => x.BlockId).Distinct()) result[id] = (await GetBlockAsync(id, ct)).BlockName;
         return result;
+    }
+    private async Task<PropertyDto> ToManagementDtoAsync(Property value, string blockName, CancellationToken ct)
+    {
+        var tenant = string.IsNullOrWhiteSpace(value.CurrentTenantId) ? null : await tenants.GetByIdAsync(value.CurrentTenantId, ct);
+        return value.ToDto(blockName, tenant);
     }
 }

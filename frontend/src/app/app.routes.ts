@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, managerGuard } from './core/guards/auth.guard';
+import { authGuard, managerGuard, pageAccessGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -27,6 +27,8 @@ export const routes: Routes = [
     children: [
       {
         path: '',
+        data: { accessKey: 'overview' },
+        canActivate: [pageAccessGuard],
         loadComponent: () =>
           import('./features/dashboard/dashboard-overview.component').then(
             (m) => m.DashboardOverviewComponent,
@@ -34,11 +36,21 @@ export const routes: Routes = [
       },
       {
         path: 'team',
+        data: { accessKey: 'team' },
+        canActivate: [pageAccessGuard],
         loadComponent: () =>
           import('./features/team/team-overview.component').then((m) => m.TeamOverviewComponent),
       },
       {
+        path: 'analytics',
+        data: { accessKey: 'analytics' },
+        canActivate: [pageAccessGuard],
+        loadComponent: () => import('./features/analytics/personal-analytics.component').then((m) => m.PersonalAnalyticsComponent),
+      },
+      {
         path: 'properties',
+        data: { accessKey: 'portfolio.properties' },
+        canActivate: [pageAccessGuard],
         loadComponent: () =>
           import('./features/properties/property-management.component').then(
             (m) => m.PropertyManagementComponent,
@@ -46,7 +58,8 @@ export const routes: Routes = [
       },
       {
         path: 'properties/new',
-        canActivate: [managerGuard],
+        canActivate: [managerGuard, pageAccessGuard],
+        data: { accessKey: 'portfolio.properties' },
         loadComponent: () =>
           import('./features/properties/property-form.component').then(
             (m) => m.PropertyFormComponent,
@@ -54,7 +67,8 @@ export const routes: Routes = [
       },
       {
         path: 'properties/:id/edit',
-        canActivate: [managerGuard],
+        canActivate: [managerGuard, pageAccessGuard],
+        data: { accessKey: 'portfolio.properties' },
         loadComponent: () =>
           import('./features/properties/property-form.component').then(
             (m) => m.PropertyFormComponent,
@@ -62,6 +76,8 @@ export const routes: Routes = [
       },
       {
         path: 'properties/:id/assign',
+        canActivate: [pageAccessGuard],
+        data: { accessKey: 'portfolio.properties' },
         loadComponent: () =>
           import('./features/properties/tenant-assignment.component').then(
             (m) => m.TenantAssignmentComponent,
@@ -69,6 +85,8 @@ export const routes: Routes = [
       },
       {
         path: 'blocks',
+        data: { accessKey: 'portfolio.blocks' },
+        canActivate: [pageAccessGuard],
         loadComponent: () =>
           import('./features/blocks/block-management.component').then(
             (m) => m.BlockManagementComponent,
@@ -76,16 +94,20 @@ export const routes: Routes = [
       },
       {
         path: 'tenants',
+        data: { accessKey: 'portfolio.tenants' },
+        canActivate: [pageAccessGuard],
         loadComponent: () =>
           import('./features/tenants/tenants.component').then((m) => m.TenantsComponent),
       },
       {
         path: 'auction/listings',
         data: {
+          accessKey: 'auction.listings',
           section: 'Auction',
           title: 'Listings',
           description: 'Manage properties prepared for future auction workflows.',
         },
+        canActivate: [pageAccessGuard],
         loadComponent: () =>
           import('./features/workspace-placeholder/workspace-placeholder.component').then(
             (m) => m.WorkspacePlaceholderComponent,
@@ -93,44 +115,50 @@ export const routes: Routes = [
       },
       {
         path: 'notices/overdue',
-        data: { mode: 'overdueNotice' },
+        data: { mode: 'overdueNotice', accessKey: 'notices.overdue' },
+        canActivate: [pageAccessGuard],
         loadComponent: () =>
           import('./features/notices/notices.component').then((m) => m.NoticesComponent),
       },
       {
         path: 'notices/eviction',
-        data: { mode: 'evictionNotice' },
+        data: { mode: 'evictionNotice', accessKey: 'notices.eviction' },
+        canActivate: [pageAccessGuard],
         loadComponent: () =>
           import('./features/notices/notices.component').then((m) => m.NoticesComponent),
       },
       {
         path: 'notices/overdue-list',
-        data: { mode: 'overdueList' },
+        data: { mode: 'overdueList', accessKey: 'notices.overdueList' },
+        canActivate: [pageAccessGuard],
         loadComponent: () =>
           import('./features/notices/notices.component').then((m) => m.NoticesComponent),
       },
       {
         path: 'notices/eviction-list',
-        data: { mode: 'evictionList' },
+        data: { mode: 'evictionList', accessKey: 'notices.evictionList' },
+        canActivate: [pageAccessGuard],
         loadComponent: () =>
           import('./features/notices/notices.component').then((m) => m.NoticesComponent),
       },
       {
         path: 'notices/sync',
-        canActivate: [managerGuard],
-        data: { mode: 'sync' },
+        canActivate: [managerGuard, pageAccessGuard],
+        data: { mode: 'sync', accessKey: 'notices.sync' },
         loadComponent: () =>
           import('./features/notices/notices.component').then((m) => m.NoticesComponent),
       },
       {
         path: 'notices/synced-data-records',
-        data: { mode: 'syncedDataRecords' },
+        data: { mode: 'syncedDataRecords', accessKey: 'notices.syncedDataRecords' },
+        canActivate: [pageAccessGuard],
         loadComponent: () =>
           import('./features/notices/notices.component').then((m) => m.NoticesComponent),
       },
       {
         path: 'users',
-        canActivate: [managerGuard],
+        canActivate: [managerGuard, pageAccessGuard],
+        data: { accessKey: 'administration.users' },
         loadComponent: () =>
           import('./features/users/user-management.component').then(
             (m) => m.UserManagementComponent,
@@ -138,7 +166,8 @@ export const routes: Routes = [
       },
       {
         path: 'audit-logs',
-        canActivate: [managerGuard],
+        canActivate: [managerGuard, pageAccessGuard],
+        data: { accessKey: 'administration.auditLogs' },
         loadComponent: () =>
           import('./features/audit/audit-logs.component').then((m) => m.AuditLogsComponent),
       },
@@ -149,9 +178,19 @@ export const routes: Routes = [
       },
       {
         path: 'settings',
-        canActivate: [managerGuard],
+        canActivate: [managerGuard, pageAccessGuard],
+        data: { accessKey: 'administration.settings' },
         loadComponent: () =>
           import('./features/settings/settings.component').then((m) => m.SettingsComponent),
+      },
+      {
+        path: 'access-management',
+        canActivate: [managerGuard, pageAccessGuard],
+        data: { accessKey: 'administration.accessManagement' },
+        loadComponent: () =>
+          import('./features/access-management/access-management.component').then(
+            (m) => m.AccessManagementComponent,
+          ),
       },
     ],
   },

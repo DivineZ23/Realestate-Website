@@ -8,6 +8,7 @@ export const API_ENDPOINTS = {
   },
   enquiries: '/enquiries',
   tenants: '/tenants',
+  evictions: '/tenants/evictions',
   notices: {
     snapshot: '/notices/snapshot',
     snapshots: '/notices/snapshots',
@@ -16,7 +17,9 @@ export const API_ENDPOINTS = {
   users: '/users',
   auditLogs: '/audit-logs',
   dashboard: '/dashboard',
+  personalStatistics: '/dashboard/personal',
   uploads: '/uploads/images',
   teamAgents: '/team/agents',
   settingsTeam: '/settings/team',
+  accessManagement: '/access-management',
 } as const;

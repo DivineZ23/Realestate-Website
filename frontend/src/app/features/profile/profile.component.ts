@@ -1,6 +1,7 @@
 import { DatePipe, TitleCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
+import { USER_ROLES } from '../../core/constants/user-role.constants';
 @Component({
   selector: 'app-profile',
   imports: [DatePipe, TitleCasePipe],
@@ -15,7 +16,7 @@ import { AuthService } from '../../core/services/auth.service';
         <div>
           <h2>{{ user.displayName }}</h2>
           <p>@{{ user.username }}</p>
-          <span>{{ user.role | titlecase }}</span>
+          <span>{{ roleLabel(user.role) }}</span>
         </div>
         <dl>
           <div>
@@ -105,4 +106,5 @@ import { AuthService } from '../../core/services/auth.service';
 export class ProfileComponent {
   readonly auth = inject(AuthService);
   readonly fallback = 'https://api.dicebear.com/9.x/initials/svg?seed=Imperial';
+  readonly roleLabel = (role: keyof typeof USER_ROLES) => USER_ROLES[role];
 }

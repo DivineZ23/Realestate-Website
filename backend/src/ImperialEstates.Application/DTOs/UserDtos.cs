@@ -13,6 +13,8 @@ public sealed record CurrentUserDto(
     ApprovalStatus ApprovalStatus, AccessStatus AccessStatus);
 
 public sealed record AgentSummaryDto(string Id, string DisplayName, string Username, string? AvatarUrl, UserRole Role);
+
+public sealed record AccessManagementDto(Dictionary<string, Dictionary<string, bool>> Permissions);
 public sealed record TeamMemberDto(string Id, string Name, string Title, string Biography, string ImageUrl);
 
 public sealed record UserActionRequest(string? Reason);

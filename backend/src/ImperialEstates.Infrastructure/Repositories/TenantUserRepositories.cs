@@ -9,6 +9,9 @@ namespace ImperialEstates.Infrastructure.Repositories;
 
 public sealed class TenantRepository(MongoContext db) : ITenantRepository
 {
+    public async Task<IReadOnlyList<Tenant>> GetAllAsync(CancellationToken ct) =>
+        await db.Tenants.Find(x => !x.IsDeleted).SortByDescending(x => x.CreatedAt).ToListAsync(ct);
+
     public async Task<PagedResult<Tenant>> QueryAsync(int page, int pageSize, CancellationToken ct)
     {
         page = Paging.NormalizePage(page); pageSize = Paging.NormalizePageSize(pageSize);
@@ -25,6 +28,9 @@ public sealed class TenantRepository(MongoContext db) : ITenantRepository
         var filter = Builders<Tenant>.Filter.Eq(x => x.IsDeleted, false) & Builders<Tenant>.Filter.In(x => x.Cid, cids.Select(cid => (int?)cid));
         return await db.Tenants.Find(filter).SortByDescending(x => x.CreatedAt).ToListAsync(ct);
     }
+    public async Task<IReadOnlyList<Tenant>> GetEvictedAsync(CancellationToken ct) =>
+        await db.Tenants.Find(x => !x.IsDeleted && x.Status == TenantStatus.Evicted)
+            .SortByDescending(x => x.EndDate).ToListAsync(ct);
     public Task CreateAsync(Tenant value, CancellationToken ct) { RepositoryHelpers.PrepareForInsert(value); return db.Tenants.InsertOneAsync(value, cancellationToken: ct); }
     public Task UpdateAsync(Tenant value, CancellationToken ct) => RepositoryHelpers.ReplaceAsync(db.Tenants, value, ct);
 }

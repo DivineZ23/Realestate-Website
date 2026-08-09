@@ -6,14 +6,17 @@ import {
   AuditLog,
   CreateEnquiryRequest,
   DashboardSummary,
+  PersonalStatistics,
   Enquiry,
   EnquiryStatus,
   RentSyncSnapshot,
+  EvictionHistory,
   Tenant,
 } from '../models/management.models';
 import { Block, UpsertBlockRequest } from '../models/property.models';
 import {
   AccessStatus,
+  AccessManagementSettings,
   AgentSummary,
   ApprovalStatus,
   TeamMember,
@@ -79,6 +82,17 @@ export class SettingsService {
 }
 
 @Injectable({ providedIn: 'root' })
+export class AccessManagementService {
+  private readonly api = inject(ApiService);
+  get(): Observable<AccessManagementSettings> {
+    return this.api.get(API_ENDPOINTS.accessManagement);
+  }
+  update(settings: AccessManagementSettings): Observable<AccessManagementSettings> {
+    return this.api.put(API_ENDPOINTS.accessManagement, settings);
+  }
+}
+
+@Injectable({ providedIn: 'root' })
 export class UserService {
   private readonly api = inject(ApiService);
   all(
@@ -104,12 +118,16 @@ export class DashboardService {
   get(): Observable<DashboardSummary> {
     return this.api.get(API_ENDPOINTS.dashboard);
   }
+  personal(): Observable<PersonalStatistics> { return this.api.get(API_ENDPOINTS.personalStatistics); }
 }
 @Injectable({ providedIn: 'root' })
 export class TenantService {
   private readonly api = inject(ApiService);
   all(): Observable<PagedResult<Tenant>> {
     return this.api.get(API_ENDPOINTS.tenants, { page: 1, pageSize: 100 });
+  }
+  evictions(): Observable<EvictionHistory[]> {
+    return this.api.get(API_ENDPOINTS.evictions);
   }
 }
 @Injectable({ providedIn: 'root' })
@@ -126,6 +144,9 @@ export class NoticeService {
   }
   deleteSnapshot(id: string): Observable<void> {
     return this.api.delete<void>(`${API_ENDPOINTS.notices.snapshots}/${id}`);
+  }
+  setResolution(snapshotId: string, rowNumber: number, isResolved: boolean): Observable<RentSyncSnapshot> {
+    return this.api.patch(`${API_ENDPOINTS.notices.snapshots}/${snapshotId}/records/${rowNumber}/resolution`, { isResolved });
   }
 }
 @Injectable({ providedIn: 'root' })

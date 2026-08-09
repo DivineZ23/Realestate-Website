@@ -12,7 +12,7 @@ import { SettingsService } from '../../core/services/management.services';
       <h1>Settings</h1>
       <p>Operational configuration is intentionally narrow and secure.</p>
     </div>
-    <div class="settings">
+    <div class="settings-grid">
       <section class="panel team-editor">
         <header>
           <div>
@@ -26,16 +26,16 @@ import { SettingsService } from '../../core/services/management.services';
         <div class="members">
           @for (member of members(); track member.id; let index = $index) {
             <article>
-              <img [src]="member.imageUrl" alt="" />
-              <label class="field"><span>Name</span><input [(ngModel)]="member.name" /></label>
+              <div class="member-avatar"><img [src]="member.imageUrl" alt="" /></div>
+              <div class="member-fields"><label class="field"><span>Name</span><input [(ngModel)]="member.name" /></label>
               <label class="field"><span>Title</span><input [(ngModel)]="member.title" /></label>
               <label class="field wide"
                 ><span>Biography</span><textarea rows="2" [(ngModel)]="member.biography"></textarea>
               </label>
               <label class="field wide"
                 ><span>Image URL</span><input [(ngModel)]="member.imageUrl"
-              /></label>
-              <button class="remove" (click)="remove(index)"><svg lucideTrash2></svg>Remove</button>
+              /></label></div>
+              <button class="remove" type="button" (click)="remove(index)" aria-label="Remove team member"><svg lucideTrash2></svg></button>
             </article>
           }
         </div>
@@ -80,20 +80,14 @@ import { SettingsService } from '../../core/services/management.services';
       .page-title p:last-child {
         color: var(--muted);
       }
-      .settings {
-        display: grid;
-        gap: 14px;
-        max-width: 900px;
-      }
-      .settings section {
+      .settings-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+      .settings-grid section {
         display: flex;
         justify-content: space-between;
         align-items: center;
         padding: 22px;
       }
-      .settings .team-editor {
-        display: block;
-      }
+      .settings-grid .team-editor { display: block; grid-column: 1 / -1; }
       .team-editor header {
         display: flex;
         justify-content: space-between;
@@ -106,25 +100,28 @@ import { SettingsService } from '../../core/services/management.services';
       }
       .members article {
         display: grid;
-        grid-template-columns: 64px 1fr 1fr auto;
+        grid-template-columns: 64px minmax(0, 1fr) 34px;
         gap: 12px;
-        align-items: end;
+        align-items: start;
         padding: 14px;
         border: 1px solid var(--border);
         border-radius: 12px;
       }
-      .members img {
+      .member-avatar img {
         width: 64px;
         height: 64px;
         border-radius: 50%;
         object-fit: cover;
       }
-      .members .wide {
-        grid-column: 2 / span 2;
-      }
+      .member-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; min-width: 0; }
+      .member-fields .wide { grid-column: 1 / -1; }
+      .member-fields input, .member-fields textarea { width: 100%; }
       .remove {
-        border: 0;
-        background: none;
+        width: 34px;
+        height: 34px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: transparent;
         color: var(--danger);
         cursor: pointer;
         display: inline-flex;
@@ -138,36 +135,36 @@ import { SettingsService } from '../../core/services/management.services';
       .save {
         margin-top: 16px;
       }
-      .settings h2 {
+      .settings-grid h2 {
         font-size: 1.05rem;
         margin-bottom: 5px;
       }
-      .settings p {
+      .settings-grid p {
         color: var(--muted);
         font-size: 0.8rem;
         margin: 0;
       }
-      .settings span {
+      .settings-grid span {
         color: var(--muted);
         font-size: 0.72rem;
       }
-      .settings .enabled {
+      .settings-grid .enabled {
         color: var(--forest);
         background: var(--forest-light);
         padding: 6px 9px;
         border-radius: 99px;
       }
       @media (max-width: 760px) {
+        .settings-grid { grid-template-columns: 1fr; }
         .members article {
-          grid-template-columns: 52px 1fr;
+          grid-template-columns: 52px minmax(0, 1fr) 34px;
         }
         .members img {
           width: 52px;
           height: 52px;
         }
-        .members .wide {
-          grid-column: 2;
-        }
+        .member-fields { grid-template-columns: 1fr; }
+        .member-fields .wide { grid-column: 1; }
       }
     `,
   ],

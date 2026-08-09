@@ -31,7 +31,7 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
       <div class="content">
         <div class="top">
           <div>
-            <p class="meta">{{ property().blockName }} · {{ typeLabel(property().type) }}</p>
+            <p class="meta">{{ property().blockName }} &middot; {{ typeLabel(property().type) }}</p>
             <h3>{{ property().propertyName }}</h3>
           </div>
           <p class="rent">
@@ -103,7 +103,7 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
         top: 16px;
       }
       .content {
-        padding: 20px;
+        padding: 18px;
       }
       .top {
         display: flex;
@@ -135,7 +135,7 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
       .details {
         display: flex;
         gap: 18px;
-        margin: 20px 0;
+        margin: 18px 0;
         color: var(--muted);
         font-size: 0.82rem;
       }

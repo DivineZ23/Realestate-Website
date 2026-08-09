@@ -1,53 +1,31 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { LucideMoon, LucideSun } from '@lucide/angular';
+import { LucideMoon, LucideSun, LucideSunMedium } from '@lucide/angular';
 import { ThemeService } from '../../../core/services/theme.service';
 
 @Component({
   selector: 'app-theme-toggle',
-  imports: [LucideMoon, LucideSun],
+  imports: [LucideMoon, LucideSun, LucideSunMedium],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <button
-      type="button"
-      class="theme-toggle"
-      (click)="theme.toggle()"
-      [attr.aria-label]="theme.theme() === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
-      [attr.title]="theme.theme() === 'light' ? 'Dark mode' : 'Light mode'"
-    >
-      @if (theme.theme() === 'light') {
-        <svg lucideMoon [size]="19" [strokeWidth]="1.8"></svg>
-      } @else {
-        <svg lucideSun [size]="19" [strokeWidth]="1.8"></svg>
-      }
-    </button>
+    <div class="theme-switcher" aria-label="Website theme">
+      <button type="button" [class.active]="theme.theme() === 'light'" (click)="theme.setTheme('light')" aria-label="Use light theme" title="Light"><svg lucideSun [size]="16"></svg></button>
+      <button type="button" [class.active]="theme.theme() === 'dark'" (click)="theme.setTheme('dark')" aria-label="Use dark theme" title="Dark"><svg lucideMoon [size]="16"></svg></button>
+      <button type="button" [class.active]="theme.theme() === 'graphite'" (click)="theme.setTheme('graphite')" aria-label="Use graphite theme" title="Graphite"><svg lucideSunMedium [size]="16"></svg></button>
+    </div>
   `,
   styles: [
     `
-      .theme-toggle {
-        display: grid;
-        place-items: center;
-        width: 40px;
-        height: 40px;
-        padding: 0;
-        border: 1px solid var(--border);
-        border-radius: 50%;
-        background: var(--surface-strong);
-        color: var(--ink);
-        cursor: pointer;
-        transition:
-          color var(--ease),
-          background var(--ease),
-          border-color var(--ease),
-          transform var(--ease);
+      .theme-switcher { display: flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-soft); }
+      .theme-switcher button {
+        display: grid; place-items: center; width: 29px; height: 29px; padding: 0;
+        border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer;
       }
-      .theme-toggle:hover {
-        color: var(--bronze);
-        border-color: var(--bronze);
-        transform: translateY(-1px);
+      .theme-switcher button:hover { color: var(--ink); }
+      .theme-switcher button.active {
+        color: var(--forest); background: var(--surface-strong); box-shadow: var(--shadow-sm);
       }
-      .theme-toggle:focus-visible {
-        outline: 3px solid var(--focus-ring);
-        outline-offset: 2px;
+      .theme-switcher button:focus-visible {
+        outline: 2px solid var(--focus-ring); outline-offset: 1px;
       }
       svg {
         flex: 0 0 auto;

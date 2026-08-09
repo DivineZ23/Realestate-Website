@@ -1,4 +1,8 @@
-export type UserRole = 'agent' | 'manager' | 'owner';
+export type UserRole = 'agent' | 'seniorAgent' | 'manager' | 'owner';
+
+export interface AccessManagementSettings {
+  permissions: Record<string, Partial<Record<UserRole, boolean>>>;
+}
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 export type AccessStatus = 'active' | 'pending' | 'revoked';
 

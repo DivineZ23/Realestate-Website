@@ -16,7 +16,7 @@ public sealed class UserManagementServiceTests
         var owner = ActiveOwner("owner-1");
         var service = new UserManagementService(new FakeUserRepository([manager, owner]), new FakeAuditRepository());
         var result = await service.DemoteAsync(manager.Id, owner.Id, "Role change", default);
-        Assert.Equal(UserRole.Agent, result.Role);
+        Assert.Equal(UserRole.SeniorAgent, result.Role);
     }
 
     [Fact]
@@ -26,7 +26,7 @@ public sealed class UserManagementServiceTests
         var owner = ActiveOwner("owner-1");
         var service = new UserManagementService(new FakeUserRepository([agent, owner]), new FakeAuditRepository());
         var result = await service.PromoteAsync(agent.Id, owner.Id, default);
-        Assert.Equal(UserRole.Manager, result.Role);
+        Assert.Equal(UserRole.SeniorAgent, result.Role);
     }
 
     [Fact]

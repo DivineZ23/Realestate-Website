@@ -3,6 +3,7 @@ import { NgIf } from '@angular/common';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   LucideBell,
+  LucideChartNoAxesCombined,
   LucideBlocks,
   LucideBuilding2,
   LucideChevronDown,
@@ -26,7 +27,10 @@ import {
   LucideUsersRound,
 } from '@lucide/angular';
 import { AuthService } from '../../core/services/auth.service';
+import { PageAccessService } from '../../core/services/page-access.service';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
+import { SiteCreditComponent } from '../../shared/components/site-credit/site-credit.component';
+import { USER_ROLES } from '../../core/constants/user-role.constants';
 
 @Component({
   selector: 'app-dashboard-layout',
@@ -37,7 +41,9 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
     RouterLinkActive,
     RouterOutlet,
     ThemeToggleComponent,
+    SiteCreditComponent,
     LucideBell,
+    LucideChartNoAxesCombined,
     LucideLayoutDashboard,
     LucideUsersRound,
     LucideBuilding2,
@@ -66,10 +72,13 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
       <div class="aside-head">
         <a routerLink="/dashboard" class="mark" aria-label="Imperial Estates dashboard"
           ><img src="/assets/imperial-estates-logo.png" alt="" /></a
-        ><strong>Imperial<br />Estates</strong>
+        ><strong>Imperial Estates</strong>
       </div>
       <nav aria-label="Dashboard sections">
-        <section class="nav-section">
+        <section class="nav-section" *ngIf="access.canAccess('analytics')">
+          <a class="section-direct" routerLink="/dashboard/analytics" routerLinkActive="active"><svg lucideChartNoAxesCombined></svg><b>Analytics</b></a>
+        </section>
+        <section class="nav-section" *ngIf="hasAny(['auction.listings'])">
           <button
             class="section-toggle"
             type="button"
@@ -82,13 +91,13 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
           </button>
           <ng-container *ngIf="auctionOpen()">
             <div class="section-links" id="auction-navigation">
-              <a routerLink="/dashboard/auction/listings" routerLinkActive="active">
+              <a *ngIf="access.canAccess('auction.listings')" routerLink="/dashboard/auction/listings" routerLinkActive="active">
                 <svg lucideClipboardList></svg><b>Listings</b>
               </a>
             </div>
           </ng-container>
         </section>
-        <section class="nav-section">
+        <section class="nav-section" *ngIf="hasAny(['portfolio.properties', 'portfolio.blocks', 'portfolio.tenants'])">
           <button
             class="section-toggle"
             type="button"
@@ -101,19 +110,19 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
           </button>
           <ng-container *ngIf="portfolioOpen()">
             <div class="section-links" id="portfolio-navigation">
-              <a routerLink="/dashboard/properties" routerLinkActive="active">
+              <a *ngIf="access.canAccess('portfolio.properties')" routerLink="/dashboard/properties" routerLinkActive="active">
                 <svg lucideBuilding2></svg><b>Properties</b>
               </a>
-              <a routerLink="/dashboard/blocks" routerLinkActive="active">
+              <a *ngIf="access.canAccess('portfolio.blocks')" routerLink="/dashboard/blocks" routerLinkActive="active">
                 <svg lucideBlocks></svg><b>Blocks</b>
               </a>
-              <a routerLink="/dashboard/tenants" routerLinkActive="active">
+              <a *ngIf="access.canAccess('portfolio.tenants')" routerLink="/dashboard/tenants" routerLinkActive="active">
                 <svg lucideContactRound></svg><b>Tenants</b>
               </a>
             </div>
           </ng-container>
         </section>
-        <section class="nav-section">
+        <section class="nav-section" *ngIf="hasAny(['notices.overdue', 'notices.eviction', 'notices.overdueList', 'notices.evictionList', 'notices.sync', 'notices.syncedDataRecords'])">
           <button
             class="section-toggle"
             type="button"
@@ -126,30 +135,30 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
           </button>
           <ng-container *ngIf="noticesOpen()">
             <div class="section-links" id="notices-navigation">
-              <a routerLink="/dashboard/notices/overdue" routerLinkActive="active">
+              <a *ngIf="access.canAccess('notices.overdue')" routerLink="/dashboard/notices/overdue" routerLinkActive="active">
                 <svg lucideClockAlert></svg><b>Overdue Notice</b>
               </a>
-              <a routerLink="/dashboard/notices/eviction" routerLinkActive="active">
+              <a *ngIf="access.canAccess('notices.eviction')" routerLink="/dashboard/notices/eviction" routerLinkActive="active">
                 <svg lucideFileWarning></svg><b>Eviction Notice</b>
               </a>
-              <a routerLink="/dashboard/notices/overdue-list" routerLinkActive="active">
+              <a *ngIf="access.canAccess('notices.overdueList')" routerLink="/dashboard/notices/overdue-list" routerLinkActive="active">
                 <svg lucideList></svg><b>Overdue List</b>
               </a>
-              <a routerLink="/dashboard/notices/eviction-list" routerLinkActive="active">
+              <a *ngIf="access.canAccess('notices.evictionList')" routerLink="/dashboard/notices/eviction-list" routerLinkActive="active">
                 <svg lucideListX></svg><b>Eviction List</b>
               </a>
-              <ng-container *ngIf="auth.isManager()">
+              <ng-container *ngIf="auth.isManager() && access.canAccess('notices.sync')">
                 <a routerLink="/dashboard/notices/sync" routerLinkActive="active">
                   <svg lucideUploadCloud></svg><b>Data Sync</b>
                 </a>
               </ng-container>
-              <a routerLink="/dashboard/notices/synced-data-records" routerLinkActive="active">
+              <a *ngIf="access.canAccess('notices.syncedDataRecords')" routerLink="/dashboard/notices/synced-data-records" routerLinkActive="active">
                 <svg lucideHistory></svg><b>Sync History</b>
               </a>
             </div>
           </ng-container>
         </section>
-        <ng-container *ngIf="auth.isManager()">
+        <ng-container *ngIf="auth.isManager() && hasAny(['administration.users', 'administration.auditLogs', 'administration.settings', 'administration.accessManagement'])">
           <section class="nav-section">
             <button
               class="section-toggle"
@@ -163,14 +172,17 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
             </button>
             <ng-container *ngIf="administrationOpen()">
               <div class="section-links" id="administration-navigation">
-                <a routerLink="/dashboard/users" routerLinkActive="active">
+                <a *ngIf="access.canAccess('administration.users')" routerLink="/dashboard/users" routerLinkActive="active">
                   <svg lucideUsersRound></svg><b>User Management</b>
                 </a>
-                <a routerLink="/dashboard/audit-logs" routerLinkActive="active">
+                <a *ngIf="access.canAccess('administration.auditLogs')" routerLink="/dashboard/audit-logs" routerLinkActive="active">
                   <svg lucideScrollText></svg><b>Audit Logs</b>
                 </a>
-                <a routerLink="/dashboard/settings" routerLinkActive="active">
+                <a *ngIf="access.canAccess('administration.settings')" routerLink="/dashboard/settings" routerLinkActive="active">
                   <svg lucideSettings></svg><b>Settings</b>
+                </a>
+                <a *ngIf="access.canAccess('administration.accessManagement')" routerLink="/dashboard/access-management" routerLinkActive="active">
+                  <svg lucideShieldCheck></svg><b>Access Management</b>
                 </a>
               </div>
             </ng-container>
@@ -200,12 +212,12 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
           <strong>Good {{ greeting() }}, {{ auth.user()?.displayName }}</strong>
         </div>
         <nav class="breadcrumb" aria-label="Dashboard breadcrumb">
-          <a
+          <a *ngIf="access.canAccess('overview')"
             routerLink="/dashboard"
             routerLinkActive="active"
             [routerLinkActiveOptions]="{ exact: true }"
             ><svg lucideLayoutDashboard></svg>Overview</a
-          ><a routerLink="/dashboard/team" routerLinkActive="active"
+          ><a *ngIf="access.canAccess('team')" routerLink="/dashboard/team" routerLinkActive="active"
             ><svg lucideUsersRound></svg>Team</a
           >
         </nav>
@@ -214,12 +226,13 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
           <a routerLink="/dashboard/profile"
             ><img [src]="auth.user()?.avatarUrl || fallback" alt="" /><span
               ><b>{{ auth.user()?.displayName }}</b
-              ><small>{{ auth.user()?.role }}</small></span
+              ><small>{{ roleLabel() }}</small></span
             ></a
           ><button (click)="auth.logout()"><svg lucideLogOut></svg><span>Sign out</span></button>
         </div>
       </header>
       <main><router-outlet /></main>
+      <app-site-credit />
     </section>
   </div>`,
   styles: [
@@ -236,23 +249,23 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         height: 100vh;
         background: var(--sidebar-bg);
         color: var(--sidebar-text);
-        padding: 24px 16px;
+        padding: 18px 14px;
         display: flex;
         flex-direction: column;
         overflow-y: auto;
       }
       .aside-head {
-        height: 54px;
+        height: 58px;
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 0 10px 22px;
+        padding: 0 9px 16px;
         border-bottom: 1px solid var(--sidebar-border);
       }
       .mark {
-        width: 44px;
-        height: 44px;
-        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
         overflow: hidden;
         flex: 0 0 auto;
         box-shadow: 0 0 0 1px var(--sidebar-border);
@@ -264,26 +277,26 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         object-fit: cover;
       }
       .aside-head strong {
-        font-family: Georgia, serif;
-        font-weight: 500;
-        line-height: 1.05;
+        font-weight: 750;
+        line-height: 1.08;
+        letter-spacing: -.02em;
       }
       nav {
         display: flex;
         flex-direction: column;
-        gap: 10px;
-        padding-top: 24px;
+        gap: 7px;
+        padding-top: 18px;
         flex: 1;
       }
       .section-toggle,
       nav a {
         display: flex;
         align-items: center;
-        gap: 13px;
-        padding: 11px 13px;
+        gap: 11px;
+        padding: 9px 11px;
         color: var(--sidebar-link);
-        border-radius: 10px;
-        font-size: 0.84rem;
+        border-radius: 8px;
+        font-size: 0.81rem;
       }
       .section-toggle {
         width: 100%;
@@ -291,6 +304,10 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         border: 0;
         background: transparent;
         cursor: pointer;
+        color: var(--sidebar-subtle);
+        font-size: .69rem;
+        letter-spacing: .075em;
+        text-transform: uppercase;
       }
       .section-toggle > span {
         display: flex;
@@ -298,18 +315,20 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         gap: 13px;
       }
       .section-toggle:hover {
-        background: var(--sidebar-active);
-        color: var(--sidebar-active-text);
+        background: transparent;
+        color: var(--sidebar-text);
       }
       .section-links {
-        padding-left: 13px;
+        display: grid;
+        gap: 3px;
+        padding: 2px 0 3px 8px;
         border-left: 1px solid var(--sidebar-border);
-        margin-left: 22px;
+        margin-left: 20px;
       }
       nav a svg,
       .section-toggle svg {
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
         flex: 0 0 auto;
         stroke-width: 1.8;
       }
@@ -319,17 +338,19 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
       nav a b {
         font-weight: 600;
       }
-      nav a.active,
-      nav a:hover {
+      nav a.active {
         background: var(--sidebar-active);
         color: var(--sidebar-active-text);
+      }
+      nav a:hover:not(.active) {
+        background: var(--sidebar-hover);
+        color: var(--sidebar-hover-text);
       }
       .collapse {
         border: 0;
         background: transparent;
         color: var(--sidebar-muted);
-        text-align: left;
-        padding: 12px;
+        padding: 10px 11px;
         display: flex;
         gap: 14px;
         cursor: pointer;
@@ -340,15 +361,19 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
       }
       .workspace {
         min-width: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
       }
       .workspace > header {
-        height: 82px;
-        background: var(--surface);
+        height: 72px;
+        background: var(--header-bg);
+        backdrop-filter: blur(14px);
         border-bottom: 1px solid var(--border);
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
         align-items: center;
-        padding: 0 32px;
+        padding: 0 28px;
         position: sticky;
         top: 0;
         z-index: 20;
@@ -357,21 +382,22 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         display: flex;
         flex-direction: row;
         align-items: center;
-        gap: 24px;
+        gap: 8px;
         padding: 0;
       }
       .breadcrumb a {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 0;
+        padding: 7px 10px;
         color: var(--muted);
-        font-size: 0.92rem;
+        border-radius: 7px;
+        font-size: 0.82rem;
       }
       .breadcrumb a:hover,
       .breadcrumb a.active {
-        color: var(--ink);
-        background: transparent;
+        color: var(--forest);
+        background: var(--forest-light);
       }
       .account,
       .account a {
@@ -383,8 +409,8 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         justify-self: end;
       }
       .account img {
-        width: 38px;
-        height: 38px;
+        width: 34px;
+        height: 34px;
         object-fit: cover;
         border-radius: 50%;
       }
@@ -394,6 +420,7 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
       .account small {
         color: var(--muted);
         text-transform: capitalize;
+        font-size: .7rem;
       }
       .account button {
         border: 0;
@@ -407,13 +434,11 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         gap: 7px;
         color: var(--ink);
       }
-      .account button svg {
-        width: 16px;
-        height: 16px;
-      }
       .workspace main {
-        padding: 32px;
-        max-width: 1500px;
+        flex: 1;
+        width: 100%;
+        padding: 28px 24px 36px;
+        max-width: 1640px;
         margin: 0 auto;
       }
       .mobile-menu {
@@ -424,7 +449,7 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
         height: 21px;
       }
       .collapsed {
-        grid-template-columns: 78px 1fr;
+        grid-template-columns: 74px 1fr;
       }
       .collapsed .aside-head strong,
       .collapsed nav b,
@@ -484,7 +509,6 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
           display: block;
           border: 0;
           background: none;
-          font-size: 1.3rem;
         }
         .workspace > header {
           grid-template-columns: auto 1fr auto;
@@ -506,6 +530,7 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
 })
 export class DashboardLayoutComponent {
   readonly auth = inject(AuthService);
+  readonly access = inject(PageAccessService);
   readonly collapsed = signal(false);
   readonly portfolioOpen = signal(true);
   readonly auctionOpen = signal(true);
@@ -515,4 +540,10 @@ export class DashboardLayoutComponent {
   readonly greeting = computed(() =>
     new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening',
   );
+  readonly roleLabel = computed(() => {
+    const role = this.auth.user()?.role;
+    return role ? USER_ROLES[role] : '';
+  });
+  constructor() { this.access.load().subscribe(); }
+  hasAny(resources: string[]): boolean { return resources.some((resource) => this.access.canAccess(resource)); }
 }

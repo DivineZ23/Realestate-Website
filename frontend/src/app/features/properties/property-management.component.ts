@@ -30,6 +30,7 @@ import { PropertyService } from '../../core/services/property.service';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
+import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
 
 @Component({
   selector: 'app-property-management',
@@ -96,7 +97,11 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
             <th>Type</th>
             <th>Rent</th>
             <th>Status</th>
-            <th>Updated</th>
+            <th>Rental Status</th>
+            <th>Tenant</th>
+            <th>CID</th>
+            <th>Number</th>
+            <th>Rent paid till</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -116,11 +121,15 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
               </td>
               <td>{{ property.rent | currency: 'USD' : 'symbol' : '1.0-0' }}</td>
               <td><app-status-badge [status]="property.status" /></td>
-              <td>{{ property.updatedAt | date: 'mediumDate' }}</td>
+              <td><span class="rental-status" [class]="property.rentalStatus || 'paid'">{{ rentalStatusLabel(property) }}</span></td>
+              <td>{{ property.tenantName || '—' }}</td>
+              <td>{{ property.tenantCid ?? '—' }}</td>
+              <td>{{ property.tenantPhoneNumber || '—' }}</td>
+              <td>{{ property.rentPaidThrough ? (property.rentPaidThrough | date: 'mediumDate') : '—' }}</td>
               <td>
                 <div class="row-actions">
                   @if (property.status === 'available' || property.status === 'booked') {
-                    <a [routerLink]="[property.id, 'assign']"><svg lucideUserPlus></svg>Assign</a>
+                    <a [routerLink]="[property.id, 'assign']"><svg lucideUserPlus></svg>Sell</a>
                   } @else if (property.status === 'owned') {
                     <button class="danger" (click)="evict(property)">
                       <svg lucideUserMinus></svg>Evict
@@ -150,7 +159,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
             </tr>
           } @empty {
             <tr>
-              <td colspan="8">
+              <td colspan="12">
                 <app-empty-state
                   title="No properties found"
                   message="Adjust your filters or add the first property."
@@ -224,6 +233,9 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         color: var(--muted);
         font-size: 0.7rem;
       }
+      .rental-status { display: inline-flex; padding: 5px 9px; border-radius: 999px; background: var(--forest-light); color: var(--forest); font-size: .72rem; font-weight: 700; text-transform: capitalize; }
+      .rental-status.overdue { background: var(--warning-soft); color: var(--warning-ink); }
+      .rental-status.evictable { background: var(--danger-soft); color: var(--danger); }
       .row-actions a,
       .row-actions button {
         border: 0;
@@ -293,6 +305,7 @@ export class PropertyManagementComponent {
   readonly typeLabel = propertyTypeLabel;
   readonly typeCapacity = propertyTypeCapacity;
   readonly blocks = signal<Block[]>([]);
+  rentalStatusLabel(property: Property) { return property.status === 'owned' ? (property.rentalStatus || 'paid') : '—'; }
   readonly loading = signal(false);
   readonly result = signal<PagedResult<Property>>({
     items: [],
@@ -364,20 +377,11 @@ export class PropertyManagementComponent {
   }
   evict(property: Property) {
     this.dialog
-      .open(ConfirmDialogComponent, {
-        data: {
-          title: 'Evict current tenant?',
-          message:
-            'The active tenancy will be ended, history preserved, and the property returned to Available.',
-          requireReason: true,
-          dangerous: true,
-          confirmLabel: 'Evict tenant',
-        },
-      })
+      .open(EvictTenantDialogComponent, { data: property })
       .afterClosed()
       .subscribe((result) => {
         if (result?.confirmed)
-          this.service.evict(property.id, result.reason).subscribe(() => this.refresh());
+          this.service.evict(property.id, { reason: result.reason, storageImageUrls: result.storageImageUrls }).subscribe(() => this.refresh());
       });
   }
   remove(property: Property) {

@@ -29,16 +29,13 @@ export interface CreateEnquiryRequest {
 }
 export interface Tenant {
   id: string;
-  propertyId: string;
+  cid?: number;
   fullName: string;
   phoneNumber: string;
-  email?: string;
-  startDate: string;
-  expectedEndDate?: string;
-  endDate?: string;
-  monthlyRent: number;
+  discordId: string;
+  propertyCount: number;
+  totalRent: number;
   status: string;
-  createdAt: string;
 }
 export interface AuditLog {
   id: string;
@@ -73,6 +70,14 @@ export interface DashboardSummary {
   pendingUsers: number;
   recentStatusChanges: StatusHistory[];
 }
+export interface PersonalActivity {
+  id: string; propertyId: string; propertyName: string; tenantName: string; cid?: number;
+  amount: number; occurredAt: string;
+}
+export interface PersonalStatistics {
+  housesSold: number; housesEvicted: number; totalDepositTaken: number;
+  recentSales: PersonalActivity[]; recentEvictions: PersonalActivity[];
+}
 
 export type RentSyncStatus = 'paid' | 'overdue' | 'evictable' | 'empty';
 export interface RentSyncRecord {
@@ -91,6 +96,10 @@ export interface RentSyncRecord {
   tenantMatched: boolean;
   overdueNotice?: string;
   evictionNotice?: string;
+  isResolved: boolean;
+  resolvedByUserId?: string;
+  resolvedByDisplayName?: string;
+  resolvedAt?: string;
 }
 export interface RentSyncSnapshot {
   id: string;
@@ -103,4 +112,19 @@ export interface RentSyncSnapshot {
   empty: number;
   unmappedTenants: number;
   records: RentSyncRecord[];
+}
+export interface EvictionHistory {
+  id: string;
+  propertyId: string;
+  propertyBusinessId?: number;
+  propertyName?: string;
+  tenantName: string;
+  cid?: number;
+  phoneNumber: string;
+  monthlyRent: number;
+  reason: string;
+  storageImageUrls: string[];
+  evictedByUserId?: string;
+  evictedByDisplayName?: string;
+  evictedAt: string;
 }

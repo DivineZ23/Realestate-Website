@@ -15,8 +15,15 @@ public sealed class Tenant : BaseDocument
     public DateTime? EndDate { get; set; }
     public decimal MonthlyRent { get; set; }
     public decimal SecurityDeposit { get; set; }
+    public DateTime? RentPaidThrough { get; set; }
+    public string RentalStatus { get; set; } = "paid";
     public string? EmergencyContact { get; set; }
     public string? Notes { get; set; }
     public string? EndReason { get; set; }
+    public List<string> EvictionStorageImages { get; set; } = [];
+    public string? EvictedByUserId { get; set; }
+    public string? EvictedByDisplayName { get; set; }
+    public string? EvictedPropertyName { get; set; }
+    public int? EvictedPropertyId { get; set; }
     public TenantStatus Status { get; set; } = TenantStatus.Active;
 }

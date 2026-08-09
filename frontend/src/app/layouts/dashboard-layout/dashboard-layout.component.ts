@@ -284,7 +284,7 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
       nav {
         display: flex;
         flex-direction: column;
-        gap: 7px;
+        gap: 12px;
         padding-top: 18px;
         flex: 1;
       }
@@ -320,7 +320,7 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
       }
       .section-links {
         display: grid;
-        gap: 3px;
+        gap: 7px;
         padding: 2px 0 3px 8px;
         border-left: 1px solid var(--sidebar-border);
         margin-left: 20px;
@@ -336,8 +336,10 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
         transform: rotate(-90deg);
       }
       nav a b {
-        font-weight: 600;
+        font-weight: 550;
+        letter-spacing: 0;
       }
+      nav a.active b { font-weight: 700; }
       nav a.active {
         background: var(--sidebar-active);
         color: var(--sidebar-active-text);

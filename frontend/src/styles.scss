@@ -14,7 +14,8 @@ body {
   background-attachment: fixed;
 }
 body {
-  line-height: 1.55;
+  font-size: 14px;
+  line-height: 21px;
   color: var(--ink);
   text-rendering: optimizeLegibility;
   transition:
@@ -191,6 +192,8 @@ h3 {
 .page-title h1 {
   margin: 4px 0 6px;
   font-size: clamp(1.8rem, 2.5vw, 2.35rem);
+  font-weight: 700;
+  letter-spacing: -0.7px;
 }
 .page-title p:last-child {
   max-width: 700px;

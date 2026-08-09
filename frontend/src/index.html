@@ -9,13 +9,13 @@
         try {
           const savedTheme = localStorage.getItem('imperial-estates-theme');
           const theme =
-            savedTheme === 'light' || savedTheme === 'dark'
+            savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'graphite'
               ? savedTheme
               : matchMedia('(prefers-color-scheme: dark)').matches
                 ? 'dark'
                 : 'light';
           document.documentElement.dataset.theme = theme;
-          document.documentElement.style.colorScheme = theme;
+          document.documentElement.style.colorScheme = theme === 'light' ? 'light' : 'dark';
         } catch {
           document.documentElement.dataset.theme = 'light';
         }

@@ -11,8 +11,9 @@ import { PropertyStatus } from '../../../core/models/property.models';
         display: inline-flex;
         padding: 5px 10px;
         border-radius: 999px;
-        font-size: 0.72rem;
-        font-weight: 760;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 16px;
         text-transform: capitalize;
       }
       .available {

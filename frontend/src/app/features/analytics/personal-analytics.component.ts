@@ -19,14 +19,25 @@ import { DashboardService } from '../../core/services/management.services';
     @if (stats(); as s) {
       <div class="metrics">
         <article class="panel">
-          <svg lucideHouse></svg><span>Houses sold</span><b>{{ s.housesSold }}</b>
+          <div class="metric-copy">
+            <span>Houses sold</span>
+            <b>{{ s.housesSold }}</b>
+          </div>
+          <div class="metric-icon" aria-hidden="true"><svg lucideHouse></svg></div>
         </article>
         <article class="panel">
-          <svg lucideUserX></svg><span>Houses evicted</span><b>{{ s.housesEvicted }}</b>
+          <div class="metric-copy">
+            <span>Houses evicted</span>
+            <b>{{ s.housesEvicted }}</b>
+          </div>
+          <div class="metric-icon" aria-hidden="true"><svg lucideUserX></svg></div>
         </article>
         <article class="panel">
-          <svg lucideBadgeDollarSign></svg><span>Total deposit taken</span
-          ><b>{{ s.totalDepositTaken | currency: 'USD' : 'symbol' : '1.0-0' }}</b>
+          <div class="metric-copy">
+            <span>Total deposit taken</span>
+            <b>{{ s.totalDepositTaken | currency: 'USD' : 'symbol' : '1.0-0' }}</b>
+          </div>
+          <div class="metric-icon" aria-hidden="true"><svg lucideBadgeDollarSign></svg></div>
         </article>
       </div>
       <div class="activity-grid">
@@ -91,23 +102,52 @@ import { DashboardService } from '../../core/services/management.services';
         margin-bottom: 20px;
       }
       .metrics article {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        gap: 6px 12px;
+        position: relative;
+        display: flex;
+        justify-content: space-between;
         align-items: center;
-        padding: 20px;
+        gap: 20px;
+        min-height: 96px;
+        padding: 18px 20px;
+        overflow: hidden;
       }
-      .metrics svg {
-        grid-row: 1/3;
-        width: 24px;
+      .metrics article::before {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 3px;
+        background: var(--forest);
+        content: '';
+      }
+      .metric-copy {
+        display: grid;
+        gap: 5px;
+        min-width: 0;
+      }
+      .metric-copy span {
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 600;
+      }
+      .metric-copy b {
+        color: var(--ink);
+        font-size: 1.9rem;
+        line-height: 1;
+        letter-spacing: -0.035em;
+      }
+      .metric-icon {
+        display: grid;
+        flex: 0 0 42px;
+        width: 42px;
+        height: 42px;
+        place-items: center;
+        border: 1px solid color-mix(in srgb, var(--forest) 30%, var(--border));
+        border-radius: 11px;
+        background: var(--forest-light);
         color: var(--forest);
       }
-      .metrics span {
-        color: var(--muted);
-        font-size: 0.76rem;
-      }
-      .metrics b {
-        font-size: 1.8rem;
+      .metric-icon svg {
+        width: 20px;
+        height: 20px;
       }
       .activity-grid {
         display: grid;

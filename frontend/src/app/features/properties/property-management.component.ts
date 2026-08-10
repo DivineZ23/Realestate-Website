@@ -121,11 +121,19 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
               </td>
               <td>{{ property.rent | currency: 'USD' : 'symbol' : '1.0-0' }}</td>
               <td><app-status-badge [status]="property.status" /></td>
-              <td><span class="rental-status" [class]="property.rentalStatus || 'paid'">{{ rentalStatusLabel(property) }}</span></td>
+              <td>
+                <span class="rental-status" [class]="property.rentalStatus || 'paid'">{{
+                  rentalStatusLabel(property)
+                }}</span>
+              </td>
               <td>{{ property.tenantName || '—' }}</td>
               <td>{{ property.tenantCid ?? '—' }}</td>
               <td>{{ property.tenantPhoneNumber || '—' }}</td>
-              <td>{{ property.rentPaidThrough ? (property.rentPaidThrough | date: 'mediumDate') : '—' }}</td>
+              <td>
+                {{
+                  property.rentPaidThrough ? (property.rentPaidThrough | date: 'mediumDate') : '—'
+                }}
+              </td>
               <td>
                 <div class="row-actions">
                   @if (property.status === 'available' || property.status === 'booked') {
@@ -233,9 +241,24 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
         color: var(--muted);
         font-size: 0.7rem;
       }
-      .rental-status { display: inline-flex; padding: 5px 9px; border-radius: 999px; background: var(--forest-light); color: var(--forest); font-size: .72rem; font-weight: 700; text-transform: capitalize; }
-      .rental-status.overdue { background: var(--warning-soft); color: var(--warning-ink); }
-      .rental-status.evictable { background: var(--danger-soft); color: var(--danger); }
+      .rental-status {
+        display: inline-flex;
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: var(--forest-light);
+        color: var(--forest);
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: capitalize;
+      }
+      .rental-status.overdue {
+        background: var(--warning-soft);
+        color: var(--warning-ink);
+      }
+      .rental-status.evictable {
+        background: var(--danger-soft);
+        color: var(--danger);
+      }
       .row-actions a,
       .row-actions button {
         border: 0;
@@ -305,7 +328,9 @@ export class PropertyManagementComponent {
   readonly typeLabel = propertyTypeLabel;
   readonly typeCapacity = propertyTypeCapacity;
   readonly blocks = signal<Block[]>([]);
-  rentalStatusLabel(property: Property) { return property.status === 'owned' ? (property.rentalStatus || 'paid') : '—'; }
+  rentalStatusLabel(property: Property) {
+    return property.status === 'owned' ? property.rentalStatus || 'paid' : '—';
+  }
   readonly loading = signal(false);
   readonly result = signal<PagedResult<Property>>({
     items: [],
@@ -381,7 +406,12 @@ export class PropertyManagementComponent {
       .afterClosed()
       .subscribe((result) => {
         if (result?.confirmed)
-          this.service.evict(property.id, { reason: result.reason, storageImageUrls: result.storageImageUrls }).subscribe(() => this.refresh());
+          this.service
+            .evict(property.id, {
+              reason: result.reason,
+              storageImageUrls: result.storageImageUrls,
+            })
+            .subscribe(() => this.refresh());
       });
   }
   remove(property: Property) {

@@ -7,8 +7,10 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
   imports: [DatePipe, TitleCasePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div class="page-title">
-      <p class="eyebrow">Personal account</p>
-      <h1>Profile</h1>
+      <div>
+        <p class="eyebrow">Personal account</p>
+        <h1>Profile</h1>
+      </div>
     </div>
     @if (auth.user(); as user) {
       <div class="profile panel">

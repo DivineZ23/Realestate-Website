@@ -28,7 +28,14 @@ import { LucideSearch, LucideSlidersHorizontal, LucideX } from '@lucide/angular'
 
 @Component({
   selector: 'app-properties-list',
-  imports: [ReactiveFormsModule, PropertyCardComponent, EmptyStateComponent, LucideSearch, LucideSlidersHorizontal, LucideX],
+  imports: [
+    ReactiveFormsModule,
+    PropertyCardComponent,
+    EmptyStateComponent,
+    LucideSearch,
+    LucideSlidersHorizontal,
+    LucideX,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<section class="page-head">
       <div class="container">
@@ -38,7 +45,10 @@ import { LucideSearch, LucideSlidersHorizontal, LucideX } from '@lucide/angular'
       </div>
     </section>
     <section class="container listing">
-      <div class="filter-heading"><div><svg lucideSlidersHorizontal></svg><b>Refine your search</b></div><button type="button" (click)="clear()"><svg lucideX></svg>Clear filters</button></div>
+      <div class="filter-heading">
+        <div><svg lucideSlidersHorizontal></svg><b>Refine your search</b></div>
+        <button type="button" (click)="clear()"><svg lucideX></svg>Clear filters</button>
+      </div>
       <form [formGroup]="filters" class="filters">
         <label class="search"
           ><svg lucideSearch></svg
@@ -88,8 +98,8 @@ import { LucideSearch, LucideSlidersHorizontal, LucideX } from '@lucide/angular'
           <option value="newest:desc">Newest</option>
           <option value="rent:asc">Rent: low to high</option>
           <option value="rent:desc">Rent: high to low</option>
-          <option value="name:asc">Name</option></select
-        >
+          <option value="name:asc">Name</option>
+        </select>
       </form>
       <div class="result-bar">
         <span
@@ -172,13 +182,27 @@ import { LucideSearch, LucideSlidersHorizontal, LucideX } from '@lucide/angular'
         align-items: center;
         gap: 7px;
       }
-      .filter-heading b { font-size: .86rem; }
-      .filter-heading svg { width: 16px; height: 16px; }
-      .filter-heading button {
-        border: 0; padding: 7px 9px; border-radius: 8px; background: transparent;
-        color: var(--muted); cursor: pointer; font-size: .78rem; font-weight: 650;
+      .filter-heading b {
+        font-size: 0.86rem;
       }
-      .filter-heading button:hover { color: var(--ink); background: var(--surface-muted); }
+      .filter-heading svg {
+        width: 16px;
+        height: 16px;
+      }
+      .filter-heading button {
+        border: 0;
+        padding: 7px 9px;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 0.78rem;
+        font-weight: 650;
+      }
+      .filter-heading button:hover {
+        color: var(--ink);
+        background: var(--surface-muted);
+      }
       .filters {
         padding: 14px;
         border: 1px solid var(--border);

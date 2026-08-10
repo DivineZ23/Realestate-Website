@@ -3,16 +3,22 @@ import { FormsModule } from '@angular/forms';
 import { LucidePlus, LucideSave, LucideTrash2 } from '@lucide/angular';
 import { TeamMember } from '../../core/models/user.models';
 import { SettingsService } from '../../core/services/management.services';
+import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 @Component({
   selector: 'app-settings',
-  imports: [FormsModule, LucidePlus, LucideSave, LucideTrash2],
+  imports: [FormsModule, LucidePlus, LucideSave, LucideTrash2, ThemeToggleComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div class="page-title">
-      <p class="eyebrow">Administration</p>
-      <h1>Settings</h1>
-      <p>Operational configuration is intentionally narrow and secure.</p>
+      <div>
+        <p class="eyebrow">Administration</p>
+        <h1>Settings</h1>
+        <p>Operational configuration is intentionally narrow and secure.</p>
+      </div>
     </div>
     <div class="settings-grid">
+      <section class="appearance-editor">
+        <app-theme-toggle [inline]="true" />
+      </section>
       <section class="panel team-editor">
         <header>
           <div>
@@ -27,15 +33,25 @@ import { SettingsService } from '../../core/services/management.services';
           @for (member of members(); track member.id; let index = $index) {
             <article>
               <div class="member-avatar"><img [src]="member.imageUrl" alt="" /></div>
-              <div class="member-fields"><label class="field"><span>Name</span><input [(ngModel)]="member.name" /></label>
-              <label class="field"><span>Title</span><input [(ngModel)]="member.title" /></label>
-              <label class="field wide"
-                ><span>Biography</span><textarea rows="2" [(ngModel)]="member.biography"></textarea>
-              </label>
-              <label class="field wide"
-                ><span>Image URL</span><input [(ngModel)]="member.imageUrl"
-              /></label></div>
-              <button class="remove" type="button" (click)="remove(index)" aria-label="Remove team member"><svg lucideTrash2></svg></button>
+              <div class="member-fields">
+                <label class="field"><span>Name</span><input [(ngModel)]="member.name" /></label>
+                <label class="field"><span>Title</span><input [(ngModel)]="member.title" /></label>
+                <label class="field wide"
+                  ><span>Biography</span
+                  ><textarea rows="2" [(ngModel)]="member.biography"></textarea>
+                </label>
+                <label class="field wide"
+                  ><span>Image URL</span><input [(ngModel)]="member.imageUrl"
+                /></label>
+              </div>
+              <button
+                class="remove"
+                type="button"
+                (click)="remove(index)"
+                aria-label="Remove team member"
+              >
+                <svg lucideTrash2></svg>
+              </button>
             </article>
           }
         </div>
@@ -80,14 +96,26 @@ import { SettingsService } from '../../core/services/management.services';
       .page-title p:last-child {
         color: var(--muted);
       }
-      .settings-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+      .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
       .settings-grid section {
         display: flex;
         justify-content: space-between;
         align-items: center;
         padding: 22px;
       }
-      .settings-grid .team-editor { display: block; grid-column: 1 / -1; }
+      .settings-grid .team-editor {
+        display: block;
+        grid-column: 1 / -1;
+      }
+      .settings-grid .appearance-editor {
+        display: block;
+        grid-column: 1 / -1;
+        padding: 0;
+      }
       .team-editor header {
         display: flex;
         justify-content: space-between;
@@ -113,9 +141,19 @@ import { SettingsService } from '../../core/services/management.services';
         border-radius: 50%;
         object-fit: cover;
       }
-      .member-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; min-width: 0; }
-      .member-fields .wide { grid-column: 1 / -1; }
-      .member-fields input, .member-fields textarea { width: 100%; }
+      .member-fields {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        min-width: 0;
+      }
+      .member-fields .wide {
+        grid-column: 1 / -1;
+      }
+      .member-fields input,
+      .member-fields textarea {
+        width: 100%;
+      }
       .remove {
         width: 34px;
         height: 34px;
@@ -155,7 +193,9 @@ import { SettingsService } from '../../core/services/management.services';
         border-radius: 99px;
       }
       @media (max-width: 760px) {
-        .settings-grid { grid-template-columns: 1fr; }
+        .settings-grid {
+          grid-template-columns: 1fr;
+        }
         .members article {
           grid-template-columns: 52px minmax(0, 1fr) 34px;
         }
@@ -163,8 +203,12 @@ import { SettingsService } from '../../core/services/management.services';
           width: 52px;
           height: 52px;
         }
-        .member-fields { grid-template-columns: 1fr; }
-        .member-fields .wide { grid-column: 1; }
+        .member-fields {
+          grid-template-columns: 1fr;
+        }
+        .member-fields .wide {
+          grid-column: 1;
+        }
       }
     `,
   ],

@@ -40,5 +40,7 @@ export const pageAccessGuard: CanActivateFn = (route: ActivatedRouteSnapshot) =>
   const router = inject(Router);
   const resource = route.data['accessKey'] as string | undefined;
   if (!resource) return true;
-  return access.load().pipe(map(() => access.canAccess(resource) ? true : router.createUrlTree(['/dashboard'])));
+  return access
+    .load()
+    .pipe(map(() => (access.canAccess(resource) ? true : router.createUrlTree(['/dashboard']))));
 };

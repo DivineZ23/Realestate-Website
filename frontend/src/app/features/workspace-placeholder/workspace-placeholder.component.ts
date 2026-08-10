@@ -7,9 +7,11 @@ import { LucideConstruction } from '@lucide/angular';
   imports: [LucideConstruction],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div class="page-title">
-      <p class="eyebrow">{{ section }}</p>
-      <h1>{{ title }}</h1>
-      <p>{{ description }}</p>
+      <div>
+        <p class="eyebrow">{{ section }}</p>
+        <h1>{{ title }}</h1>
+        <p>{{ description }}</p>
+      </div>
     </div>
     <div class="panel placeholder">
       <svg lucideConstruction></svg>
@@ -27,7 +29,7 @@ import { LucideConstruction } from '@lucide/angular';
         font-size: 2.5rem;
         margin: 4px 0;
       }
-      .page-title > p:last-child,
+      .page-title p:last-child,
       .placeholder p {
         color: var(--muted);
       }

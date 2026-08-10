@@ -15,7 +15,11 @@ import {
   LucideTrash2,
 } from '@lucide/angular';
 import { map } from 'rxjs';
-import { EvictionHistory, RentSyncRecord, RentSyncSnapshot } from '../../core/models/management.models';
+import {
+  EvictionHistory,
+  RentSyncRecord,
+  RentSyncSnapshot,
+} from '../../core/models/management.models';
 import { NoticeService, TenantService, UserService } from '../../core/services/management.services';
 import { AuthService } from '../../core/services/auth.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
@@ -36,7 +40,11 @@ interface NoticeDayGroup {
   records: RentSyncRecord[];
   unresolved: number;
 }
-interface EvictionDayGroup { key: string; date: string; records: EvictionHistory[]; }
+interface EvictionDayGroup {
+  key: string;
+  date: string;
+  records: EvictionHistory[];
+}
 
 @Component({
   selector: 'app-notices',
@@ -56,9 +64,11 @@ interface EvictionDayGroup { key: string; date: string; records: EvictionHistory
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div class="page-title">
-      <p class="eyebrow">Rent status workflow</p>
-      <h1>{{ title() }}</h1>
-      <p>{{ description() }}</p>
+      <div>
+        <p class="eyebrow">Rent status workflow</p>
+        <h1>{{ title() }}</h1>
+        <p>{{ description() }}</p>
+      </div>
     </div>
 
     @if (mode() === 'sync') {
@@ -103,7 +113,22 @@ interface EvictionDayGroup { key: string; date: string; records: EvictionHistory
     }
 
     @if (snapshot(); as data) {
-      @if (!isSyncedDataRecords()) {
+      @if (isNoticeView()) {
+        <div class="summary-grid notice-summary">
+          <div class="panel notice-total" [class.eviction]="mode() === 'evictionNotice'">
+            <b>{{ currentNoticeTotal() }}</b>
+            <span>{{ mode() === 'overdueNotice' ? 'Total overdue' : 'Total evictable' }}</span>
+          </div>
+          <div class="panel pending">
+            <b>{{ pendingNoticeCount() }}</b>
+            <span>Pending notices to be sent</span>
+          </div>
+          <div class="panel sent">
+            <b>{{ noticesSentToday() }}</b>
+            <span>Notices sent today</span>
+          </div>
+        </div>
+      } @else if (mode() !== 'sync' && !isSyncedDataRecords()) {
         <div class="summary-grid">
           <div class="panel">
             <b>{{ data.total }}</b
@@ -123,8 +148,11 @@ interface EvictionDayGroup { key: string; date: string; records: EvictionHistory
           </div>
         </div>
       }
-      @if (data.syncedAt) {
-        <p class="synced">Last synced {{ data.syncedAt | date: 'mediumDate' }} at {{ data.syncedAt | date: 'shortTime' }}</p>
+      @if (data.syncedAt && mode() !== 'sync' && !isSyncedDataRecords()) {
+        <p class="synced">
+          Last synced {{ data.syncedAt | date: 'mediumDate' }} at
+          {{ data.syncedAt | date: 'shortTime' }}
+        </p>
       }
     }
 
@@ -142,16 +170,66 @@ interface EvictionDayGroup { key: string; date: string; records: EvictionHistory
           <div class="notice-groups eviction-history">
             @for (group of evictionGroups(); track group.key) {
               <section class="panel day-section">
-                <button class="day-header" type="button" (click)="toggleEvictionGroup(group.key)" [attr.aria-expanded]="isEvictionGroupOpen(group.key)">
-                  <span class="day-title"><svg lucideChevronDown [class.closed]="!isEvictionGroupOpen(group.key)"></svg><span><b>{{ group.date | date: 'fullDate' }}</b><small>{{ group.records.length }} {{ group.records.length === 1 ? 'eviction' : 'evictions' }}</small></span></span>
+                <button
+                  class="day-header"
+                  type="button"
+                  (click)="toggleEvictionGroup(group.key)"
+                  [attr.aria-expanded]="isEvictionGroupOpen(group.key)"
+                >
+                  <span class="day-title"
+                    ><svg lucideChevronDown [class.closed]="!isEvictionGroupOpen(group.key)"></svg
+                    ><span
+                      ><b>{{ group.date | date: 'fullDate' }}</b
+                      ><small
+                        >{{ group.records.length }}
+                        {{ group.records.length === 1 ? 'eviction' : 'evictions' }}</small
+                      ></span
+                    ></span
+                  >
                 </button>
                 @if (isEvictionGroupOpen(group.key)) {
                   <div class="day-content">
                     @for (eviction of group.records; track eviction.id) {
                       <article class="eviction-history-card">
                         <time>{{ eviction.evictedAt | date: 'shortTime' }}</time>
-                        <div class="eviction-row"><div><small>Property name</small><b>{{ eviction.propertyName || 'Unknown property' }}</b></div><div><small>Owner name</small><b>{{ eviction.tenantName }}</b></div><div><small>CID</small><b>{{ eviction.cid || 'N/A' }}</b></div><div><small>Number</small><b>{{ eviction.phoneNumber }}</b></div><div><small>Storage images</small>@if (eviction.storageImageUrls.length) { <button class="image-toggle" type="button" (click)="toggleImages(eviction.id)"><svg lucideImages></svg>{{ eviction.storageImageUrls.length }}</button> } @else { <span class="no-evidence">None</span> }</div></div>
-                        @if (imagesOpen()[eviction.id]) { <div class="evidence-grid">@for (image of eviction.storageImageUrls; track image) { <a [href]="image" target="_blank" rel="noopener"><img [src]="image" alt="Storage evidence" /></a> }</div> }
+                        <div class="eviction-row">
+                          <div>
+                            <small>Property name</small
+                            ><b>{{ eviction.propertyName || 'Unknown property' }}</b>
+                          </div>
+                          <div>
+                            <small>Owner name</small><b>{{ eviction.tenantName }}</b>
+                          </div>
+                          <div>
+                            <small>CID</small><b>{{ eviction.cid || 'N/A' }}</b>
+                          </div>
+                          <div>
+                            <small>Number</small><b>{{ eviction.phoneNumber }}</b>
+                          </div>
+                          <div>
+                            <small>Storage images</small>
+                            @if (eviction.storageImageUrls.length) {
+                              <button
+                                class="image-toggle"
+                                type="button"
+                                (click)="toggleImages(eviction.id)"
+                              >
+                                <svg lucideImages></svg>{{ eviction.storageImageUrls.length }}
+                              </button>
+                            } @else {
+                              <span class="no-evidence">None</span>
+                            }
+                          </div>
+                        </div>
+                        @if (imagesOpen()[eviction.id]) {
+                          <div class="evidence-grid">
+                            @for (image of eviction.storageImageUrls; track image) {
+                              <a [href]="image" target="_blank" rel="noopener"
+                                ><img [src]="image" alt="Storage evidence"
+                              /></a>
+                            }
+                          </div>
+                        }
                       </article>
                     }
                   </div>
@@ -159,7 +237,14 @@ interface EvictionDayGroup { key: string; date: string; records: EvictionHistory
               </section>
             }
           </div>
-        } @else { <div class="panel"><app-empty-state title="No completed evictions" message="Completed eviction records will appear here." /></div> }
+        } @else {
+          <div class="panel">
+            <app-empty-state
+              title="No completed evictions"
+              message="Completed eviction records will appear here."
+            />
+          </div>
+        }
       } @else if (isSyncedDataRecords()) {
         <div class="panel table-wrap">
           <table class="data-table">
@@ -177,7 +262,10 @@ interface EvictionDayGroup { key: string; date: string; records: EvictionHistory
               @for (record of snapshotList(); track record.id) {
                 <tr>
                   <td>
-                    {{ record.syncedAt ? (record.syncedAt | date: 'mediumDate') : 'Unknown date' }} @if (record.syncedAt) { at {{ record.syncedAt | date: 'shortTime' }} }
+                    {{ record.syncedAt ? (record.syncedAt | date: 'mediumDate') : 'Unknown date' }}
+                    @if (record.syncedAt) {
+                      at {{ record.syncedAt | date: 'shortTime' }}
+                    }
                   </td>
                   <td>{{ record.active }}</td>
                   <td>{{ record.overdue }}</td>
@@ -206,8 +294,22 @@ interface EvictionDayGroup { key: string; date: string; records: EvictionHistory
         <div class="notice-groups">
           @for (group of noticeGroups(); track group.key) {
             <section class="panel day-section" [class.complete]="group.unresolved === 0">
-              <button class="day-header" type="button" (click)="toggleGroup(group.key)" [attr.aria-expanded]="isGroupOpen(group.key)">
-                <span class="day-title"><svg lucideChevronDown [class.closed]="!isGroupOpen(group.key)"></svg><span><b>{{ group.syncedAt | date: 'fullDate' }}</b><small>{{ group.records.length }} {{ group.records.length === 1 ? 'notice' : 'notices' }}</small></span></span>
+              <button
+                class="day-header"
+                type="button"
+                (click)="toggleGroup(group.key)"
+                [attr.aria-expanded]="isGroupOpen(group.key)"
+              >
+                <span class="day-title"
+                  ><svg lucideChevronDown [class.closed]="!isGroupOpen(group.key)"></svg
+                  ><span
+                    ><b>{{ group.syncedAt | date: 'fullDate' }}</b
+                    ><small
+                      >{{ group.records.length }}
+                      {{ group.records.length === 1 ? 'notice' : 'notices' }}</small
+                    ></span
+                  ></span
+                >
                 @if (group.unresolved === 0) {
                   <span class="group-status resolved"><svg lucideCircleCheck></svg>Complete</span>
                 } @else {
@@ -220,21 +322,52 @@ interface EvictionDayGroup { key: string; date: string; records: EvictionHistory
                     <article class="notice-card" [class.resolved-card]="record.isResolved">
                       <div class="notice-message">
                         <div class="notice-text">{{ noticeText(record) }}</div>
-                        <button class="copy message-action" type="button" (click)="copyNotice(group.snapshotId, record)">
-                          <svg lucideCopy></svg>{{ copiedRow() === recordKey(group.snapshotId, record) ? 'Copied' : 'Copy' }}
+                        <button
+                          class="copy message-action"
+                          type="button"
+                          (click)="copyNotice(group.snapshotId, record)"
+                        >
+                          <svg lucideCopy></svg
+                          >{{
+                            copiedRow() === recordKey(group.snapshotId, record) ? 'Copied' : 'Copy'
+                          }}
                         </button>
                         @if (mode() === 'overdueNotice') {
-                          <button class="phone-copy message-action" type="button" [disabled]="!record.phone" (click)="copyPhone(record)">
-                            <svg lucidePhone></svg>{{ copiedPhone() === recordKey(group.snapshotId, record) ? 'Copied' : (record.phone || 'No number') }}
+                          <button
+                            class="phone-copy message-action"
+                            type="button"
+                            [disabled]="!record.phone"
+                            (click)="copyPhone(record)"
+                          >
+                            <svg lucidePhone></svg
+                            >{{
+                              copiedPhone() === recordKey(group.snapshotId, record)
+                                ? 'Copied'
+                                : record.phone || 'No number'
+                            }}
                           </button>
                         }
                         <label class="resolve-control message-resolve">
-                          <input type="checkbox" [checked]="record.isResolved" [disabled]="resolvingRow() === recordKey(group.snapshotId, record)" (change)="setResolution(group, record, $any($event.target).checked)" />
+                          <input
+                            type="checkbox"
+                            [checked]="record.isResolved"
+                            [disabled]="resolvingRow() === recordKey(group.snapshotId, record)"
+                            (change)="setResolution(group, record, $any($event.target).checked)"
+                          />
                           <span>Mark as resolved</span>
                         </label>
                       </div>
                       @if (record.isResolved) {
-                        <p class="resolved-by"><svg lucideCircleCheck></svg>Resolved by <b>{{ record.resolvedByDisplayName || 'Unknown user' }}</b>@if (record.resolvedAt) { <span>&middot; {{ record.resolvedAt | date: 'mediumDate' }} at {{ record.resolvedAt | date: 'shortTime' }}</span> }</p>
+                        <p class="resolved-by">
+                          <svg lucideCircleCheck></svg>Resolved by
+                          <b>{{ record.resolvedByDisplayName || 'Unknown user' }}</b>
+                          @if (record.resolvedAt) {
+                            <span
+                              >&middot; {{ record.resolvedAt | date: 'mediumDate' }} at
+                              {{ record.resolvedAt | date: 'shortTime' }}</span
+                            >
+                          }
+                        </p>
                       }
                       @if (!record.discordId && mode() === 'evictionNotice') {
                         <p class="unmapped">Discord ID not found for CID {{ record.cid }}.</p>
@@ -398,10 +531,22 @@ interface EvictionDayGroup { key: string; date: string; records: EvictionHistory
         color: var(--forest);
       }
       .summary-grid .overdue b {
-        color: var(--warning);
+        color: var(--warning-ink);
       }
       .summary-grid .eviction b {
         color: var(--danger);
+      }
+      .summary-grid.notice-summary {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .notice-summary .notice-total b {
+        color: var(--warning-ink);
+      }
+      .notice-summary .pending b {
+        color: var(--warning-ink);
+      }
+      .notice-summary .sent b {
+        color: var(--forest);
       }
       .synced {
         margin: 9px 0 20px;
@@ -515,6 +660,9 @@ interface EvictionDayGroup { key: string; date: string; records: EvictionHistory
         .summary-grid {
           grid-template-columns: repeat(2, 1fr);
         }
+        .summary-grid.notice-summary {
+          grid-template-columns: 1fr;
+        }
         .sync-actions {
           align-items: stretch;
           flex-direction: column;
@@ -590,6 +738,31 @@ export class NoticesComponent {
     () => this.mode() === 'overdueNotice' || this.mode() === 'evictionNotice',
   );
   readonly isSyncedDataRecords = computed(() => this.mode() === 'syncedDataRecords');
+  readonly currentNoticeRecords = computed(() => {
+    if (!this.isNoticeView()) return [];
+    const status = this.mode() === 'overdueNotice' ? 'overdue' : 'evictable';
+    return (this.snapshot()?.records ?? []).filter((record) => record.status === status);
+  });
+  readonly currentNoticeTotal = computed(() => this.currentNoticeRecords().length);
+  readonly pendingNoticeCount = computed(
+    () => this.currentNoticeRecords().filter((record) => !record.isResolved).length,
+  );
+  readonly noticesSentToday = computed(() => {
+    if (!this.isNoticeView()) return 0;
+    const status = this.mode() === 'overdueNotice' ? 'overdue' : 'evictable';
+    const today = new Date();
+    return this.snapshotList().reduce(
+      (total, snapshot) =>
+        total +
+        snapshot.records.filter(
+          (record) =>
+            record.status === status &&
+            record.isResolved &&
+            this.isSameLocalDay(record.resolvedAt, today),
+        ).length,
+      0,
+    );
+  });
   readonly noticeGroups = computed<NoticeDayGroup[]>(() => {
     if (!this.isNoticeView()) return [];
     const status = this.mode() === 'overdueNotice' ? 'overdue' : 'evictable';
@@ -617,7 +790,11 @@ export class NoticesComponent {
       const key = this.dayKey(record.evictedAt, record.id);
       groups.set(key, [...(groups.get(key) ?? []), record]);
     }
-    return Array.from(groups.entries()).map(([key, records]) => ({ key, date: records[0].evictedAt, records }));
+    return Array.from(groups.entries()).map(([key, records]) => ({
+      key,
+      date: records[0].evictedAt,
+      records,
+    }));
   });
 
   constructor() {
@@ -705,9 +882,15 @@ export class NoticesComponent {
   toggleGroup(key: string) {
     this.expandedDays.update((values) => ({ ...values, [key]: !values[key] }));
   }
-  isEvictionGroupOpen(key: string) { return this.expandedEvictionDays()[key] ?? false; }
-  toggleEvictionGroup(key: string) { this.expandedEvictionDays.update((values) => ({ ...values, [key]: !values[key] })); }
-  toggleImages(id: string) { this.imagesOpen.update((values) => ({ ...values, [id]: !values[id] })); }
+  isEvictionGroupOpen(key: string) {
+    return this.expandedEvictionDays()[key] ?? false;
+  }
+  toggleEvictionGroup(key: string) {
+    this.expandedEvictionDays.update((values) => ({ ...values, [key]: !values[key] }));
+  }
+  toggleImages(id: string) {
+    this.imagesOpen.update((values) => ({ ...values, [id]: !values[id] }));
+  }
 
   setResolution(group: NoticeDayGroup, record: RentSyncRecord, isResolved: boolean) {
     const key = this.recordKey(group.snapshotId, record);
@@ -715,15 +898,22 @@ export class NoticesComponent {
     this.resolvingRow.set(key);
     this.notices.setResolution(group.snapshotId, record.rowNumber, isResolved).subscribe({
       next: (updated) => {
-        this.snapshotList.update((values) => values.map((value) => value.id === updated.id ? updated : value));
+        this.snapshotList.update((values) =>
+          values.map((value) => (value.id === updated.id ? updated : value)),
+        );
         if (this.snapshot()?.id === updated.id) this.snapshot.set(updated);
         const status = this.mode() === 'overdueNotice' ? 'overdue' : 'evictable';
-        const unresolved = updated.records.filter((value) => value.status === status && !value.isResolved).length;
+        const unresolved = updated.records.filter(
+          (value) => value.status === status && !value.isResolved,
+        ).length;
         this.expandedDays.update((values) => ({ ...values, [group.key]: unresolved > 0 }));
         this.resolvingRow.set(null);
       },
       error: () => {
-        this.snackBar.open('The notice resolution could not be updated.', 'Dismiss', { duration: 4000, panelClass: ['error-toast'] });
+        this.snackBar.open('The notice resolution could not be updated.', 'Dismiss', {
+          duration: 4000,
+          panelClass: ['error-toast'],
+        });
         this.resolvingRow.set(null);
       },
     });
@@ -782,5 +972,15 @@ export class NoticesComponent {
     if (!value) return fallback;
     const date = new Date(value);
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }
+
+  private isSameLocalDay(value: string | undefined, target: Date) {
+    if (!value) return false;
+    const date = new Date(value);
+    return (
+      date.getFullYear() === target.getFullYear() &&
+      date.getMonth() === target.getMonth() &&
+      date.getDate() === target.getDate()
+    );
   }
 }

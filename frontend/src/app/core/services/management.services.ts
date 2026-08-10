@@ -118,7 +118,9 @@ export class DashboardService {
   get(): Observable<DashboardSummary> {
     return this.api.get(API_ENDPOINTS.dashboard);
   }
-  personal(): Observable<PersonalStatistics> { return this.api.get(API_ENDPOINTS.personalStatistics); }
+  personal(): Observable<PersonalStatistics> {
+    return this.api.get(API_ENDPOINTS.personalStatistics);
+  }
 }
 @Injectable({ providedIn: 'root' })
 export class TenantService {
@@ -145,8 +147,15 @@ export class NoticeService {
   deleteSnapshot(id: string): Observable<void> {
     return this.api.delete<void>(`${API_ENDPOINTS.notices.snapshots}/${id}`);
   }
-  setResolution(snapshotId: string, rowNumber: number, isResolved: boolean): Observable<RentSyncSnapshot> {
-    return this.api.patch(`${API_ENDPOINTS.notices.snapshots}/${snapshotId}/records/${rowNumber}/resolution`, { isResolved });
+  setResolution(
+    snapshotId: string,
+    rowNumber: number,
+    isResolved: boolean,
+  ): Observable<RentSyncSnapshot> {
+    return this.api.patch(
+      `${API_ENDPOINTS.notices.snapshots}/${snapshotId}/records/${rowNumber}/resolution`,
+      { isResolved },
+    );
   }
 }
 @Injectable({ providedIn: 'root' })

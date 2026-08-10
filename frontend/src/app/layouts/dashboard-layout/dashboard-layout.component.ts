@@ -76,7 +76,9 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
       </div>
       <nav aria-label="Dashboard sections">
         <section class="nav-section" *ngIf="access.canAccess('analytics')">
-          <a class="section-direct" routerLink="/dashboard/analytics" routerLinkActive="active"><svg lucideChartNoAxesCombined></svg><b>Analytics</b></a>
+          <a class="section-direct" routerLink="/dashboard/analytics" routerLinkActive="active"
+            ><svg lucideChartNoAxesCombined></svg><b>Analytics</b></a
+          >
         </section>
         <section class="nav-section" *ngIf="hasAny(['auction.listings'])">
           <button
@@ -91,13 +93,20 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
           </button>
           <ng-container *ngIf="auctionOpen()">
             <div class="section-links" id="auction-navigation">
-              <a *ngIf="access.canAccess('auction.listings')" routerLink="/dashboard/auction/listings" routerLinkActive="active">
+              <a
+                *ngIf="access.canAccess('auction.listings')"
+                routerLink="/dashboard/auction/listings"
+                routerLinkActive="active"
+              >
                 <svg lucideClipboardList></svg><b>Listings</b>
               </a>
             </div>
           </ng-container>
         </section>
-        <section class="nav-section" *ngIf="hasAny(['portfolio.properties', 'portfolio.blocks', 'portfolio.tenants'])">
+        <section
+          class="nav-section"
+          *ngIf="hasAny(['portfolio.properties', 'portfolio.blocks', 'portfolio.tenants'])"
+        >
           <button
             class="section-toggle"
             type="button"
@@ -110,19 +119,43 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
           </button>
           <ng-container *ngIf="portfolioOpen()">
             <div class="section-links" id="portfolio-navigation">
-              <a *ngIf="access.canAccess('portfolio.properties')" routerLink="/dashboard/properties" routerLinkActive="active">
+              <a
+                *ngIf="access.canAccess('portfolio.properties')"
+                routerLink="/dashboard/properties"
+                routerLinkActive="active"
+              >
                 <svg lucideBuilding2></svg><b>Properties</b>
               </a>
-              <a *ngIf="access.canAccess('portfolio.blocks')" routerLink="/dashboard/blocks" routerLinkActive="active">
+              <a
+                *ngIf="access.canAccess('portfolio.blocks')"
+                routerLink="/dashboard/blocks"
+                routerLinkActive="active"
+              >
                 <svg lucideBlocks></svg><b>Blocks</b>
               </a>
-              <a *ngIf="access.canAccess('portfolio.tenants')" routerLink="/dashboard/tenants" routerLinkActive="active">
+              <a
+                *ngIf="access.canAccess('portfolio.tenants')"
+                routerLink="/dashboard/tenants"
+                routerLinkActive="active"
+              >
                 <svg lucideContactRound></svg><b>Tenants</b>
               </a>
             </div>
           </ng-container>
         </section>
-        <section class="nav-section" *ngIf="hasAny(['notices.overdue', 'notices.eviction', 'notices.overdueList', 'notices.evictionList', 'notices.sync', 'notices.syncedDataRecords'])">
+        <section
+          class="nav-section"
+          *ngIf="
+            hasAny([
+              'notices.overdue',
+              'notices.eviction',
+              'notices.overdueList',
+              'notices.evictionList',
+              'notices.sync',
+              'notices.syncedDataRecords',
+            ])
+          "
+        >
           <button
             class="section-toggle"
             type="button"
@@ -135,16 +168,32 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
           </button>
           <ng-container *ngIf="noticesOpen()">
             <div class="section-links" id="notices-navigation">
-              <a *ngIf="access.canAccess('notices.overdue')" routerLink="/dashboard/notices/overdue" routerLinkActive="active">
+              <a
+                *ngIf="access.canAccess('notices.overdue')"
+                routerLink="/dashboard/notices/overdue"
+                routerLinkActive="active"
+              >
                 <svg lucideClockAlert></svg><b>Overdue Notice</b>
               </a>
-              <a *ngIf="access.canAccess('notices.eviction')" routerLink="/dashboard/notices/eviction" routerLinkActive="active">
+              <a
+                *ngIf="access.canAccess('notices.eviction')"
+                routerLink="/dashboard/notices/eviction"
+                routerLinkActive="active"
+              >
                 <svg lucideFileWarning></svg><b>Eviction Notice</b>
               </a>
-              <a *ngIf="access.canAccess('notices.overdueList')" routerLink="/dashboard/notices/overdue-list" routerLinkActive="active">
+              <a
+                *ngIf="access.canAccess('notices.overdueList')"
+                routerLink="/dashboard/notices/overdue-list"
+                routerLinkActive="active"
+              >
                 <svg lucideList></svg><b>Overdue List</b>
               </a>
-              <a *ngIf="access.canAccess('notices.evictionList')" routerLink="/dashboard/notices/eviction-list" routerLinkActive="active">
+              <a
+                *ngIf="access.canAccess('notices.evictionList')"
+                routerLink="/dashboard/notices/eviction-list"
+                routerLinkActive="active"
+              >
                 <svg lucideListX></svg><b>Eviction List</b>
               </a>
               <ng-container *ngIf="auth.isManager() && access.canAccess('notices.sync')">
@@ -152,13 +201,27 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
                   <svg lucideUploadCloud></svg><b>Data Sync</b>
                 </a>
               </ng-container>
-              <a *ngIf="access.canAccess('notices.syncedDataRecords')" routerLink="/dashboard/notices/synced-data-records" routerLinkActive="active">
+              <a
+                *ngIf="access.canAccess('notices.syncedDataRecords')"
+                routerLink="/dashboard/notices/synced-data-records"
+                routerLinkActive="active"
+              >
                 <svg lucideHistory></svg><b>Sync History</b>
               </a>
             </div>
           </ng-container>
         </section>
-        <ng-container *ngIf="auth.isManager() && hasAny(['administration.users', 'administration.auditLogs', 'administration.settings', 'administration.accessManagement'])">
+        <ng-container
+          *ngIf="
+            auth.isManager() &&
+            hasAny([
+              'administration.users',
+              'administration.auditLogs',
+              'administration.settings',
+              'administration.accessManagement',
+            ])
+          "
+        >
           <section class="nav-section">
             <button
               class="section-toggle"
@@ -172,16 +235,32 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
             </button>
             <ng-container *ngIf="administrationOpen()">
               <div class="section-links" id="administration-navigation">
-                <a *ngIf="access.canAccess('administration.users')" routerLink="/dashboard/users" routerLinkActive="active">
+                <a
+                  *ngIf="access.canAccess('administration.users')"
+                  routerLink="/dashboard/users"
+                  routerLinkActive="active"
+                >
                   <svg lucideUsersRound></svg><b>User Management</b>
                 </a>
-                <a *ngIf="access.canAccess('administration.auditLogs')" routerLink="/dashboard/audit-logs" routerLinkActive="active">
+                <a
+                  *ngIf="access.canAccess('administration.auditLogs')"
+                  routerLink="/dashboard/audit-logs"
+                  routerLinkActive="active"
+                >
                   <svg lucideScrollText></svg><b>Audit Logs</b>
                 </a>
-                <a *ngIf="access.canAccess('administration.settings')" routerLink="/dashboard/settings" routerLinkActive="active">
+                <a
+                  *ngIf="access.canAccess('administration.settings')"
+                  routerLink="/dashboard/settings"
+                  routerLinkActive="active"
+                >
                   <svg lucideSettings></svg><b>Settings</b>
                 </a>
-                <a *ngIf="access.canAccess('administration.accessManagement')" routerLink="/dashboard/access-management" routerLinkActive="active">
+                <a
+                  *ngIf="access.canAccess('administration.accessManagement')"
+                  routerLink="/dashboard/access-management"
+                  routerLinkActive="active"
+                >
                   <svg lucideShieldCheck></svg><b>Access Management</b>
                 </a>
               </div>
@@ -212,12 +291,16 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
           <strong>Good {{ greeting() }}, {{ auth.user()?.displayName }}</strong>
         </div>
         <nav class="breadcrumb" aria-label="Dashboard breadcrumb">
-          <a *ngIf="access.canAccess('overview')"
+          <a
+            *ngIf="access.canAccess('overview')"
             routerLink="/dashboard"
             routerLinkActive="active"
             [routerLinkActiveOptions]="{ exact: true }"
             ><svg lucideLayoutDashboard></svg>Overview</a
-          ><a *ngIf="access.canAccess('team')" routerLink="/dashboard/team" routerLinkActive="active"
+          ><a
+            *ngIf="access.canAccess('team')"
+            routerLink="/dashboard/team"
+            routerLinkActive="active"
             ><svg lucideUsersRound></svg>Team</a
           >
         </nav>
@@ -279,12 +362,12 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
       .aside-head strong {
         font-weight: 750;
         line-height: 1.08;
-        letter-spacing: -.02em;
+        letter-spacing: -0.02em;
       }
       nav {
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 15px;
         padding-top: 18px;
         flex: 1;
       }
@@ -296,7 +379,8 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
         padding: 9px 11px;
         color: var(--sidebar-link);
         border-radius: 8px;
-        font-size: 0.81rem;
+        font-size: 0.79rem;
+        line-height: 1.3;
       }
       .section-toggle {
         width: 100%;
@@ -305,8 +389,8 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
         background: transparent;
         cursor: pointer;
         color: var(--sidebar-subtle);
-        font-size: .69rem;
-        letter-spacing: .075em;
+        font-size: 0.67rem;
+        letter-spacing: 0.075em;
         text-transform: uppercase;
       }
       .section-toggle > span {
@@ -320,8 +404,8 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
       }
       .section-links {
         display: grid;
-        gap: 7px;
-        padding: 2px 0 3px 8px;
+        gap: 10px;
+        padding: 3px 0 5px 8px;
         border-left: 1px solid var(--sidebar-border);
         margin-left: 20px;
       }
@@ -336,10 +420,15 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
         transform: rotate(-90deg);
       }
       nav a b {
-        font-weight: 550;
+        font-weight: 530;
         letter-spacing: 0;
       }
-      nav a.active b { font-weight: 700; }
+      .section-toggle b {
+        font-weight: 600;
+      }
+      nav a.active b {
+        font-weight: 680;
+      }
       nav a.active {
         background: var(--sidebar-active);
         color: var(--sidebar-active-text);
@@ -422,7 +511,7 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
       .account small {
         color: var(--muted);
         text-transform: capitalize;
-        font-size: .7rem;
+        font-size: 0.7rem;
       }
       .account button {
         border: 0;
@@ -546,6 +635,10 @@ export class DashboardLayoutComponent {
     const role = this.auth.user()?.role;
     return role ? USER_ROLES[role] : '';
   });
-  constructor() { this.access.load().subscribe(); }
-  hasAny(resources: string[]): boolean { return resources.some((resource) => this.access.canAccess(resource)); }
+  constructor() {
+    this.access.load().subscribe();
+  }
+  hasAny(resources: string[]): boolean {
+    return resources.some((resource) => this.access.canAccess(resource));
+  }
 }

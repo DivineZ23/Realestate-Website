@@ -86,7 +86,8 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
               auth.isOwner()
             ) {
               <button (click)="simple(user, 'promote')">
-                <svg lucideShieldCheck></svg>{{ user.role === 'agent' ? 'Promote to Senior Agent' : 'Promote to Manager' }}
+                <svg lucideShieldCheck></svg
+                >{{ user.role === 'agent' ? 'Promote to Senior Agent' : 'Promote to Manager' }}
               </button>
             }
             @if ((user.role === 'manager' || user.role === 'seniorAgent') && auth.isOwner()) {
@@ -302,14 +303,18 @@ export class UserManagementComponent {
         : this.activeTab() === 'agents'
           ? { approval: 'approved' as const, access: 'active' as const, role: 'agent' as const }
           : this.activeTab() === 'seniorAgents'
-            ? { approval: 'approved' as const, access: 'active' as const, role: 'seniorAgent' as const }
-          : this.activeTab() === 'managers'
-            ? { approval: 'approved' as const, role: 'manager' as const }
-            : this.activeTab() === 'owners'
-              ? { approval: 'approved' as const, role: 'owner' as const }
-              : this.activeTab() === 'revoked'
-                ? { access: 'revoked' as const }
-                : { approval: 'rejected' as const };
+            ? {
+                approval: 'approved' as const,
+                access: 'active' as const,
+                role: 'seniorAgent' as const,
+              }
+            : this.activeTab() === 'managers'
+              ? { approval: 'approved' as const, role: 'manager' as const }
+              : this.activeTab() === 'owners'
+                ? { approval: 'approved' as const, role: 'owner' as const }
+                : this.activeTab() === 'revoked'
+                  ? { access: 'revoked' as const }
+                  : { approval: 'rejected' as const };
     this.service.all(filters).subscribe((v) => this.users.set(v.items));
   }
   canChangeAccess(user: User): boolean {

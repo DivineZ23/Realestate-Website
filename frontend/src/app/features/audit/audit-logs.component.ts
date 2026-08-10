@@ -9,9 +9,11 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
   imports: [DatePipe, JsonPipe, EmptyStateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div class="page-title">
-      <p class="eyebrow">Accountability</p>
-      <h1>Audit logs</h1>
-      <p>Immutable context for material portfolio and access changes.</p>
+      <div>
+        <p class="eyebrow">Accountability</p>
+        <h1>Audit logs</h1>
+        <p>Immutable context for material portfolio and access changes.</p>
+      </div>
     </div>
     <div class="panel table-wrap">
       <table class="data-table">

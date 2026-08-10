@@ -146,6 +146,9 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
       }
       .financial-stats article {
         display: grid;
+        align-content: start;
+        gap: 7px;
+        min-width: 0;
         min-height: 124px;
         padding: 18px;
       }
@@ -153,12 +156,17 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
       .financial-stats small {
         color: var(--muted);
         font-size: 0.75rem;
+        line-height: 1.35;
       }
       .financial-stats b {
-        align-self: center;
-        overflow: hidden;
-        font-size: clamp(1.25rem, 2.2vw, 1.9rem);
-        text-overflow: ellipsis;
+        margin: 2px 0;
+        overflow: visible;
+        font-size: clamp(1.25rem, 2vw, 1.9rem);
+        font-variant-numeric: tabular-nums;
+        line-height: 1.12;
+        overflow-wrap: anywhere;
+        text-overflow: clip;
+        white-space: normal;
       }
       .financial-stats .profit {
         border-left: 3px solid var(--forest);
@@ -171,7 +179,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         color: var(--danger);
       }
       .block-highlight b {
-        font-size: 1.3rem;
+        font-size: clamp(1.05rem, 1.45vw, 1.3rem);
       }
       .stats article {
         background: var(--surface);
@@ -198,7 +206,9 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
       .stats .available small {
         color: var(--muted);
       }
-      .stats .available b { color: var(--forest); }
+      .stats .available b {
+        color: var(--forest);
+      }
       .dashboard-grid {
         display: grid;
         grid-template-columns: 1.4fr 0.6fr;

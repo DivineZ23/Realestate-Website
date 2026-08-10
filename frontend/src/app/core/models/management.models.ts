@@ -71,12 +71,20 @@ export interface DashboardSummary {
   recentStatusChanges: StatusHistory[];
 }
 export interface PersonalActivity {
-  id: string; propertyId: string; propertyName: string; tenantName: string; cid?: number;
-  amount: number; occurredAt: string;
+  id: string;
+  propertyId: string;
+  propertyName: string;
+  tenantName: string;
+  cid?: number;
+  amount: number;
+  occurredAt: string;
 }
 export interface PersonalStatistics {
-  housesSold: number; housesEvicted: number; totalDepositTaken: number;
-  recentSales: PersonalActivity[]; recentEvictions: PersonalActivity[];
+  housesSold: number;
+  housesEvicted: number;
+  totalDepositTaken: number;
+  recentSales: PersonalActivity[];
+  recentEvictions: PersonalActivity[];
 }
 
 export type RentSyncStatus = 'paid' | 'overdue' | 'evictable' | 'empty';

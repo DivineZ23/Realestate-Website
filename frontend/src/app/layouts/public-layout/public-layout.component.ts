@@ -97,7 +97,7 @@ import { SiteCreditComponent } from '../../shared/components/site-credit/site-cr
       .brand strong {
         font-size: 1rem;
         font-weight: 750;
-        letter-spacing: -.02em;
+        letter-spacing: -0.02em;
       }
       nav {
         display: flex;

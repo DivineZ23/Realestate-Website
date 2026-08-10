@@ -8,7 +8,6 @@ import {
   MatDialogRef,
   MatDialogTitle,
 } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
 
 export interface ConfirmDialogData {
   title: string;
@@ -25,7 +24,6 @@ export interface ConfirmDialogData {
     MatDialogClose,
     MatDialogContent,
     MatDialogTitle,
-    MatButtonModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<h2 mat-dialog-title>{{ data.title }}</h2>
@@ -38,10 +36,11 @@ export interface ConfirmDialogData {
         </label>
       }</mat-dialog-content
     ><mat-dialog-actions align="end"
-      ><button mat-button mat-dialog-close>Cancel</button
+      ><button class="btn btn-secondary" type="button" mat-dialog-close>Cancel</button
       ><button
-        mat-flat-button
-        [class.danger]="data.dangerous"
+        class="btn btn-primary"
+        type="button"
+        [class.btn-danger]="data.dangerous"
         [disabled]="data.requireReason && !reason.trim()"
         (click)="confirm()"
       >
@@ -56,9 +55,9 @@ export interface ConfirmDialogData {
       p {
         color: var(--muted);
       }
-      .danger {
-        background: var(--danger) !important;
-        color: var(--on-primary) !important;
+      :host {
+        display: block;
+        color: var(--ink);
       }
       .field {
         margin-top: 18px;

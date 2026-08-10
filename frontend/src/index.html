@@ -8,16 +8,28 @@
       (() => {
         try {
           const savedTheme = localStorage.getItem('imperial-estates-theme');
+          const legacyThemes = {
+            light: 'imperial-light',
+            dark: 'emerald-dark',
+            graphite: 'imperial-dark',
+          };
+          const palettes = ['imperial', 'ocean', 'emerald', 'violet', 'ruby'];
+          const migratedTheme = legacyThemes[savedTheme] || savedTheme;
+          const parts = migratedTheme?.split('-') || [];
           const theme =
-            savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'graphite'
-              ? savedTheme
+            palettes.includes(parts[0]) && (parts[1] === 'light' || parts[1] === 'dark')
+              ? migratedTheme
               : matchMedia('(prefers-color-scheme: dark)').matches
-                ? 'dark'
-                : 'light';
+                ? 'imperial-dark'
+                : 'imperial-light';
           document.documentElement.dataset.theme = theme;
-          document.documentElement.style.colorScheme = theme === 'light' ? 'light' : 'dark';
+          document.documentElement.dataset.palette = theme.split('-')[0];
+          document.documentElement.dataset.mode = theme.split('-')[1];
+          document.documentElement.style.colorScheme = theme.endsWith('-dark') ? 'dark' : 'light';
         } catch {
-          document.documentElement.dataset.theme = 'light';
+          document.documentElement.dataset.theme = 'imperial-light';
+          document.documentElement.dataset.palette = 'imperial';
+          document.documentElement.dataset.mode = 'light';
         }
       })();
     </script>

@@ -45,7 +45,10 @@ export const routes: Routes = [
         path: 'analytics',
         data: { accessKey: 'analytics' },
         canActivate: [pageAccessGuard],
-        loadComponent: () => import('./features/analytics/personal-analytics.component').then((m) => m.PersonalAnalyticsComponent),
+        loadComponent: () =>
+          import('./features/analytics/personal-analytics.component').then(
+            (m) => m.PersonalAnalyticsComponent,
+          ),
       },
       {
         path: 'properties',

@@ -6,19 +6,35 @@ import { AuthService } from './auth.service';
 
 const DEFAULTS: AccessManagementSettings = {
   permissions: {
-    overview: all(), team: all(), analytics: all(), 'auction.listings': all(),
-    'portfolio.properties': all(), 'portfolio.blocks': all(), 'portfolio.tenants': all(),
-    'notices.overdue': all(), 'notices.eviction': all(), 'notices.overdueList': all(),
-    'notices.evictionList': all(), 'notices.syncedDataRecords': all(),
-    'notices.sync': managers(), 'administration.users': managers(),
-    'administration.auditLogs': managers(), 'administration.settings': managers(),
+    overview: all(),
+    team: all(),
+    analytics: all(),
+    'auction.listings': all(),
+    'portfolio.properties': all(),
+    'portfolio.blocks': all(),
+    'portfolio.tenants': all(),
+    'notices.overdue': all(),
+    'notices.eviction': all(),
+    'notices.overdueList': all(),
+    'notices.evictionList': all(),
+    'notices.syncedDataRecords': all(),
+    'notices.sync': managers(),
+    'administration.users': managers(),
+    'administration.auditLogs': managers(),
+    'administration.settings': managers(),
     'administration.accessManagement': owners(),
   },
 };
 
-function all(): Record<UserRole, boolean> { return { agent: true, seniorAgent: true, manager: true, owner: true }; }
-function managers(): Record<UserRole, boolean> { return { agent: false, seniorAgent: false, manager: true, owner: true }; }
-function owners(): Record<UserRole, boolean> { return { agent: false, seniorAgent: false, manager: false, owner: true }; }
+function all(): Record<UserRole, boolean> {
+  return { agent: true, seniorAgent: true, manager: true, owner: true };
+}
+function managers(): Record<UserRole, boolean> {
+  return { agent: false, seniorAgent: false, manager: true, owner: true };
+}
+function owners(): Record<UserRole, boolean> {
+  return { agent: false, seniorAgent: false, manager: false, owner: true };
+}
 
 @Injectable({ providedIn: 'root' })
 export class PageAccessService {
@@ -33,8 +49,14 @@ export class PageAccessService {
   load(): Observable<AccessManagementSettings> {
     if (this.loaded()) return of(this.state());
     return (this.request$ ??= this.api.get().pipe(
-      tap((settings) => { this.state.set(settings); this.loaded.set(true); }),
-      catchError(() => { this.loaded.set(true); return of(this.state()); }),
+      tap((settings) => {
+        this.state.set(settings);
+        this.loaded.set(true);
+      }),
+      catchError(() => {
+        this.loaded.set(true);
+        return of(this.state());
+      }),
       shareReplay(1),
     ));
   }

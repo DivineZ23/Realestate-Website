@@ -21,6 +21,10 @@ services:
       App__FrontendUrl: ${FRONTEND_URL:-http://localhost:4200}
       Storage__ZiplineBaseUrl: ${ZIPLINE_BASE_URL}
       Storage__ZiplineApiToken: ${ZIPLINE_API_TOKEN}
+      GoogleSheets__SpreadsheetId: ${GOOGLE_SHEETS_SPREADSHEET_ID}
+      GoogleSheets__SheetId: ${GOOGLE_SHEETS_SHEET_ID:-0}
+      GoogleSheets__ClientEmail: ${GOOGLE_SHEETS_CLIENT_EMAIL}
+      GoogleSheets__PrivateKey: ${GOOGLE_SHEETS_PRIVATE_KEY}
       SeedData__Enabled: ${SEED_DATA:-false}
     ports:
       - "5080:8080"

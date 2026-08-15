@@ -59,6 +59,12 @@ public sealed class PropertyRepository(MongoContext db) : IPropertyRepository
         return await db.Properties.Find(filter).ToListAsync(ct);
     }
     public Task<Property?> GetByBusinessIdAsync(int id, CancellationToken ct) => db.Properties.Find(x => x.PropertyId == id && !x.IsDeleted).FirstOrDefaultAsync(ct)!;
+    public Task<Property?> GetByNameAsync(string name, CancellationToken ct)
+    {
+        var exactName = new BsonRegularExpression($"^{System.Text.RegularExpressions.Regex.Escape(name.Trim())}$", "i");
+        var filter = Builders<Property>.Filter.Eq(x => x.IsDeleted, false) & Builders<Property>.Filter.Regex(x => x.PropertyName, exactName);
+        return db.Properties.Find(filter).FirstOrDefaultAsync(ct)!;
+    }
     public async Task<IReadOnlyList<Property>> GetAllAsync(CancellationToken ct) =>
         await db.Properties.Find(x => !x.IsDeleted).ToListAsync(ct);
     public async Task<IReadOnlyList<Property>> GetFeaturedAsync(int limit, CancellationToken ct) => await db.Properties.Find(x => !x.IsDeleted && x.IsActive && x.IsFeatured && x.Status == PropertyStatus.Available).SortByDescending(x => x.CreatedAt).Limit(limit).ToListAsync(ct);

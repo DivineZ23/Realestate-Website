@@ -144,6 +144,9 @@ export class NoticeService {
   sync(rawData: string): Observable<RentSyncSnapshot> {
     return this.api.post(API_ENDPOINTS.notices.sync, { rawData });
   }
+  retryGoogleSheet(): Observable<RentSyncSnapshot> {
+    return this.api.post(API_ENDPOINTS.notices.retryGoogleSheet, {});
+  }
   deleteSnapshot(id: string): Observable<void> {
     return this.api.delete<void>(`${API_ENDPOINTS.notices.snapshots}/${id}`);
   }

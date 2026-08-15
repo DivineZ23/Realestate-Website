@@ -78,13 +78,25 @@ public sealed class PropertyService(
     public async Task<PropertyDto> ChangeStatusAsync(string id, ChangePropertyStatusRequest request, string actorId, CancellationToken cancellationToken)
     {
         var value = await GetEntityAsync(id, cancellationToken);
+        var isManagerControlledTransition = request.Status is PropertyStatus.Auction or PropertyStatus.OnHold ||
+            request.Status == PropertyStatus.Available && value.Status is PropertyStatus.Auction or PropertyStatus.OnHold;
+        if (isManagerControlledTransition)
+        {
+            var actor = await users.GetByIdAsync(actorId, cancellationToken) ?? throw new UnauthorizedAccessException();
+            if (actor.Role is not (UserRole.Manager or UserRole.Owner))
+                throw new UnauthorizedAccessException("Only managers and owners can list a property for auction or place it on hold.");
+        }
         var previous = value.Status;
         switch (request.Status)
         {
             case PropertyStatus.Available: value.MakeAvailable(); break;
             case PropertyStatus.Booked: value.MarkBooked(request.EnquiryId); break;
-            case PropertyStatus.Unavailable: throw new DomainRuleException("Unavailable status is not enabled.", "STATUS_NOT_SUPPORTED");
-            case PropertyStatus.Owned: throw new DomainRuleException("Assign tenant information to occupy a property.", "TENANT_REQUIRED");
+            case PropertyStatus.Auction: value.MarkForAuction(); break;
+            case PropertyStatus.OnHold: value.PlaceOnHold(request.Reason ?? string.Empty); break;
+            case PropertyStatus.Paid:
+            case PropertyStatus.Overdue:
+            case PropertyStatus.Evictable:
+                throw new DomainRuleException("Rental statuses are controlled by tenant assignment and rent data sync.", "RENTAL_STATUS_MANAGED");
         }
         value.UpdatedBy = actorId;
         await properties.UpdateAsync(value, cancellationToken);

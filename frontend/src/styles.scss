@@ -85,6 +85,12 @@ h3 {
   width: var(--space-page);
   margin-inline: auto;
 }
+.brand-logo {
+  display: block;
+  background: currentColor;
+  -webkit-mask: url('/assets/imperial-estates-logo.png') center / contain no-repeat;
+  mask: url('/assets/imperial-estates-logo.png') center / contain no-repeat;
+}
 .eyebrow {
   color: var(--bronze);
   font-size: 0.78rem;
@@ -305,6 +311,80 @@ table.data-table {
 }
 
 app-notices {
+  .sheet-sync-state {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 11px;
+    margin-top: 18px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-strong);
+  }
+  .sheet-sync-state .status-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  .sheet-sync-state > div:nth-child(2) {
+    display: grid;
+    gap: 2px;
+  }
+  .sheet-sync-state b {
+    font-size: 0.82rem;
+  }
+  .sheet-sync-state small {
+    color: var(--muted);
+    font-size: 0.73rem;
+  }
+  .sheet-sync-state.synced .status-dot {
+    background: var(--forest);
+    box-shadow: 0 0 0 4px var(--forest-light);
+  }
+  .sheet-sync-state.ready .status-dot {
+    background: var(--forest);
+    box-shadow: 0 0 0 4px var(--forest-light);
+  }
+  .sheet-sync-state.pending .status-dot {
+    background: var(--warning-ink);
+    box-shadow: 0 0 0 4px var(--warning-soft);
+    animation: sheet-sync-pulse 1.2s ease-in-out infinite;
+  }
+  .sheet-sync-state.failed .status-dot {
+    background: var(--danger);
+    box-shadow: 0 0 0 4px var(--danger-soft);
+  }
+  .sheet-sync-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .sheet-sync-controls a,
+  .retry-sheet {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: var(--forest);
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .retry-sheet {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--forest);
+  }
+  .retry-sheet.failure {
+    color: var(--danger);
+  }
+  .retry-sheet svg {
+    width: 14px;
+    height: 14px;
+  }
   .notice-groups {
     display: grid;
     gap: 14px;
@@ -597,6 +677,12 @@ app-notices {
   }
 }
 
+@keyframes sheet-sync-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
 @media (max-width: 720px) {
   :root {
     --space-page: min(100% - 28px, 1360px);
@@ -615,6 +701,12 @@ app-notices {
     width: 100%;
   }
   app-notices {
+    .sheet-sync-state {
+      grid-template-columns: auto 1fr;
+    }
+    .sheet-sync-controls {
+      grid-column: 2;
+    }
     .eviction-row {
       grid-template-columns: 1fr 1fr;
     }

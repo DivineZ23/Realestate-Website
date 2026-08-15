@@ -3,8 +3,16 @@ import { PropertyStatus, PropertyType } from '../models/property.models';
 export const PROPERTY_STATUSES: readonly { value: PropertyStatus; label: string }[] = [
   { value: 'available', label: 'Available' },
   { value: 'booked', label: 'Booked' },
-  { value: 'owned', label: 'Occupied' },
+  { value: 'auction', label: 'Auction' },
+  { value: 'paid', label: 'Paid' },
+  { value: 'overdue', label: 'Overdue' },
+  { value: 'evictable', label: 'Evictable' },
+  { value: 'onHold', label: 'On Hold' },
 ];
+
+export function propertyStatusLabel(status: PropertyStatus): string {
+  return PROPERTY_STATUSES.find((option) => option.value === status)?.label ?? status;
+}
 
 export const PROPERTY_TYPE_OPTIONS: readonly {
   value: PropertyType;

@@ -119,6 +119,10 @@ export interface RentSyncSnapshot {
   evictable: number;
   empty: number;
   unmappedTenants: number;
+  googleSheetSyncStatus: 'notConfigured' | 'ready' | 'pending' | 'synced' | 'failed';
+  googleSheetSyncedAt?: string;
+  googleSheetSyncError?: string;
+  googleSheetUrl?: string;
   records: RentSyncRecord[];
 }
 export interface EvictionHistory {

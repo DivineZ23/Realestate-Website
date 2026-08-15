@@ -13,6 +13,7 @@ export const API_ENDPOINTS = {
     snapshot: '/notices/snapshot',
     snapshots: '/notices/snapshots',
     sync: '/notices/sync',
+    retryGoogleSheet: '/notices/sync/google-sheet/retry',
   },
   users: '/users',
   auditLogs: '/audit-logs',

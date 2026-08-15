@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { PropertyStatus } from '../../../core/models/property.models';
+import { propertyStatusLabel } from '../../../core/constants/property-status.constants';
 
 @Component({
   selector: 'app-status-badge',
@@ -24,11 +25,20 @@ import { PropertyStatus } from '../../../core/models/property.models';
         background: var(--booked-bg);
         color: var(--booked-ink);
       }
-      .owned {
+      .paid,
+      .auction {
         background: var(--owned-bg);
         color: var(--owned-ink);
       }
-      .unavailable {
+      .overdue {
+        background: var(--booked-bg);
+        color: var(--booked-ink);
+      }
+      .evictable {
+        background: var(--danger-soft);
+        color: var(--danger);
+      }
+      .onHold {
         background: var(--neutral-soft);
         color: var(--muted);
       }
@@ -37,5 +47,5 @@ import { PropertyStatus } from '../../../core/models/property.models';
 })
 export class StatusBadgeComponent {
   readonly status = input.required<PropertyStatus>();
-  readonly label = () => (this.status() === 'owned' ? 'Occupied' : this.status());
+  readonly label = () => propertyStatusLabel(this.status());
 }

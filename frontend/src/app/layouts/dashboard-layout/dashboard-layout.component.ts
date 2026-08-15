@@ -12,7 +12,9 @@ import {
   LucideContactRound,
   LucideFileWarning,
   LucideGavel,
+  LucideGauge,
   LucideHistory,
+  LucideHousePlus,
   LucideLayoutDashboard,
   LucideList,
   LucideListX,
@@ -54,7 +56,9 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
     LucideContactRound,
     LucideFileWarning,
     LucideGavel,
+    LucideGauge,
     LucideHistory,
+    LucideHousePlus,
     LucideUploadCloud,
     LucideList,
     LucideListX,
@@ -71,16 +75,33 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
     <aside>
       <div class="aside-head">
         <a routerLink="/dashboard" class="mark" aria-label="Imperial Estates dashboard"
-          ><img src="/assets/imperial-estates-logo.png" alt="" /></a
+          ><span class="brand-logo" aria-hidden="true"></span></a
         ><strong>Imperial Estates</strong>
       </div>
       <nav aria-label="Dashboard sections">
         <section class="nav-section" *ngIf="access.canAccess('analytics')">
-          <a class="section-direct" routerLink="/dashboard/analytics" routerLinkActive="active"
-            ><svg lucideChartNoAxesCombined></svg><b>Analytics</b></a
+          <button
+            class="section-toggle"
+            type="button"
+            [attr.aria-expanded]="performanceOpen()"
+            aria-controls="performance-navigation"
+            (click)="performanceOpen.update((open) => !open)"
           >
+            <span><svg lucideGauge></svg><b>Performance</b></span>
+            <svg class="chevron" lucideChevronDown [class.rotated]="!performanceOpen()"></svg>
+          </button>
+          <ng-container *ngIf="performanceOpen()">
+            <div class="section-links" id="performance-navigation">
+              <a routerLink="/dashboard/analytics" routerLinkActive="active">
+                <svg lucideChartNoAxesCombined></svg><b>Analytics</b>
+              </a>
+            </div>
+          </ng-container>
         </section>
-        <section class="nav-section" *ngIf="hasAny(['auction.listings'])">
+        <section
+          class="nav-section"
+          *ngIf="hasAny(['auction.createListing', 'auction.listings'])"
+        >
           <button
             class="section-toggle"
             type="button"
@@ -93,6 +114,13 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
           </button>
           <ng-container *ngIf="auctionOpen()">
             <div class="section-links" id="auction-navigation">
+              <a
+                *ngIf="access.canAccess('auction.createListing')"
+                routerLink="/dashboard/auction/create-listing"
+                routerLinkActive="active"
+              >
+                <svg lucideHousePlus></svg><b>Create Listing</b>
+              </a>
               <a
                 *ngIf="access.canAccess('auction.listings')"
                 routerLink="/dashboard/auction/listings"
@@ -338,26 +366,22 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
         overflow-y: auto;
       }
       .aside-head {
-        height: 58px;
+        height: 76px;
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 0 9px 16px;
+        padding: 0 6px 12px;
         border-bottom: 1px solid var(--sidebar-border);
       }
       .mark {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
-        overflow: hidden;
+        width: 62px;
+        height: 62px;
         flex: 0 0 auto;
-        box-shadow: 0 0 0 1px var(--sidebar-border);
       }
-      .mark img {
-        display: block;
+      .mark .brand-logo {
         width: 100%;
         height: 100%;
-        object-fit: cover;
+        color: var(--sidebar-active);
       }
       .aside-head strong {
         font-weight: 750;
@@ -623,6 +647,7 @@ export class DashboardLayoutComponent {
   readonly auth = inject(AuthService);
   readonly access = inject(PageAccessService);
   readonly collapsed = signal(false);
+  readonly performanceOpen = signal(true);
   readonly portfolioOpen = signal(true);
   readonly auctionOpen = signal(true);
   readonly noticesOpen = signal(true);

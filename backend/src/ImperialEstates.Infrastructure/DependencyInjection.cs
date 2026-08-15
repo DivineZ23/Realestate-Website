@@ -1,5 +1,6 @@
 using ImperialEstates.Application.Interfaces;
 using ImperialEstates.Infrastructure.Auth;
+using ImperialEstates.Infrastructure.External;
 using ImperialEstates.Infrastructure.Persistence;
 using ImperialEstates.Infrastructure.Repositories;
 using ImperialEstates.Infrastructure.Storage;
@@ -21,6 +22,7 @@ public static class DependencyInjection
         services.Configure<DiscordOptions>(configuration.GetSection(DiscordOptions.SectionName));
         services.Configure<AccessOptions>(configuration.GetSection(AccessOptions.SectionName));
         services.Configure<StorageOptions>(configuration.GetSection("Storage"));
+        services.Configure<GoogleSheetsOptions>(configuration.GetSection(GoogleSheetsOptions.SectionName));
         services.AddSingleton<MongoContext>();
         services.AddSingleton<MongoIndexInitializer>();
         services.AddSingleton<SeedDataService>();
@@ -38,6 +40,7 @@ public static class DependencyInjection
         services.AddSingleton<IOwnerIdentity, ConfiguredOwnerIdentity>();
         services.AddHttpClient<IDiscordOAuthService, DiscordOAuthService>();
         services.AddHttpClient<ZiplineFileStorageService>();
+        services.AddHttpClient<IGoogleSheetsSyncService, GoogleSheetsSyncService>();
         services.AddSingleton<LocalFileStorageService>();
         services.AddScoped<IFileStorageService, ConfigurableFileStorageService>();
         return services;

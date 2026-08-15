@@ -46,28 +46,28 @@ public sealed class PropertyLifecycleTests
     }
 
     [Fact]
-    public void Unavailable_property_cannot_be_booked()
+    public void On_hold_property_cannot_be_booked()
     {
         var property = NewProperty();
-        property.MarkUnavailable("Renovation");
+        property.PlaceOnHold("Renovation");
         var exception = Assert.Throws<DomainRuleException>(() => property.MarkBooked(null));
         Assert.Equal("INVALID_STATUS_TRANSITION", exception.ErrorCode);
     }
 
     [Fact]
-    public void Unavailable_requires_a_reason()
+    public void On_hold_requires_a_reason()
     {
         var property = NewProperty();
-        var exception = Assert.Throws<DomainRuleException>(() => property.MarkUnavailable(" "));
+        var exception = Assert.Throws<DomainRuleException>(() => property.PlaceOnHold(" "));
         Assert.Equal("REASON_REQUIRED", exception.ErrorCode);
     }
 
     [Fact]
-    public void Tenant_assignment_sets_owned_and_links_tenant()
+    public void Tenant_assignment_sets_paid_and_links_tenant()
     {
         var property = NewProperty();
         property.AssignTenant("tenant-1");
-        Assert.Equal(PropertyStatus.Owned, property.Status);
+        Assert.Equal(PropertyStatus.Paid, property.Status);
         Assert.Equal("tenant-1", property.CurrentTenantId);
     }
 
@@ -77,6 +77,22 @@ public sealed class PropertyLifecycleTests
         var property = NewProperty();
         var exception = Assert.Throws<DomainRuleException>(() => property.AssignTenant(""));
         Assert.Equal("TENANT_REQUIRED", exception.ErrorCode);
+    }
+
+    [Fact]
+    public void Available_property_can_be_listed_for_auction()
+    {
+        var property = NewProperty();
+        property.MarkForAuction();
+        Assert.Equal(PropertyStatus.Auction, property.Status);
+    }
+
+    [Fact]
+    public void Rent_status_requires_an_active_tenant()
+    {
+        var property = NewProperty();
+        var exception = Assert.Throws<DomainRuleException>(() => property.ApplyRentStatus(PropertyStatus.Overdue));
+        Assert.Equal("NO_ACTIVE_TENANT", exception.ErrorCode);
     }
 
     [Fact]

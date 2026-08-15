@@ -103,6 +103,20 @@ export const routes: Routes = [
           import('./features/tenants/tenants.component').then((m) => m.TenantsComponent),
       },
       {
+        path: 'auction/create-listing',
+        data: {
+          accessKey: 'auction.createListing',
+          section: 'Auction',
+          title: 'Create Listing',
+          description: 'Select a property and prepare it for the auction listing workflow.',
+        },
+        canActivate: [pageAccessGuard],
+        loadComponent: () =>
+          import('./features/workspace-placeholder/workspace-placeholder.component').then(
+            (m) => m.WorkspacePlaceholderComponent,
+          ),
+      },
+      {
         path: 'auction/listings',
         data: {
           accessKey: 'auction.listings',

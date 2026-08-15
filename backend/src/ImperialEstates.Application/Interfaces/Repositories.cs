@@ -21,6 +21,7 @@ public interface IPropertyRepository
     Task<Property?> GetByIdAsync(string id, CancellationToken cancellationToken);
     Task<IReadOnlyList<Property>> GetByIdsAsync(IReadOnlyCollection<string> ids, CancellationToken cancellationToken);
     Task<Property?> GetByBusinessIdAsync(int propertyId, CancellationToken cancellationToken);
+    Task<Property?> GetByNameAsync(string propertyName, CancellationToken cancellationToken);
     Task<IReadOnlyList<Property>> GetAllAsync(CancellationToken cancellationToken);
     Task<IReadOnlyList<Property>> GetFeaturedAsync(int limit, CancellationToken cancellationToken);
     Task<long> CountByBlockAsync(string blockId, CancellationToken cancellationToken);

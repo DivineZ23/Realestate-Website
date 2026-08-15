@@ -12,4 +12,5 @@ public sealed record RentSyncRecordDto(
 
 public sealed record RentSyncSnapshotDto(
     string Id, string? CreatedBy, DateTime? SyncedAt, int Total, int Active, int Overdue, int Evictable, int Empty,
-    int UnmappedTenants, IReadOnlyList<RentSyncRecordDto> Records);
+    int UnmappedTenants, string GoogleSheetSyncStatus, DateTime? GoogleSheetSyncedAt,
+    string? GoogleSheetSyncError, string? GoogleSheetUrl, IReadOnlyList<RentSyncRecordDto> Records);

@@ -22,7 +22,7 @@ import { SiteCreditComponent } from '../../shared/components/site-credit/site-cr
     <header class="site-header">
       <div class="container nav">
         <a routerLink="/" class="brand"
-          ><img src="/assets/imperial-estates-logo.png" alt="" /><strong
+          ><span class="brand-logo" aria-hidden="true"></span><strong
             >Imperial Estates</strong
           ></a
         >
@@ -77,7 +77,7 @@ import { SiteCreditComponent } from '../../shared/components/site-credit/site-cr
         border-bottom: 1px solid var(--header-border);
       }
       .nav {
-        height: 70px;
+        height: 76px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -87,12 +87,11 @@ import { SiteCreditComponent } from '../../shared/components/site-credit/site-cr
         align-items: center;
         gap: 11px;
       }
-      .brand img {
-        width: 40px;
-        height: 40px;
-        object-fit: cover;
-        border-radius: 10px;
-        box-shadow: 0 0 0 1px var(--border);
+      .brand .brand-logo {
+        width: 58px;
+        height: 58px;
+        flex: 0 0 58px;
+        color: var(--bronze);
       }
       .brand strong {
         font-size: 1rem;

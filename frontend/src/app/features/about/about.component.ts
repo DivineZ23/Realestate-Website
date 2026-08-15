@@ -21,8 +21,11 @@ import { SettingsService } from '../../core/services/management.services';
       <div class="container story">
         <div>
           <img
-            src="https://images.unsplash.com/photo-1600607688969-a5bfcd646154?auto=format&fit=crop&w=1200&q=82"
-            alt="Imperial Estates interior"
+            src="/assets/imperial-city-story.webp"
+            alt="Imperial Estates city district"
+            width="1672"
+            height="941"
+            loading="lazy"
           />
         </div>
         <article>

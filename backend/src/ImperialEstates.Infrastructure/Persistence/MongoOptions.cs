@@ -38,3 +38,12 @@ public sealed class StorageOptions
     public string? ZiplineApiToken { get; set; }
     public long MaximumFileSize { get; set; } = 10 * 1024 * 1024;
 }
+
+public sealed class GoogleSheetsOptions
+{
+    public const string SectionName = "GoogleSheets";
+    public string SpreadsheetId { get; set; } = string.Empty;
+    public int SheetId { get; set; }
+    public string ClientEmail { get; set; } = string.Empty;
+    public string PrivateKey { get; set; } = string.Empty;
+}

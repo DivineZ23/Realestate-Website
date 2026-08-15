@@ -17,6 +17,10 @@ public static class DeploymentConfigurationExtensions
             ["FRONTEND_URL"] = "App:FrontendUrl",
             ["ZIPLINE_BASE_URL"] = "Storage:ZiplineBaseUrl",
             ["ZIPLINE_API_TOKEN"] = "Storage:ZiplineApiToken",
+            ["GOOGLE_SHEETS_SPREADSHEET_ID"] = "GoogleSheets:SpreadsheetId",
+            ["GOOGLE_SHEETS_SHEET_ID"] = "GoogleSheets:SheetId",
+            ["GOOGLE_SHEETS_CLIENT_EMAIL"] = "GoogleSheets:ClientEmail",
+            ["GOOGLE_SHEETS_PRIVATE_KEY"] = "GoogleSheets:PrivateKey",
             ["SEED_DATA"] = "SeedData:Enabled"
         };
 

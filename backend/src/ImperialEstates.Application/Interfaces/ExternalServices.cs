@@ -21,3 +21,9 @@ public interface IFileStorageService
     Task<FileUploadResult> UploadAsync(Stream stream, string fileName, string contentType, CancellationToken cancellationToken);
 }
 
+public interface IGoogleSheetsSyncService
+{
+    bool IsConfigured { get; }
+    string? SpreadsheetUrl { get; }
+    Task PublishAsync(IReadOnlyList<RentSyncRecord> records, CancellationToken cancellationToken);
+}

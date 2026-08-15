@@ -34,8 +34,11 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
         </div>
         <div class="hero-image">
           <img
-            src="https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=1500&q=86"
-            alt="Refined, light-filled living room"
+            src="/assets/imperial-estate-hero.webp"
+            alt="Imperial Estates manor and landscaped grounds"
+            width="1672"
+            height="941"
+            fetchpriority="high"
           />
           <div class="note">
             <span>Now available</span><strong>Riverside Collection</strong

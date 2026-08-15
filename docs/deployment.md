@@ -14,3 +14,27 @@ Before release:
 8. Configure MongoDB backups, alerting, and log retention.
 
 The API exposes `/health` for basic process health. Add authenticated dependency health checks at the platform level if your environment requires them.
+
+## Google Sheets rent-data publishing
+
+Data Sync can publish the normalized eight-column game export directly to the Google Sheet used by the Discord bot. Publishing happens immediately after a successful website sync; the Data Sync page checks the latest state every minute and exposes a manual retry when Google rejects a write.
+
+1. Create a Google Cloud service account and enable the Google Sheets API for its project.
+2. Create a JSON key for that service account. Keep the downloaded JSON outside the repository.
+3. Share the target spreadsheet with the JSON file's `client_email` as an Editor.
+4. Add these values to the VPS environment:
+
+```dotenv
+GOOGLE_SHEETS_SPREADSHEET_ID=1jOrbMx12x-WPGyamV0u4y6ATx7C10wpErGXEUrb74A4
+GOOGLE_SHEETS_SHEET_ID=0
+GOOGLE_SHEETS_CLIENT_EMAIL=service-account-name@project-id.iam.gserviceaccount.com
+GOOGLE_SHEETS_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n
+```
+
+Use the `private_key` value from the JSON key and retain literal `\n` sequences when storing it as one environment-variable line. Never commit the JSON key, service-account private key, or a populated `.env` file.
+
+The publisher resolves the tab name from `GOOGLE_SHEETS_SHEET_ID`, clears only columns `A:H` on that tab, and rewrites the following bot-facing contract:
+
+```text
+Status, Address, Interior, Renter CID, Renter Name, Phone, Income, Cost
+```

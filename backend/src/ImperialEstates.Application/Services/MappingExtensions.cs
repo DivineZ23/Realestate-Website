@@ -18,7 +18,6 @@ internal static class MappingExtensions
         value.Bathrooms, value.Floor, value.Area, value.FurnishingStatus, value.Amenities, value.Images,
         value.CurrentTenantId, tenant?.FullName, tenant?.Cid, tenant?.PhoneNumber,
         tenant is null ? null : tenant.RentPaidThrough ?? tenant.StartDate.Date.AddDays(7),
-        tenant?.RentalStatus,
         value.BookedByEnquiryId, value.UnavailableReason, value.IsFeatured,
         value.IsActive, value.CreatedAt, value.UpdatedAt);
 

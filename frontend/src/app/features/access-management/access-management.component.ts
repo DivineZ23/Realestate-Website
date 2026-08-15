@@ -205,7 +205,8 @@ export class AccessManagementComponent {
   readonly resources: AccessResource[] = [
     { key: 'overview', section: 'Workspace', label: 'Overview' },
     { key: 'team', section: 'Workspace', label: 'Team' },
-    { key: 'analytics', section: 'Workspace', label: 'Analytics' },
+    { key: 'analytics', section: 'Performance', label: 'Analytics' },
+    { key: 'auction.createListing', section: 'Auction', label: 'Create Listing' },
     { key: 'auction.listings', section: 'Auction', label: 'Listings' },
     { key: 'portfolio.properties', section: 'Portfolio', label: 'Properties' },
     { key: 'portfolio.blocks', section: 'Portfolio', label: 'Blocks' },

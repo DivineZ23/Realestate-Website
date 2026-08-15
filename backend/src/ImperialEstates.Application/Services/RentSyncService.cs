@@ -11,7 +11,10 @@ namespace ImperialEstates.Application.Services;
 public sealed class RentSyncService(
     IRentSyncRepository snapshots,
     ITenantRepository tenants,
+    IPropertyRepository properties,
+    IStatusHistoryRepository history,
     IUserRepository users,
+    IGoogleSheetsSyncService googleSheets,
     IAuditRepository audits)
 {
     private static readonly Regex RowPattern = new(
@@ -89,11 +92,25 @@ public sealed class RentSyncService(
                 group => group.Key,
                 group => group.OrderByDescending(x => x.Status == TenantStatus.Active).ThenByDescending(x => x.CreatedAt).First());
 
-        foreach (var record in records.Where(x => x.Cid.HasValue))
+        foreach (var record in records)
         {
-            if (!tenantByCid.TryGetValue(record.Cid!.Value, out var tenant)) continue;
-            record.TenantId = tenant.Id;
-            record.DiscordId = tenant.DiscordId;
+            Tenant? tenant = null;
+            if (record.Cid.HasValue && tenantByCid.TryGetValue(record.Cid.Value, out var matchedTenant))
+            {
+                tenant = matchedTenant;
+                record.TenantId = tenant.Id;
+                record.DiscordId = tenant.DiscordId;
+            }
+
+            var property = tenant is { Status: TenantStatus.Active }
+                ? await properties.GetByIdAsync(tenant.PropertyId, ct)
+                : record.Status == "empty"
+                    ? await properties.GetByNameAsync(record.Address, ct)
+                    : null;
+            if (property is not null)
+                await ApplyPropertyStatusAsync(property, record, actorId, ct);
+
+            if (tenant is null) continue;
             var tenantChanged = false;
             if (record.PaidThrough.HasValue && tenant.RentPaidThrough != record.PaidThrough)
             {
@@ -118,8 +135,11 @@ public sealed class RentSyncService(
             Records = records,
             CreatedBy = actorId,
             UpdatedBy = actorId,
+            GoogleSheetSyncStatus = googleSheets.IsConfigured ? "pending" : "notConfigured",
+            GoogleSheetUrl = googleSheets.SpreadsheetUrl,
         };
         await snapshots.SaveCurrentAsync(snapshot, ct);
+        await PublishToGoogleSheetAsync(snapshot, actorId, ct);
         await audits.CreateAsync(new AuditLog
         {
             Action = "rent-data.synced",
@@ -132,9 +152,112 @@ public sealed class RentSyncService(
                 ["overdue"] = records.Count(x => x.Status == "overdue"),
                 ["evictable"] = records.Count(x => x.Status == "evictable"),
                 ["unmappedTenants"] = records.Count(x => x.Cid.HasValue && string.IsNullOrWhiteSpace(x.DiscordId)),
+                ["googleSheetSyncStatus"] = snapshot.GoogleSheetSyncStatus,
             },
         }, ct);
         return Map(snapshot);
+    }
+
+    public async Task<RentSyncSnapshotDto> RetryGoogleSheetSyncAsync(string actorId, CancellationToken ct)
+    {
+        var snapshot = await snapshots.GetCurrentAsync(ct) ?? throw new KeyNotFoundException("Rent sync snapshot not found.");
+        snapshot.GoogleSheetSyncStatus = googleSheets.IsConfigured ? "pending" : "notConfigured";
+        snapshot.GoogleSheetSyncError = null;
+        snapshot.GoogleSheetUrl = googleSheets.SpreadsheetUrl;
+        snapshot.UpdatedBy = actorId;
+        await snapshots.UpdateAsync(snapshot, ct);
+        await PublishToGoogleSheetAsync(snapshot, actorId, ct);
+        return Map(snapshot);
+    }
+
+    private async Task PublishToGoogleSheetAsync(RentSyncSnapshot snapshot, string actorId, CancellationToken ct)
+    {
+        if (!googleSheets.IsConfigured)
+        {
+            snapshot.GoogleSheetSyncStatus = "notConfigured";
+            snapshot.GoogleSheetSyncError = null;
+            return;
+        }
+
+        try
+        {
+            await googleSheets.PublishAsync(snapshot.Records, ct);
+            snapshot.GoogleSheetSyncStatus = "synced";
+            snapshot.GoogleSheetSyncedAt = DateTime.UtcNow;
+            snapshot.GoogleSheetSyncError = null;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            snapshot.GoogleSheetSyncStatus = "failed";
+            snapshot.GoogleSheetSyncError = exception.Message;
+        }
+
+        snapshot.UpdatedBy = actorId;
+        await snapshots.UpdateAsync(snapshot, ct);
+        await audits.CreateAsync(new AuditLog
+        {
+            Action = snapshot.GoogleSheetSyncStatus == "synced" ? "google-sheet.synced" : "google-sheet.sync-failed",
+            EntityType = "rentSyncSnapshot",
+            EntityId = snapshot.Id,
+            PerformedByUserId = actorId,
+            Metadata = new Dictionary<string, object?>
+            {
+                ["status"] = snapshot.GoogleSheetSyncStatus,
+                ["syncedAt"] = snapshot.GoogleSheetSyncedAt,
+                ["error"] = snapshot.GoogleSheetSyncError,
+            },
+        }, ct);
+    }
+
+    private async Task ApplyPropertyStatusAsync(Property property, RentSyncRecord record, string actorId, CancellationToken ct)
+    {
+        var previous = property.Status;
+        if (record.Status == "empty")
+        {
+            if (property.CurrentTenantId is not null) return;
+            property.MakeAvailable();
+        }
+        else
+        {
+            var target = record.Status switch
+            {
+                "paid" => PropertyStatus.Paid,
+                "evictable" => PropertyStatus.Evictable,
+                "overdue" when property.Status == PropertyStatus.Evictable => PropertyStatus.Evictable,
+                "overdue" when property.Status == PropertyStatus.Overdue &&
+                    property.StatusChangedAt <= DateTime.UtcNow.AddDays(-7) => PropertyStatus.Evictable,
+                "overdue" => PropertyStatus.Overdue,
+                _ => property.Status
+            };
+            property.ApplyRentStatus(target);
+            if (target == PropertyStatus.Evictable) record.Status = "evictable";
+        }
+
+        if (property.Status == previous) return;
+        property.UpdatedBy = actorId;
+        await properties.UpdateAsync(property, ct);
+        await history.CreateAsync(new PropertyStatusHistory
+        {
+            PropertyId = property.Id,
+            PreviousStatus = previous,
+            NewStatus = property.Status,
+            Reason = "Rent data sync",
+            ChangedByUserId = actorId,
+            CreatedBy = actorId
+        }, ct);
+        await audits.CreateAsync(new AuditLog
+        {
+            Action = "property.status.synced",
+            EntityType = "property",
+            EntityId = property.Id,
+            PerformedByUserId = actorId,
+            Metadata = new Dictionary<string, object?>
+            {
+                ["from"] = previous.ToString(),
+                ["to"] = property.Status.ToString(),
+                ["address"] = record.Address
+            }
+        }, ct);
     }
 
     private static List<RentSyncRecord> Parse(string? rawData)
@@ -213,9 +336,10 @@ public sealed class RentSyncService(
 
     private static string? Optional(string value) => value.Trim().Equals("N/A", StringComparison.OrdinalIgnoreCase) ? null : value.Trim();
 
-    private static RentSyncSnapshotDto Map(RentSyncSnapshot? snapshot)
+    private RentSyncSnapshotDto Map(RentSyncSnapshot? snapshot)
     {
-        if (snapshot is null) return new(string.Empty, null, null, 0, 0, 0, 0, 0, 0, Array.Empty<RentSyncRecordDto>());
+        if (snapshot is null) return new(string.Empty, null, null, 0, 0, 0, 0, 0, 0,
+            googleSheets.IsConfigured ? "ready" : "notConfigured", null, null, googleSheets.SpreadsheetUrl, Array.Empty<RentSyncRecordDto>());
         var evictionDate = snapshot.UpdatedAt.Date.AddDays(7);
         var records = snapshot.Records.Select(record => new RentSyncRecordDto(
             record.RowNumber, record.Status, record.PaidThrough, record.Address, record.Interior,
@@ -234,6 +358,12 @@ public sealed class RentSyncService(
             records.Count(x => x.Status == "evictable"),
             records.Count(x => x.Status == "empty"),
             records.Count(x => x.Cid.HasValue && string.IsNullOrWhiteSpace(x.DiscordId)),
+            snapshot.GoogleSheetSyncStatus == "notConfigured" && googleSheets.IsConfigured
+                ? "ready"
+                : snapshot.GoogleSheetSyncStatus,
+            snapshot.GoogleSheetSyncedAt,
+            snapshot.GoogleSheetSyncError,
+            snapshot.GoogleSheetUrl,
             records);
     }
 

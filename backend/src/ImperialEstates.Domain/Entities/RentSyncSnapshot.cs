@@ -3,6 +3,10 @@ namespace ImperialEstates.Domain.Entities;
 public sealed class RentSyncSnapshot : BaseDocument
 {
     public IReadOnlyList<RentSyncRecord> Records { get; set; } = [];
+    public string GoogleSheetSyncStatus { get; set; } = "notConfigured";
+    public DateTime? GoogleSheetSyncedAt { get; set; }
+    public string? GoogleSheetSyncError { get; set; }
+    public string? GoogleSheetUrl { get; set; }
 }
 
 public sealed class RentSyncRecord

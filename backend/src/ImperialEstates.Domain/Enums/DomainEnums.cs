@@ -1,6 +1,17 @@
 namespace ImperialEstates.Domain.Enums;
 
-public enum PropertyStatus { Available, Booked, Owned, Unavailable }
+// Explicit values keep existing MongoDB documents compatible: legacy Owned (2)
+// becomes Paid, while legacy Unavailable (3) becomes OnHold.
+public enum PropertyStatus
+{
+    Available = 0,
+    Booked = 1,
+    Paid = 2,
+    OnHold = 3,
+    Auction = 4,
+    Overdue = 5,
+    Evictable = 6
+}
 public enum PropertyType
 {
     // Legacy values are retained so existing MongoDB documents remain readable.

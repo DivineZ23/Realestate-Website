@@ -13,10 +13,18 @@ public sealed class RentSyncServiceTests
     public async Task Sync_parses_unquoted_currency_and_maps_discord_id_by_cid()
     {
         var snapshots = new SnapshotRepository();
+        var tenant = new Tenant { Id = "tenant-1", PropertyId = "property-1", Cid = 1258, DiscordId = "727075012489510944" };
+        var property = new Property { Id = "property-1", PropertyName = "Forum Drive 10 / Apt2" };
+        property.SetTenantForPersistence(tenant.Id);
+        property.SetStatusForPersistence(PropertyStatus.Paid);
+        var googleSheets = new GoogleSheetsSyncService();
         var service = new RentSyncService(
             snapshots,
-            new TenantRepository(new Tenant { Id = "tenant-1", Cid = 1258, DiscordId = "727075012489510944" }),
+            new TenantRepository(tenant),
+            new PropertyRepository(property),
+            new StatusHistoryRepository(),
             new UserRepository(new User { Id = "owner-1", DisplayName = "Divine", Role = UserRole.Owner }),
+            googleSheets,
             new AuditRepository());
         const string export = """
             Status,Address,Interior,Renter CID,Renter Name,Phone,Income,Cost
@@ -37,6 +45,9 @@ public sealed class RentSyncServiceTests
         Assert.Equal("727075012489510944", eviction.DiscordId);
         Assert.Contains("Notify : <@727075012489510944>", eviction.EvictionNotice);
         Assert.Contains("Rent : $3,000", eviction.EvictionNotice);
+        Assert.Equal(PropertyStatus.Evictable, property.Status);
+        Assert.Equal("synced", result.GoogleSheetSyncStatus);
+        Assert.Equal(4, googleSheets.PublishedRecords.Count);
 
         var resolved = await service.SetResolutionAsync(result.Id, eviction.RowNumber, true, "owner-1", CancellationToken.None);
         var resolvedEviction = Assert.Single(resolved.Records.Where(x => x.Status == "evictable"));
@@ -82,12 +93,46 @@ public sealed class RentSyncServiceTests
         public Task<PagedResult<Tenant>> QueryAsync(int page, int pageSize, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Tenant?> GetByIdAsync(string id, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task CreateAsync(Tenant tenant, CancellationToken cancellationToken) => throw new NotSupportedException();
-        public Task UpdateAsync(Tenant tenant, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task UpdateAsync(Tenant tenant, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class PropertyRepository(params Property[] values) : IPropertyRepository
+    {
+        public Task<Property?> GetByIdAsync(string id, CancellationToken ct) => Task.FromResult(values.FirstOrDefault(x => x.Id == id));
+        public Task<Property?> GetByNameAsync(string name, CancellationToken ct) => Task.FromResult(values.FirstOrDefault(x => x.PropertyName.Equals(name, StringComparison.OrdinalIgnoreCase)));
+        public Task UpdateAsync(Property property, CancellationToken ct) => Task.CompletedTask;
+        public Task<PagedResult<Property>> QueryAsync(PropertyQuery query, bool publicOnly, CancellationToken ct) => throw new NotSupportedException();
+        public Task<IReadOnlyList<Property>> GetByIdsAsync(IReadOnlyCollection<string> ids, CancellationToken ct) => throw new NotSupportedException();
+        public Task<Property?> GetByBusinessIdAsync(int propertyId, CancellationToken ct) => throw new NotSupportedException();
+        public Task<IReadOnlyList<Property>> GetAllAsync(CancellationToken ct) => throw new NotSupportedException();
+        public Task<IReadOnlyList<Property>> GetFeaturedAsync(int limit, CancellationToken ct) => throw new NotSupportedException();
+        public Task<long> CountByBlockAsync(string blockId, CancellationToken ct) => throw new NotSupportedException();
+        public Task<long> CountByStatusAsync(PropertyStatus? status, CancellationToken ct) => throw new NotSupportedException();
+        public Task CreateAsync(Property property, CancellationToken ct) => throw new NotSupportedException();
+    }
+
+    private sealed class StatusHistoryRepository : IStatusHistoryRepository
+    {
+        public Task CreateAsync(PropertyStatusHistory history, CancellationToken ct) => Task.CompletedTask;
+        public Task<IReadOnlyList<PropertyStatusHistory>> GetByPropertyAsync(string propertyId, CancellationToken ct) => throw new NotSupportedException();
+        public Task<IReadOnlyList<PropertyStatusHistory>> GetRecentAsync(int limit, CancellationToken ct) => throw new NotSupportedException();
     }
 
     private sealed class AuditRepository : IAuditRepository
     {
         public Task CreateAsync(AuditLog auditLog, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task<PagedResult<AuditLog>> QueryAsync(int page, int pageSize, CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
+    private sealed class GoogleSheetsSyncService : IGoogleSheetsSyncService
+    {
+        public bool IsConfigured => true;
+        public string? SpreadsheetUrl => "https://docs.google.com/spreadsheets/d/test/edit?gid=0";
+        public IReadOnlyList<RentSyncRecord> PublishedRecords { get; private set; } = [];
+        public Task PublishAsync(IReadOnlyList<RentSyncRecord> records, CancellationToken cancellationToken)
+        {
+            PublishedRecords = records;
+            return Task.CompletedTask;
+        }
     }
 }

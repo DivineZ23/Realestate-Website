@@ -70,7 +70,7 @@ public sealed class DashboardService(IBlockRepository blocks, IPropertyRepositor
             allProperties.Count,
             allProperties.Count(property => property.Status == PropertyStatus.Available),
             allProperties.Count(property => property.Status == PropertyStatus.Booked),
-            allProperties.Count(property => property.Status == PropertyStatus.Owned),
+            allProperties.Count(property => property.CurrentTenantId is not null),
             totalRevenue,
             totalCost,
             totalProfit,
@@ -79,8 +79,6 @@ public sealed class DashboardService(IBlockRepository blocks, IPropertyRepositor
             blockFinancials?.Profit ?? 0,
             pendingEnquiriesTask.Result,
             pendingUsersTask.Result,
-            recentHistoryTask.Result
-                .Where(x => x.PreviousStatus != PropertyStatus.Unavailable && x.NewStatus != PropertyStatus.Unavailable)
-                .Select(x => x.ToDto()).ToList());
+            recentHistoryTask.Result.Select(x => x.ToDto()).ToList());
     }
 }

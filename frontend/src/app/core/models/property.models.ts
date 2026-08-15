@@ -1,4 +1,11 @@
-export type PropertyStatus = 'available' | 'booked' | 'owned' | 'unavailable';
+export type PropertyStatus =
+  | 'available'
+  | 'booked'
+  | 'auction'
+  | 'paid'
+  | 'overdue'
+  | 'evictable'
+  | 'onHold';
 export type PropertyType =
   | 'motel'
   | 'trevorsTrailer'
@@ -63,7 +70,6 @@ export interface Property {
   tenantCid?: number;
   tenantPhoneNumber?: string;
   rentPaidThrough?: string;
-  rentalStatus?: 'paid' | 'overdue' | 'evictable';
   bookedByEnquiryId?: string;
   unavailableReason?: string;
   isFeatured: boolean;

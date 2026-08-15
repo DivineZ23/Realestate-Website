@@ -8,6 +8,8 @@ import {
   LucideCalendarPlus,
   LucideChevronLeft,
   LucideChevronRight,
+  LucideGavel,
+  LucidePauseCircle,
   LucidePencil,
   LucidePlus,
   LucideTrash2,
@@ -44,6 +46,8 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
     LucideCalendarPlus,
     LucideChevronLeft,
     LucideChevronRight,
+    LucideGavel,
+    LucidePauseCircle,
     LucidePencil,
     LucidePlus,
     LucideTrash2,
@@ -97,7 +101,6 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
             <th>Type</th>
             <th>Rent</th>
             <th>Status</th>
-            <th>Rental Status</th>
             <th>Tenant</th>
             <th>CID</th>
             <th>Number</th>
@@ -121,11 +124,6 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
               </td>
               <td>{{ property.rent | currency: 'USD' : 'symbol' : '1.0-0' }}</td>
               <td><app-status-badge [status]="property.status" /></td>
-              <td>
-                <span class="rental-status" [class]="property.rentalStatus || 'paid'">{{
-                  rentalStatusLabel(property)
-                }}</span>
-              </td>
               <td>{{ property.tenantName || '—' }}</td>
               <td>{{ property.tenantCid ?? '—' }}</td>
               <td>{{ property.tenantPhoneNumber || '—' }}</td>
@@ -138,7 +136,8 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
                 <div class="row-actions">
                   @if (property.status === 'available' || property.status === 'booked') {
                     <a [routerLink]="[property.id, 'assign']"><svg lucideUserPlus></svg>Sell</a>
-                  } @else if (property.status === 'owned') {
+                  }
+                  @if (property.currentTenantId) {
                     <button class="danger" (click)="evict(property)">
                       <svg lucideUserMinus></svg>Evict
                     </button>
@@ -146,10 +145,22 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
                   @if (property.status === 'available') {
                     <button (click)="book(property)"><svg lucideCalendarPlus></svg>Book</button>
                   }
-                  @if (property.status === 'booked') {
+                  @if (
+                    property.status === 'booked' ||
+                    (auth.isManager() &&
+                      (property.status === 'auction' || property.status === 'onHold'))
+                  ) {
                     <button (click)="release(property)"><svg lucideUndo2></svg>Release</button>
                   }
                   @if (auth.isManager()) {
+                    @if (property.status === 'available' || property.status === 'booked') {
+                      <button (click)="auction(property)"><svg lucideGavel></svg>Auction</button>
+                    }
+                    @if (!property.currentTenantId && property.status !== 'onHold') {
+                      <button (click)="hold(property)">
+                        <svg lucidePauseCircle></svg>Hold
+                      </button>
+                    }
                     <a
                       class="edit-action"
                       [routerLink]="[property.id, 'edit']"
@@ -167,7 +178,7 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
             </tr>
           } @empty {
             <tr>
-              <td colspan="12">
+              <td colspan="11">
                 <app-empty-state
                   title="No properties found"
                   message="Adjust your filters or add the first property."
@@ -241,24 +252,6 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
         color: var(--muted);
         font-size: 0.7rem;
       }
-      .rental-status {
-        display: inline-flex;
-        padding: 5px 9px;
-        border-radius: 999px;
-        background: var(--forest-light);
-        color: var(--forest);
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-transform: capitalize;
-      }
-      .rental-status.overdue {
-        background: var(--warning-soft);
-        color: var(--warning-ink);
-      }
-      .rental-status.evictable {
-        background: var(--danger-soft);
-        color: var(--danger);
-      }
       .row-actions a,
       .row-actions button {
         border: 0;
@@ -328,9 +321,6 @@ export class PropertyManagementComponent {
   readonly typeLabel = propertyTypeLabel;
   readonly typeCapacity = propertyTypeCapacity;
   readonly blocks = signal<Block[]>([]);
-  rentalStatusLabel(property: Property) {
-    return property.status === 'owned' ? property.rentalStatus || 'paid' : '—';
-  }
   readonly loading = signal(false);
   readonly result = signal<PagedResult<Property>>({
     items: [],
@@ -386,11 +376,12 @@ export class PropertyManagementComponent {
       });
   }
   release(property: Property) {
+    const source = property.status === 'booked' ? 'booking' : property.status === 'auction' ? 'auction listing' : 'hold';
     this.dialog
       .open(ConfirmDialogComponent, {
         data: {
           title: 'Release this property?',
-          message: 'The current booking will be removed and the property will become available.',
+          message: `The current ${source} will be removed and the property will become available.`,
           confirmLabel: 'Release',
         },
       })
@@ -398,6 +389,39 @@ export class PropertyManagementComponent {
       .subscribe((result) => {
         if (result?.confirmed)
           this.service.changeStatus(property.id, 'available').subscribe(() => this.refresh());
+      });
+  }
+  auction(property: Property) {
+    this.dialog
+      .open(ConfirmDialogComponent, {
+        data: {
+          title: 'List this property for auction?',
+          message: 'The property will leave public availability and its status will become Auction.',
+          confirmLabel: 'List for auction',
+        },
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (result?.confirmed)
+          this.service.changeStatus(property.id, 'auction').subscribe(() => this.refresh());
+      });
+  }
+  hold(property: Property) {
+    this.dialog
+      .open(ConfirmDialogComponent, {
+        data: {
+          title: 'Place this property on hold?',
+          message: 'It will not be available for booking, sale, or auction until it is released.',
+          confirmLabel: 'Place on hold',
+          requireReason: true,
+        },
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (result?.confirmed)
+          this.service
+            .changeStatus(property.id, 'onHold', result.reason)
+            .subscribe(() => this.refresh());
       });
   }
   evict(property: Property) {

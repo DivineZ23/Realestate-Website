@@ -1,6 +1,13 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -14,7 +21,7 @@ import {
   LucideRefreshCw,
   LucideTrash2,
 } from '@lucide/angular';
-import { map } from 'rxjs';
+import { interval, map } from 'rxjs';
 import {
   EvictionHistory,
   RentSyncRecord,
@@ -80,6 +87,49 @@ interface EvictionDayGroup {
             <p>The latest successful sync replaces the previous snapshot to limit storage use.</p>
           </div>
         </header>
+        <div class="sheet-sync-state" [class]="'sheet-sync-state ' + sheetSyncState()">
+          <span class="status-dot" aria-hidden="true"></span>
+          <div>
+            <b>{{ sheetSyncTitle() }}</b>
+            @if (sheetSyncState() === 'synced' && snapshot()?.googleSheetSyncedAt) {
+              <small>
+                Last published {{ snapshot()?.googleSheetSyncedAt | date: 'mediumDate' }} at
+                {{ snapshot()?.googleSheetSyncedAt | date: 'shortTime' }}
+              </small>
+            } @else {
+              <small>{{ sheetSyncMessage() }}</small>
+            }
+          </div>
+          <div class="sheet-sync-controls">
+            @if (snapshot()?.googleSheetUrl) {
+              <a [href]="snapshot()?.googleSheetUrl" target="_blank" rel="noopener noreferrer">
+                Open sheet
+              </a>
+            }
+            @if (
+              (sheetSyncState() === 'failed' || sheetSyncState() === 'ready') &&
+              auth.isManager() &&
+              snapshot()?.id
+            ) {
+              <button
+                class="retry-sheet"
+                [class.failure]="sheetSyncState() === 'failed'"
+                type="button"
+                [disabled]="sheetRetrying()"
+                (click)="retryGoogleSheet()"
+              >
+                <svg lucideRefreshCw [class.spinning]="sheetRetrying()"></svg>
+                {{
+                  sheetRetrying()
+                    ? 'Publishing…'
+                    : sheetSyncState() === 'ready'
+                      ? 'Publish now'
+                      : 'Retry'
+                }}
+              </button>
+            }
+          </div>
+        </div>
         @if (auth.isManager()) {
           <textarea
             rows="14"
@@ -683,6 +733,7 @@ export class NoticesComponent {
   readonly snapshotList = signal<RentSyncSnapshot[]>([]);
   readonly evictionHistory = signal<EvictionHistory[]>([]);
   readonly syncing = signal(false);
+  readonly sheetRetrying = signal(false);
   readonly error = signal('');
   readonly success = signal('');
   readonly copiedRow = signal<string | null>(null);
@@ -695,6 +746,30 @@ export class NoticesComponent {
   readonly userService = inject(UserService);
   readonly users = toSignal(this.userService.all().pipe(map((x) => x.items)), { initialValue: [] });
   rawData = '';
+  private readonly destroyRef = inject(DestroyRef);
+
+  readonly sheetSyncState = computed(() =>
+    this.syncing() || this.sheetRetrying()
+      ? 'pending'
+      : (this.snapshot()?.googleSheetSyncStatus ?? 'notConfigured'),
+  );
+  readonly sheetSyncTitle = computed(() => {
+    const titles = {
+      notConfigured: 'Google Sheet not configured',
+      ready: 'Google Sheet ready',
+      pending: 'Publishing to Google Sheet',
+      synced: 'Google Sheet is up to date',
+      failed: 'Google Sheet sync failed',
+    } as const;
+    return titles[this.sheetSyncState()];
+  });
+  readonly sheetSyncMessage = computed(() => {
+    if (this.sheetSyncState() === 'failed')
+      return this.snapshot()?.googleSheetSyncError ?? 'The last publish attempt failed.';
+    if (this.sheetSyncState() === 'pending') return 'The latest property rows are being published.';
+    if (this.sheetSyncState() === 'ready') return 'The next Data Sync will publish the latest rows.';
+    return 'Add the Google service-account variables on the server to enable publishing.';
+  });
 
   readonly title = computed(
     () =>
@@ -799,6 +874,12 @@ export class NoticesComponent {
 
   constructor() {
     this.load();
+    interval(60_000)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (this.mode() === 'sync' && !this.syncing() && !this.sheetRetrying())
+          this.loadCurrentSnapshot();
+      });
     this.tenantService.evictions().subscribe({
       next: (values) => {
         this.evictionHistory.set(values);
@@ -839,6 +920,27 @@ export class NoticesComponent {
           response?.error?.detail || response?.error?.message || 'The export could not be synced.',
         );
         this.syncing.set(false);
+      },
+    });
+  }
+
+  retryGoogleSheet() {
+    if (this.sheetRetrying()) return;
+    this.sheetRetrying.set(true);
+    this.error.set('');
+    this.notices.retryGoogleSheet().subscribe({
+      next: (snapshot) => {
+        this.snapshot.set(snapshot);
+        this.sheetRetrying.set(false);
+        if (snapshot.googleSheetSyncStatus === 'synced')
+          this.success.set('The latest data was published to Google Sheets.');
+        else this.error.set(snapshot.googleSheetSyncError ?? 'Google Sheets sync failed.');
+      },
+      error: (response) => {
+        this.error.set(
+          response?.error?.detail || response?.error?.message || 'Google Sheets sync failed.',
+        );
+        this.sheetRetrying.set(false);
       },
     });
   }
@@ -938,6 +1040,11 @@ export class NoticesComponent {
   }
 
   private load() {
+    this.loadCurrentSnapshot();
+    this.loadSnapshots();
+  }
+
+  private loadCurrentSnapshot() {
     this.notices.snapshot().subscribe({
       next: (snapshot) => this.snapshot.set(snapshot),
       error: () =>
@@ -949,10 +1056,10 @@ export class NoticesComponent {
           evictable: 0,
           empty: 0,
           unmappedTenants: 0,
+          googleSheetSyncStatus: 'notConfigured',
           records: [],
         }),
     });
-    this.loadSnapshots();
   }
 
   private loadSnapshots() {

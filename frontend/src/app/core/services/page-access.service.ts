@@ -9,6 +9,7 @@ const DEFAULTS: AccessManagementSettings = {
     overview: all(),
     team: all(),
     analytics: all(),
+    'auction.createListing': all(),
     'auction.listings': all(),
     'portfolio.properties': all(),
     'portfolio.blocks': all(),

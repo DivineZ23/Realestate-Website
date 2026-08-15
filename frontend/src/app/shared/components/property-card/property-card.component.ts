@@ -152,8 +152,7 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
 })
 export class PropertyCardComponent {
   readonly property = input.required<PublicProperty>();
-  readonly fallback =
-    'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1400&q=80';
+  readonly fallback = '/assets/imperial-estate-hero.webp';
   readonly typeLabel = propertyTypeLabel;
   readonly typeCapacity = propertyTypeCapacity;
 }

@@ -7,6 +7,7 @@ import {
   EvictTenantRequest,
   Property,
   PropertyQuery,
+  PropertyStatus,
   PublicProperty,
   UpsertPropertyRequest,
 } from '../models/property.models';
@@ -39,7 +40,7 @@ export class PropertyService {
   }
   changeStatus(
     id: string,
-    status: string,
+    status: PropertyStatus,
     reason?: string,
     enquiryId?: string,
   ): Observable<Property> {

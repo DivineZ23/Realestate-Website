@@ -24,7 +24,7 @@ public sealed class SeedDataService(MongoContext db)
         {
             Property(245, chinaTown.Id, "ChinaTown Apt 1", PropertyType.LowEndApartment, 2450, PropertyStatus.Available, true, "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1400&q=80"),
             Property(246, chinaTown.Id, "ChinaTown Apt 2", PropertyType.MidEndApartment, 2850, PropertyStatus.Booked, false, "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1400&q=80"),
-            Property(247, chinaTown.Id, "ChinaTown Apt 3", PropertyType.HighEndApartment, 3200, PropertyStatus.Owned, false, "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=80"),
+            Property(247, chinaTown.Id, "ChinaTown Apt 3", PropertyType.HighEndApartment, 3200, PropertyStatus.Paid, false, "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=80"),
             Property(301, riverside.Id, "Riverside Villa", PropertyType.MichaelsMansion, 5800, PropertyStatus.Available, true, "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=1400&q=80"),
             Property(302, riverside.Id, "Garden House", PropertyType.FranklinsHouse, 4100, PropertyStatus.Available, false, "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1400&q=80")
         };

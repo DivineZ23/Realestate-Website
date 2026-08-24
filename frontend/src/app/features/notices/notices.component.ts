@@ -16,6 +16,7 @@ import {
   LucideChevronDown,
   LucideCircleCheck,
   LucideCopy,
+  LucideExternalLink,
   LucideImages,
   LucidePhone,
   LucideRefreshCw,
@@ -64,6 +65,7 @@ interface EvictionDayGroup {
     LucideChevronDown,
     LucideCircleCheck,
     LucideCopy,
+    LucideExternalLink,
     LucideImages,
     LucidePhone,
     LucideRefreshCw,
@@ -87,10 +89,19 @@ interface EvictionDayGroup {
             <p>The latest successful sync replaces the previous snapshot to limit storage use.</p>
           </div>
         </header>
-        <div class="sheet-sync-state" [class]="'sheet-sync-state ' + sheetSyncState()">
-          <span class="status-dot" aria-hidden="true"></span>
-          <div>
-            <b>{{ sheetSyncTitle() }}</b>
+        <div class="sheet-sync-card" [class]="'sheet-sync-card state-' + sheetSyncState()">
+          <div class="sheet-sync-icon" aria-hidden="true">
+            @if (sheetSyncState() === 'synced' || sheetSyncState() === 'ready') {
+              <svg lucideCircleCheck></svg>
+            } @else {
+              <svg lucideRefreshCw [class.spinning]="sheetSyncState() === 'pending'"></svg>
+            }
+          </div>
+          <div class="sheet-sync-copy">
+            <div class="sheet-sync-heading">
+              <b>Google Sheets</b>
+              <span class="sheet-sync-badge">{{ sheetSyncTitle() }}</span>
+            </div>
             @if (sheetSyncState() === 'synced' && snapshot()?.googleSheetSyncedAt) {
               <small>
                 Last published {{ snapshot()?.googleSheetSyncedAt | date: 'mediumDate' }} at
@@ -102,12 +113,19 @@ interface EvictionDayGroup {
           </div>
           <div class="sheet-sync-controls">
             @if (snapshot()?.googleSheetUrl) {
-              <a [href]="snapshot()?.googleSheetUrl" target="_blank" rel="noopener noreferrer">
-                Open sheet
+              <a
+                class="sheet-link"
+                [href]="snapshot()?.googleSheetUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open sheet <svg lucideExternalLink></svg>
               </a>
             }
             @if (
-              (sheetSyncState() === 'failed' || sheetSyncState() === 'ready') &&
+              (sheetSyncState() === 'failed' ||
+                sheetSyncState() === 'ready' ||
+                sheetSyncState() === 'synced') &&
               auth.isManager() &&
               snapshot()?.id
             ) {
@@ -124,7 +142,9 @@ interface EvictionDayGroup {
                     ? 'Publishing…'
                     : sheetSyncState() === 'ready'
                       ? 'Publish now'
-                      : 'Retry'
+                      : sheetSyncState() === 'failed'
+                        ? 'Retry'
+                        : 'Sync now'
                 }}
               </button>
             }
@@ -541,6 +561,14 @@ interface EvictionDayGroup {
       .sync-actions small {
         color: var(--muted);
       }
+      .sync-actions small,
+      .message {
+        font-family: inherit;
+        font-size: 0.78rem;
+        font-weight: 400;
+        line-height: 1.5;
+        letter-spacing: 0;
+      }
       .spinning {
         animation: spin 0.8s linear infinite;
       }
@@ -755,11 +783,11 @@ export class NoticesComponent {
   );
   readonly sheetSyncTitle = computed(() => {
     const titles = {
-      notConfigured: 'Google Sheet not configured',
-      ready: 'Google Sheet ready',
-      pending: 'Publishing to Google Sheet',
-      synced: 'Google Sheet is up to date',
-      failed: 'Google Sheet sync failed',
+      notConfigured: 'Not configured',
+      ready: 'Ready to publish',
+      pending: 'Publishing',
+      synced: 'Up to date',
+      failed: 'Sync failed',
     } as const;
     return titles[this.sheetSyncState()];
   });

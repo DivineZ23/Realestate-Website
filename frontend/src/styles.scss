@@ -311,76 +311,135 @@ table.data-table {
 }
 
 app-notices {
-  .sheet-sync-state {
+  .sheet-sync-card {
+    --sheet-sync-accent: var(--muted);
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: 38px minmax(0, 1fr) auto;
     align-items: center;
-    gap: 11px;
+    gap: 12px;
     margin-top: 18px;
-    padding: 12px 14px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--surface-strong);
+    padding: 11px 12px;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--border) 72%, var(--sheet-sync-accent) 28%);
+    border-radius: 14px;
+    background:
+      radial-gradient(
+        ellipse 54% 190% at 100% 0%,
+        color-mix(in srgb, var(--sheet-sync-accent) 28%, transparent) 0%,
+        color-mix(in srgb, var(--sheet-sync-accent) 11%, transparent) 48%,
+        transparent 74%
+      ),
+      linear-gradient(
+        108deg,
+        color-mix(in srgb, var(--surface-strong) 96%, black 4%) 0%,
+        color-mix(in srgb, var(--surface-strong) 94%, var(--sheet-sync-accent) 6%) 64%,
+        color-mix(in srgb, var(--surface-strong) 84%, var(--sheet-sync-accent) 16%) 100%
+      );
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, white 8%, transparent),
+      0 10px 28px color-mix(in srgb, black 18%, transparent);
   }
-  .sheet-sync-state .status-dot {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: var(--muted);
-  }
-  .sheet-sync-state > div:nth-child(2) {
+  .sheet-sync-icon {
     display: grid;
-    gap: 2px;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    color: var(--muted);
   }
-  .sheet-sync-state b {
-    font-size: 0.82rem;
+  .sheet-sync-icon svg {
+    width: 18px;
+    height: 18px;
   }
-  .sheet-sync-state small {
+  .sheet-sync-copy {
+    display: grid;
+    min-width: 0;
+    gap: 4px;
+    text-align: left;
+  }
+  .sheet-sync-heading {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .sheet-sync-heading b {
+    font-size: 0.84rem;
+  }
+  .sheet-sync-badge {
+    padding: 0;
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .sheet-sync-copy small {
     color: var(--muted);
     font-size: 0.73rem;
+    line-height: 1.35;
   }
-  .sheet-sync-state.synced .status-dot {
-    background: var(--forest);
-    box-shadow: 0 0 0 4px var(--forest-light);
+  .sheet-sync-card.state-synced .sheet-sync-icon,
+  .sheet-sync-card.state-ready .sheet-sync-icon {
+    color: var(--forest);
   }
-  .sheet-sync-state.ready .status-dot {
-    background: var(--forest);
-    box-shadow: 0 0 0 4px var(--forest-light);
+  .sheet-sync-card.state-synced .sheet-sync-badge,
+  .sheet-sync-card.state-ready .sheet-sync-badge {
+    color: var(--forest);
   }
-  .sheet-sync-state.pending .status-dot {
-    background: var(--warning-ink);
-    box-shadow: 0 0 0 4px var(--warning-soft);
-    animation: sheet-sync-pulse 1.2s ease-in-out infinite;
+  .sheet-sync-card.state-synced,
+  .sheet-sync-card.state-ready {
+    --sheet-sync-accent: var(--forest);
   }
-  .sheet-sync-state.failed .status-dot {
-    background: var(--danger);
-    box-shadow: 0 0 0 4px var(--danger-soft);
+  .sheet-sync-card.state-pending .sheet-sync-icon,
+  .sheet-sync-card.state-pending .sheet-sync-badge {
+    color: var(--warning-ink);
+  }
+  .sheet-sync-card.state-pending {
+    --sheet-sync-accent: var(--warning-ink);
+  }
+  .sheet-sync-card.state-failed .sheet-sync-icon,
+  .sheet-sync-card.state-failed .sheet-sync-badge {
+    color: var(--danger);
+  }
+  .sheet-sync-card.state-failed {
+    --sheet-sync-accent: var(--danger);
   }
   .sheet-sync-controls {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
   }
-  .sheet-sync-controls a,
+  .sheet-link,
   .retry-sheet {
-    border: 0;
-    padding: 0;
-    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 6px 10px;
+    border: 1px solid color-mix(in srgb, var(--sheet-sync-accent) 48%, var(--border) 52%);
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--surface) 82%, var(--sheet-sync-accent) 18%);
     color: var(--forest);
     font: inherit;
     font-size: 0.75rem;
     font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
     cursor: pointer;
   }
+  .sheet-link:hover,
+  .retry-sheet:hover:not(:disabled) {
+    border-color: var(--forest);
+    background: color-mix(in srgb, var(--surface) 65%, var(--sheet-sync-accent) 35%);
+    box-shadow: 0 0 18px color-mix(in srgb, var(--sheet-sync-accent) 16%, transparent);
+  }
   .retry-sheet {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
     color: var(--forest);
   }
   .retry-sheet.failure {
     color: var(--danger);
   }
+  .sheet-link svg,
   .retry-sheet svg {
     width: 14px;
     height: 14px;
@@ -685,7 +744,7 @@ app-notices {
 
 @media (max-width: 720px) {
   :root {
-    --space-page: min(100% - 28px, 1360px);
+    --space-page: min(100% - 28px, 1800px);
   }
   .section {
     padding: 56px 0;
@@ -701,8 +760,8 @@ app-notices {
     width: 100%;
   }
   app-notices {
-    .sheet-sync-state {
-      grid-template-columns: auto 1fr;
+    .sheet-sync-card {
+      grid-template-columns: 38px 1fr;
     }
     .sheet-sync-controls {
       grid-column: 2;

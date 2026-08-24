@@ -209,17 +209,28 @@ import { SettingsService } from '../../core/services/management.services';
         font-size: 0.86rem;
       }
       .contact {
-        padding: 90px 0;
+        padding: 72px 0;
         background: var(--surface-muted);
       }
       .contact > .container {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 80px;
-        align-items: end;
+        grid-template-columns: 1fr;
+        gap: 18px;
+        max-width: 1480px;
+      }
+      .contact h2 {
+        max-width: 720px;
+        margin-bottom: 0;
+      }
+      .contact > .container > div:last-child {
+        width: 100%;
+        max-width: 680px;
+        justify-self: start;
       }
       .contact p {
+        margin: 0 0 20px;
         color: var(--muted);
+        line-height: 1.65;
       }
       @media (max-width: 850px) {
         .story {
@@ -235,6 +246,10 @@ import { SettingsService } from '../../core/services/management.services';
         .contact > .container {
           grid-template-columns: 1fr;
           gap: 20px;
+        }
+        .contact > .container > div:last-child {
+          max-width: 640px;
+          justify-self: start;
         }
       }
       @media (max-width: 600px) {

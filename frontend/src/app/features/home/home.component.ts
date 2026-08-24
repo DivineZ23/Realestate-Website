@@ -49,20 +49,22 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
     </section>
     <section class="section featured">
       <div class="container">
-        <div class="heading-row">
-          <div class="section-heading">
-            <p class="eyebrow">Selected residences</p>
-            <h2>Homes that make room for life.</h2>
-          </div>
+        <div class="section-heading featured-heading">
+          <p class="eyebrow">Selected residences</p>
+          <h2>Homes that make room for life.</h2>
           <a routerLink="/properties">View every property <svg lucideArrowRight></svg></a>
         </div>
         <div class="grid">
           @for (property of featured(); track property.id) {
             <app-property-card [property]="property" />
           } @empty {
-            @for (item of skeletons; track item) {
-              <div class="skeleton"></div>
-            }
+            <div class="featured-empty">
+              <svg lucideSearch></svg>
+              <div>
+                <h3>New residences are being prepared</h3>
+                <p>There are no featured homes to display right now. Check the full property collection for the latest availability.</p>
+              </div>
+            </div>
           }
         </div>
       </div>
@@ -220,20 +222,21 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
         align-items: center;
         gap: 6px;
       }
-      .heading-row {
-        display: flex;
-        align-items: end;
-        justify-content: space-between;
+      .featured .section-heading {
+        max-width: 840px;
       }
-      .heading-row > a {
-        margin-bottom: 44px;
-        font-weight: 700;
+      .featured-heading h2 {
+        margin-bottom: 0;
+      }
+      .featured-heading > a {
         display: inline-flex;
         align-items: center;
         gap: 7px;
+        margin-top: 12px;
+        font-weight: 700;
       }
       .note a svg,
-      .heading-row > a svg {
+      .featured-heading > a svg {
         width: 16px;
         height: 16px;
       }
@@ -241,6 +244,33 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 22px;
+      }
+      .featured-empty {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        min-height: 112px;
+        padding: 24px 28px;
+        border: 1px solid var(--contrast-border);
+        border-radius: var(--radius-md);
+        background: color-mix(in srgb, var(--contrast-surface) 94%, var(--forest) 6%);
+      }
+      .featured-empty > svg {
+        width: 22px;
+        height: 22px;
+        flex: 0 0 auto;
+        color: var(--forest);
+      }
+      .featured-empty h3 {
+        margin: 0 0 5px;
+        font-size: 1rem;
+      }
+      .featured-empty p {
+        max-width: 720px;
+        margin: 0;
+        color: var(--contrast-muted);
+        font-size: 0.82rem;
       }
       .highlights {
         background: var(--surface-soft);
@@ -355,11 +385,9 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
         .steps {
           grid-template-columns: 1fr;
         }
-        .heading-row {
-          align-items: start;
-        }
-        .heading-row > a {
-          display: none;
+        .featured-empty {
+          align-items: flex-start;
+          padding: 20px;
         }
         .actions {
           align-items: stretch;
@@ -374,7 +402,6 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
 })
 export class HomeComponent {
   private properties = inject(PropertyService);
-  readonly skeletons = [1, 2, 3];
   readonly featured = toSignal(this.properties.featured().pipe(catchError(() => of([]))), {
     initialValue: [],
   });

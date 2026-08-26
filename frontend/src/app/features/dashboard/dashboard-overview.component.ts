@@ -6,6 +6,7 @@ import { LucideArrowRight } from '@lucide/angular';
 import { catchError, of } from 'rxjs';
 import { DashboardSummary } from '../../core/models/management.models';
 import { DashboardService } from '../../core/services/management.services';
+import { PageAccessService } from '../../core/services/page-access.service';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 
 @Component({
@@ -72,7 +73,9 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
               <h2>Recent status changes</h2>
               <p>Latest movement across the portfolio</p>
             </div>
-            <a routerLink="/dashboard/properties">View properties</a>
+            @if (access.canAccess('portfolio.properties')) {
+              <a routerLink="/dashboard/properties">View properties</a>
+            }
           </div>
           @for (item of s.recentStatusChanges; track item.id) {
             <div class="event">
@@ -94,12 +97,16 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         <aside>
           <section class="panel actions">
             <h2>Team access</h2>
-            @if (s.pendingUsers > 0) {
-              <a routerLink="/dashboard/users"
-                ><span>Pending approvals</span><b>{{ s.pendingUsers }}</b></a
-              >
+            @if (access.canAccess('administration.users')) {
+              @if (s.pendingUsers > 0) {
+                <a routerLink="/dashboard/users"
+                  ><span>Pending approvals</span><b>{{ s.pendingUsers }}</b></a
+                >
+              } @else {
+                <p class="empty-attention">No pending access requests.</p>
+              }
             } @else {
-              <p class="empty-attention">No pending access requests.</p>
+              <p class="empty-attention">Access requests are managed by administrators.</p>
             }
           </section>
           <section class="panel occupancy">
@@ -383,6 +390,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
 })
 export class DashboardOverviewComponent {
   private service = inject(DashboardService);
+  readonly access = inject(PageAccessService);
   readonly summary = toSignal(this.service.get().pipe(catchError(() => of(null))), {
     initialValue: null,
   });

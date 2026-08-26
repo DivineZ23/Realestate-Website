@@ -5,10 +5,13 @@ import { PagedResult } from '../models/api.models';
 import {
   AuditLog,
   CreateEnquiryRequest,
+  CreateRecruitmentApplicationRequest,
   DashboardSummary,
   PersonalStatistics,
   Enquiry,
   EnquiryStatus,
+  RecruitmentApplication,
+  RecruitmentStatus,
   RentSyncSnapshot,
   EvictionHistory,
   Tenant,
@@ -59,6 +62,27 @@ export class EnquiryService {
     body: { status?: EnquiryStatus; assignedAgentId?: string; internalNotes?: string },
   ): Observable<Enquiry> {
     return this.api.patch(`${API_ENDPOINTS.enquiries}/${id}`, body);
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class RecruitmentService {
+  private readonly api = inject(ApiService);
+  create(body: CreateRecruitmentApplicationRequest): Observable<RecruitmentApplication> {
+    return this.api.post(API_ENDPOINTS.recruitmentApplications, body);
+  }
+  all(status: RecruitmentStatus, page = 1): Observable<PagedResult<RecruitmentApplication>> {
+    return this.api.get(API_ENDPOINTS.recruitmentApplications, { page, pageSize: 50, status });
+  }
+  review(
+    id: string,
+    status: RecruitmentStatus,
+    reviewNotes?: string,
+  ): Observable<RecruitmentApplication> {
+    return this.api.patch(`${API_ENDPOINTS.recruitmentApplications}/${id}`, {
+      status,
+      reviewNotes,
+    });
   }
 }
 

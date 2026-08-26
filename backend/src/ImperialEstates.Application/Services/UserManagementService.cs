@@ -17,6 +17,24 @@ public sealed class UserManagementService(IUserRepository users, IAuditRepositor
 
     public async Task<UserDto> GetAsync(string id, CancellationToken cancellationToken) => (await GetEntityAsync(id, cancellationToken)).ToDto();
 
+    public async Task<UserDto> UpdateProfileAsync(string id, UpdateUserProfileRequest request, CancellationToken ct)
+    {
+        var user = await GetEntityAsync(id, ct);
+        if (user.ApprovalStatus != ApprovalStatus.Approved || user.AccessStatus != AccessStatus.Active)
+            throw new DomainRuleException("Your account must be approved and active before editing personal details.", "PROFILE_ACCESS_REQUIRED");
+
+        var existingCid = await users.GetByCidAsync(request.Cid, ct);
+        if (existingCid is not null && existingCid.Id != user.Id)
+            throw new DomainRuleException("That CID is already assigned to another team member.", "USER_CID_EXISTS");
+
+        return await MutateAsync(user, id, "user.profile-updated", value =>
+        {
+            value.FullName = request.FullName.Trim();
+            value.Cid = request.Cid;
+            value.PhoneNumber = request.PhoneNumber.Trim();
+        }, null, ct);
+    }
+
     public async Task<UserDto> ApproveAsync(string id, string actorId, CancellationToken ct)
     {
         var actor = await GetEntityAsync(actorId, ct);

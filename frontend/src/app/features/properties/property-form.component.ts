@@ -77,6 +77,23 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
                   <option [value]="type.value">{{ type.label }}</option>
                 }
               </select></label
+            ><label class="field"
+              ><span>Monthly rent <small>Optional</small></span
+              ><input type="number" min="0" formControlName="rent" placeholder="Ask our team" />
+              <small class="field-note"
+                >Leave empty or enter 0 to show “Ask our team”.</small
+              ></label
+            ><label class="field"
+              ><span>Security deposit <small>Optional</small></span
+              ><input
+                type="number"
+                min="0"
+                formControlName="securityDeposit"
+                placeholder="Ask our team"
+              />
+              <small class="field-note"
+                >Leave empty or enter 0 to show “Ask our team”.</small
+              ></label
             ><label class="field wide"
               ><span>Description</span><textarea rows="5" formControlName="description"></textarea>
             </label>
@@ -177,6 +194,12 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         line-height: 1.3;
         white-space: nowrap;
       }
+      .field > span small,
+      .field-note {
+        color: var(--muted);
+        font-size: 0.68rem;
+        font-weight: 500;
+      }
       .checks {
         display: flex;
         gap: 30px;
@@ -250,6 +273,8 @@ export class PropertyFormComponent {
     propertyName: new FormControl('', { nonNullable: true, validators: Validators.required }),
     description: new FormControl(''),
     type: new FormControl<PropertyType>('motel', { nonNullable: true }),
+    rent: new FormControl<number | null>(null, Validators.min(0)),
+    securityDeposit: new FormControl<number | null>(null, Validators.min(0)),
     isFeatured: new FormControl(false, { nonNullable: true }),
     isActive: new FormControl(true, { nonNullable: true }),
   });
@@ -281,8 +306,8 @@ export class PropertyFormComponent {
       description: raw.description || null,
       type: raw.type,
       storage: existing?.storage ?? null,
-      rent: existing?.rent ?? 0,
-      securityDeposit: existing?.securityDeposit ?? null,
+      rent: raw.rent ?? 0,
+      securityDeposit: raw.securityDeposit ?? null,
       bedrooms: existing?.bedrooms ?? null,
       bathrooms: existing?.bathrooms ?? null,
       floor: existing?.floor ?? null,

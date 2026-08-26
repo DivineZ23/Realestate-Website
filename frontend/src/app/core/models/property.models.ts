@@ -1,11 +1,5 @@
 export type PropertyStatus =
-  | 'available'
-  | 'booked'
-  | 'auction'
-  | 'paid'
-  | 'overdue'
-  | 'evictable'
-  | 'onHold';
+  'available' | 'booked' | 'auction' | 'paid' | 'overdue' | 'evictable' | 'onHold';
 export type PropertyType =
   | 'motel'
   | 'trevorsTrailer'
@@ -102,6 +96,7 @@ export interface PropertyQuery {
   maxRent?: number | null;
   bedrooms?: number | null;
   personCapacity?: number | null;
+  storageCapacity?: number | null;
   furnishing?: string;
   amenities?: string[];
   sortBy?: string;

@@ -100,8 +100,6 @@ import { SettingsService } from '../../core/services/management.services';
         <div>
           <p class="eyebrow">Talk to us</p>
           <h2>Have a property question?</h2>
-        </div>
-        <div>
           <p>
             Whether you are looking, letting, or considering management support, our team is ready
             to listen.
@@ -213,19 +211,16 @@ import { SettingsService } from '../../core/services/management.services';
         background: var(--surface-muted);
       }
       .contact > .container {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 18px;
+        display: block;
         max-width: 1480px;
       }
       .contact h2 {
         max-width: 720px;
-        margin-bottom: 0;
+        margin-bottom: 14px;
       }
-      .contact > .container > div:last-child {
+      .contact > .container > div {
         width: 100%;
         max-width: 680px;
-        justify-self: start;
       }
       .contact p {
         margin: 0 0 20px;
@@ -242,14 +237,6 @@ import { SettingsService } from '../../core/services/management.services';
         }
         .team-grid {
           grid-template-columns: 1fr 1fr;
-        }
-        .contact > .container {
-          grid-template-columns: 1fr;
-          gap: 20px;
-        }
-        .contact > .container > div:last-child {
-          max-width: 640px;
-          justify-self: start;
         }
       }
       @media (max-width: 600px) {

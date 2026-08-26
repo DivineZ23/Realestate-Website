@@ -62,7 +62,10 @@ export const routes: Routes = [
       {
         path: 'properties/new',
         canActivate: [managerGuard, pageAccessGuard],
-        data: { accessKey: 'portfolio.properties' },
+        data: {
+          accessKey: 'portfolio.properties.add',
+          parentAccessKey: 'portfolio.properties',
+        },
         loadComponent: () =>
           import('./features/properties/property-form.component').then(
             (m) => m.PropertyFormComponent,
@@ -71,7 +74,10 @@ export const routes: Routes = [
       {
         path: 'properties/:id/edit',
         canActivate: [managerGuard, pageAccessGuard],
-        data: { accessKey: 'portfolio.properties' },
+        data: {
+          accessKey: 'portfolio.properties.edit',
+          parentAccessKey: 'portfolio.properties',
+        },
         loadComponent: () =>
           import('./features/properties/property-form.component').then(
             (m) => m.PropertyFormComponent,
@@ -80,7 +86,10 @@ export const routes: Routes = [
       {
         path: 'properties/:id/assign',
         canActivate: [pageAccessGuard],
-        data: { accessKey: 'portfolio.properties' },
+        data: {
+          accessKey: 'portfolio.properties.sell',
+          parentAccessKey: 'portfolio.properties',
+        },
         loadComponent: () =>
           import('./features/properties/tenant-assignment.component').then(
             (m) => m.TenantAssignmentComponent,
@@ -190,6 +199,8 @@ export const routes: Routes = [
       },
       {
         path: 'profile',
+        canActivate: [pageAccessGuard],
+        data: { accessKey: 'profile' },
         loadComponent: () =>
           import('./features/profile/profile.component').then((m) => m.ProfileComponent),
       },
@@ -207,6 +218,33 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/access-management/access-management.component').then(
             (m) => m.AccessManagementComponent,
+          ),
+      },
+      {
+        path: 'recruitment/pending',
+        canActivate: [managerGuard, pageAccessGuard],
+        data: { status: 'pending', accessKey: 'recruitment.pending' },
+        loadComponent: () =>
+          import('./features/recruitment/recruitment-applications.component').then(
+            (m) => m.RecruitmentApplicationsComponent,
+          ),
+      },
+      {
+        path: 'recruitment/accepted',
+        canActivate: [managerGuard, pageAccessGuard],
+        data: { status: 'accepted', accessKey: 'recruitment.accepted' },
+        loadComponent: () =>
+          import('./features/recruitment/recruitment-applications.component').then(
+            (m) => m.RecruitmentApplicationsComponent,
+          ),
+      },
+      {
+        path: 'recruitment/rejected',
+        canActivate: [managerGuard, pageAccessGuard],
+        data: { status: 'rejected', accessKey: 'recruitment.rejected' },
+        loadComponent: () =>
+          import('./features/recruitment/recruitment-applications.component').then(
+            (m) => m.RecruitmentApplicationsComponent,
           ),
       },
     ],
@@ -240,6 +278,11 @@ export const routes: Routes = [
         path: 'about',
         loadComponent: () =>
           import('./features/about/about.component').then((m) => m.AboutComponent),
+      },
+      {
+        path: 'join-us',
+        loadComponent: () =>
+          import('./features/recruitment/join-us.component').then((m) => m.JoinUsComponent),
       },
     ],
   },

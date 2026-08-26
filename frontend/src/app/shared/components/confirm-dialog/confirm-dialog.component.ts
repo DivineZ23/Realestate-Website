@@ -18,13 +18,7 @@ export interface ConfirmDialogData {
 }
 @Component({
   selector: 'app-confirm-dialog',
-  imports: [
-    FormsModule,
-    MatDialogActions,
-    MatDialogClose,
-    MatDialogContent,
-    MatDialogTitle,
-  ],
+  imports: [FormsModule, MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<h2 mat-dialog-title>{{ data.title }}</h2>
     <mat-dialog-content

@@ -2,7 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { catchError, Observable, of, shareReplay, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { API_ENDPOINTS } from '../config/api-endpoints';
-import { User } from '../models/user.models';
+import { UpdateUserProfileRequest, User } from '../models/user.models';
 import { ApiService } from './api.service';
 
 @Injectable({ providedIn: 'root' })
@@ -34,6 +34,11 @@ export class AuthService {
 
   signIn(): void {
     window.location.assign(`${environment.apiBaseUrl}${API_ENDPOINTS.auth.signIn}`);
+  }
+  updateProfile(body: UpdateUserProfileRequest): Observable<User> {
+    return this.api
+      .put<UpdateUserProfileRequest, User>(API_ENDPOINTS.auth.profile, body)
+      .pipe(tap((user) => this.state.set(user)));
   }
   logout(): void {
     this.api.post<null, void>(API_ENDPOINTS.auth.logout, null).subscribe(() => {

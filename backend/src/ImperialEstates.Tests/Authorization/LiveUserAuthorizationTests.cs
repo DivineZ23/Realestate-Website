@@ -40,6 +40,9 @@ public sealed class LiveUserAuthorizationTests
         public Task<User?> GetByDiscordIdAsync(string id, CancellationToken ct) =>
             Task.FromResult<User?>(user.DiscordUserId == id ? user : null);
 
+        public Task<User?> GetByCidAsync(int cid, CancellationToken ct) =>
+            Task.FromResult<User?>(user.Cid == cid ? user : null);
+
         public Task<PagedResult<User>> QueryAsync(int page, int pageSize, ApprovalStatus? approval,
             AccessStatus? access, UserRole? role, CancellationToken ct) =>
             Task.FromResult(new PagedResult<User>([user], page, pageSize, 1));

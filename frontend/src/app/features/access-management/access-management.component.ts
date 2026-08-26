@@ -4,12 +4,12 @@ import { LucideLockKeyhole, LucideShieldCheck } from '@lucide/angular';
 import { UserRole } from '../../core/models/user.models';
 import { PageAccessService } from '../../core/services/page-access.service';
 import { USER_ROLES } from '../../core/constants/user-role.constants';
-
-interface AccessResource {
-  key: string;
-  section: string;
-  label: string;
-}
+import {
+  ACCESS_SECTIONS,
+  AccessResourceDefinition,
+  AccessSectionDefinition,
+  roleCanOpen,
+} from '../../core/constants/access-resource.constants';
 
 @Component({
   selector: 'app-access-management',
@@ -29,8 +29,8 @@ interface AccessResource {
         <div>
           <b>Navigation permissions</b>
           <p>
-            These toggles can restrict page access. Existing server-side Manager rules still protect
-            privileged actions.
+            Control a complete section at once or fine-tune its individual pages. Restricted roles
+            remain protected by server-side authorization.
           </p>
         </div>
       </div>
@@ -43,25 +43,41 @@ interface AccessResource {
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let resource of resources">
-              <td>
-                <small>{{ resource.section }}</small
-                ><b>{{ resource.label }}</b>
-              </td>
-              <td *ngFor="let role of roles">
-                <label class="toggle"
-                  ><input
-                    type="checkbox"
-                    [checked]="allowed(resource.key, role)"
-                    [disabled]="role === 'owner'"
-                    (change)="toggle(resource.key, role, $any($event.target).checked)"
-                  /><span></span
-                  ><em>{{
-                    role === 'owner' ? 'Always' : allowed(resource.key, role) ? 'Allowed' : 'Hidden'
-                  }}</em></label
-                >
-              </td>
-            </tr>
+            <ng-container *ngFor="let section of sections">
+              <tr class="section-row">
+                <td>
+                  <b>{{ section.label }}</b>
+                  <small>{{ section.resources.length }} pages</small>
+                </td>
+                <td *ngFor="let role of roles">
+                  <label class="toggle section-toggle"
+                    ><input
+                      type="checkbox"
+                      [checked]="sectionAllowed(section, role)"
+                      [indeterminate]="sectionPartiallyAllowed(section, role)"
+                      [disabled]="!sectionConfigurable(section, role)"
+                      (change)="toggleSection(section, role, $any($event.target).checked)"
+                    /><span></span><em>{{ sectionState(section, role) }}</em></label
+                  >
+                </td>
+              </tr>
+              <tr *ngFor="let resource of section.resources" class="resource-row">
+                <td [class.child-resource]="resource.child">
+                  <b>{{ resource.label }}</b>
+                  <small>{{ resource.child ? 'Property workflow' : 'Page' }}</small>
+                </td>
+                <td *ngFor="let role of roles">
+                  <label class="toggle"
+                    ><input
+                      type="checkbox"
+                      [checked]="allowed(resource.key, role)"
+                      [disabled]="!configurable(resource, role)"
+                      (change)="toggle(resource.key, role, $any($event.target).checked)"
+                    /><span></span><em>{{ resourceState(resource, role) }}</em></label
+                  >
+                </td>
+              </tr>
+            </ng-container>
           </tbody>
         </table>
       </div>
@@ -152,6 +168,38 @@ interface AccessResource {
         color: var(--muted);
         margin-bottom: 2px;
       }
+      .section-row td {
+        background: color-mix(in srgb, var(--surface-strong) 91%, #64748b 9%);
+        border-bottom-color: var(--border);
+        padding-top: 17px;
+        padding-bottom: 17px;
+      }
+      .section-row td:first-child {
+        box-shadow: inset 3px 0 0 color-mix(in srgb, #64748b 70%, transparent);
+      }
+      .section-row td:first-child b {
+        color: var(--text);
+        font-size: 0.88rem;
+      }
+      .section-row td:first-child small {
+        margin-top: 3px;
+      }
+      .resource-row td:first-child {
+        padding-left: 30px;
+      }
+      .resource-row td:first-child.child-resource {
+        padding-left: 48px;
+        position: relative;
+      }
+      .resource-row td:first-child.child-resource::before {
+        content: '';
+        position: absolute;
+        left: 30px;
+        top: 50%;
+        width: 8px;
+        height: 1px;
+        background: var(--muted);
+      }
       .toggle {
         display: flex;
         align-items: center;
@@ -188,12 +236,15 @@ interface AccessResource {
         transform: translateX(15px);
       }
       .toggle input:disabled + span {
-        opacity: 0.7;
+        opacity: 0.48;
       }
       .toggle em {
         font-style: normal;
         font-size: 0.72rem;
         color: var(--muted);
+      }
+      .section-toggle em {
+        font-weight: 700;
       }
     `,
   ],
@@ -202,30 +253,7 @@ export class AccessManagementComponent {
   readonly access = inject(PageAccessService);
   readonly roles: UserRole[] = ['agent', 'seniorAgent', 'manager', 'owner'];
   readonly labels = USER_ROLES;
-  readonly resources: AccessResource[] = [
-    { key: 'overview', section: 'Workspace', label: 'Overview' },
-    { key: 'team', section: 'Workspace', label: 'Team' },
-    { key: 'analytics', section: 'Performance', label: 'Analytics' },
-    { key: 'auction.createListing', section: 'Auction', label: 'Create Listing' },
-    { key: 'auction.listings', section: 'Auction', label: 'Listings' },
-    { key: 'portfolio.properties', section: 'Portfolio', label: 'Properties' },
-    { key: 'portfolio.blocks', section: 'Portfolio', label: 'Blocks' },
-    { key: 'portfolio.tenants', section: 'Portfolio', label: 'Tenants' },
-    { key: 'notices.overdue', section: 'Notices', label: 'Overdue Notice' },
-    { key: 'notices.eviction', section: 'Notices', label: 'Eviction Notice' },
-    { key: 'notices.overdueList', section: 'Notices', label: 'Overdue List' },
-    { key: 'notices.evictionList', section: 'Notices', label: 'Eviction List' },
-    { key: 'notices.sync', section: 'Notices', label: 'Data Sync' },
-    { key: 'notices.syncedDataRecords', section: 'Notices', label: 'Sync History' },
-    { key: 'administration.users', section: 'Administration', label: 'User Management' },
-    { key: 'administration.auditLogs', section: 'Administration', label: 'Audit Logs' },
-    { key: 'administration.settings', section: 'Administration', label: 'Settings' },
-    {
-      key: 'administration.accessManagement',
-      section: 'Administration',
-      label: 'Access Management',
-    },
-  ];
+  readonly sections = ACCESS_SECTIONS;
   allowed(key: string, role: UserRole) {
     return this.access.settings().permissions[key]?.[role] === true;
   }
@@ -235,6 +263,49 @@ export class AccessManagementComponent {
       ...current.permissions,
       [key]: { ...current.permissions[key], [role]: allowed },
     };
+    this.access.save({ permissions }).subscribe();
+  }
+
+  configurable(resource: AccessResourceDefinition, role: UserRole): boolean {
+    return role !== 'owner' && roleCanOpen(resource, role);
+  }
+
+  resourceState(resource: AccessResourceDefinition, role: UserRole): string {
+    if (role === 'owner') return 'Always';
+    if (!roleCanOpen(resource, role)) return 'Restricted';
+    return this.allowed(resource.key, role) ? 'Allowed' : 'Hidden';
+  }
+
+  sectionConfigurable(section: AccessSectionDefinition, role: UserRole): boolean {
+    return role !== 'owner' && section.resources.some((resource) => roleCanOpen(resource, role));
+  }
+
+  sectionAllowed(section: AccessSectionDefinition, role: UserRole): boolean {
+    const resources = section.resources.filter((resource) => roleCanOpen(resource, role));
+    return resources.length > 0 && resources.every((resource) => this.allowed(resource.key, role));
+  }
+
+  sectionPartiallyAllowed(section: AccessSectionDefinition, role: UserRole): boolean {
+    const resources = section.resources.filter((resource) => roleCanOpen(resource, role));
+    const allowed = resources.filter((resource) => this.allowed(resource.key, role)).length;
+    return allowed > 0 && allowed < resources.length;
+  }
+
+  sectionState(section: AccessSectionDefinition, role: UserRole): string {
+    if (role === 'owner') return 'Always';
+    if (!this.sectionConfigurable(section, role)) return 'Restricted';
+    if (this.sectionPartiallyAllowed(section, role)) return 'Mixed';
+    return this.sectionAllowed(section, role) ? 'All' : 'Hidden';
+  }
+
+  toggleSection(section: AccessSectionDefinition, role: UserRole, allowed: boolean) {
+    if (!this.sectionConfigurable(section, role)) return;
+    const current = this.access.settings();
+    const permissions = { ...current.permissions };
+    for (const resource of section.resources) {
+      if (!roleCanOpen(resource, role)) continue;
+      permissions[resource.key] = { ...permissions[resource.key], [role]: allowed };
+    }
     this.access.save({ permissions }).subscribe();
   }
 }

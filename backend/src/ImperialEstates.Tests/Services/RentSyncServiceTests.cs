@@ -78,6 +78,7 @@ public sealed class RentSyncServiceTests
         public Task<User?> GetByIdAsync(string id, CancellationToken ct) => Task.FromResult(values.FirstOrDefault(x => x.Id == id));
         public Task<PagedResult<User>> QueryAsync(int page, int pageSize, ApprovalStatus? approval, AccessStatus? access, UserRole? role, CancellationToken ct) => throw new NotSupportedException();
         public Task<User?> GetByDiscordIdAsync(string id, CancellationToken ct) => throw new NotSupportedException();
+        public Task<User?> GetByCidAsync(int cid, CancellationToken ct) => Task.FromResult(values.FirstOrDefault(x => x.Cid == cid));
         public Task<long> CountActiveManagersAsync(CancellationToken ct) => throw new NotSupportedException();
         public Task<long> CountPendingAsync(CancellationToken ct) => throw new NotSupportedException();
         public Task CreateAsync(User user, CancellationToken ct) => throw new NotSupportedException();

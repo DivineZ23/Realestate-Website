@@ -1,0 +1,119 @@
+using ImperialEstates.Application.Common;
+using ImperialEstates.Application.DTOs;
+using ImperialEstates.Application.Interfaces;
+using ImperialEstates.Domain.Entities;
+using ImperialEstates.Domain.Enums;
+using ImperialEstates.Domain.Exceptions;
+
+namespace ImperialEstates.Application.Services;
+
+public sealed class RecruitmentService(
+    IRecruitmentApplicationRepository applications,
+    IUserRepository users,
+    IAuditRepository audits)
+{
+    public async Task<RecruitmentApplicationDto> CreateAsync(
+        CreateRecruitmentApplicationRequest request,
+        CancellationToken ct)
+    {
+        var discordId = request.DiscordId.Trim();
+        if (await applications.HasPendingAsync(request.CharacterCid, discordId, ct))
+            throw new DomainRuleException(
+                "A pending application already exists for this CID or Discord ID.",
+                "RECRUITMENT_APPLICATION_PENDING");
+
+        var value = new RecruitmentApplication
+        {
+            CharacterName = request.CharacterName.Trim(),
+            CharacterCid = request.CharacterCid,
+            CharacterPhoneNumber = request.CharacterPhoneNumber.Trim(),
+            DiscordId = discordId,
+            ReasonToJoin = request.ReasonToJoin.Trim(),
+            TotalPlaytime = request.TotalPlaytime.Trim(),
+            BeneficialSkills = request.BeneficialSkills.Trim(),
+            Availability = request.Availability.Trim()
+        };
+        await applications.CreateAsync(value, ct);
+        return Map(value, null);
+    }
+
+    public async Task<PagedResult<RecruitmentApplicationDto>> QueryAsync(
+        int page,
+        int pageSize,
+        RecruitmentStatus? status,
+        CancellationToken ct)
+    {
+        var values = await applications.QueryAsync(page, pageSize, status, ct);
+        var reviewerIds = values.Items
+            .Select(x => x.ReviewedByUserId)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct()
+            .Cast<string>()
+            .ToArray();
+        var reviewers = new Dictionary<string, string>();
+        foreach (var reviewerId in reviewerIds)
+        {
+            var reviewer = await users.GetByIdAsync(reviewerId, ct);
+            if (reviewer is not null) reviewers[reviewerId] = reviewer.DisplayName;
+        }
+
+        return new(
+            values.Items
+                .Select(x => Map(x, x.ReviewedByUserId is null ? null : reviewers.GetValueOrDefault(x.ReviewedByUserId)))
+                .ToList(),
+            values.Page,
+            values.PageSize,
+            values.TotalItems);
+    }
+
+    public async Task<RecruitmentApplicationDto> ReviewAsync(
+        string id,
+        ReviewRecruitmentApplicationRequest request,
+        string actorId,
+        CancellationToken ct)
+    {
+        var value = await applications.GetByIdAsync(id, ct)
+            ?? throw new KeyNotFoundException("Recruitment application not found.");
+        var reviewer = await users.GetByIdAsync(actorId, ct)
+            ?? throw new UnauthorizedAccessException();
+
+        value.Status = request.Status;
+        value.ReviewNotes = request.ReviewNotes?.Trim();
+        value.ReviewedByUserId = actorId;
+        value.ReviewedAt = DateTime.UtcNow;
+        value.UpdatedAt = DateTime.UtcNow;
+        value.UpdatedBy = actorId;
+        await applications.UpdateAsync(value, ct);
+        await audits.CreateAsync(new AuditLog
+        {
+            Action = "recruitment.application.reviewed",
+            EntityType = "recruitment_application",
+            EntityId = value.Id,
+            PerformedByUserId = actorId,
+            Metadata = new()
+            {
+                ["status"] = request.Status.ToString(),
+                ["reviewNotes"] = value.ReviewNotes
+            }
+        }, ct);
+        return Map(value, reviewer.DisplayName);
+    }
+
+    private static RecruitmentApplicationDto Map(RecruitmentApplication value, string? reviewerName) => new(
+        value.Id,
+        value.CharacterName,
+        value.CharacterCid,
+        value.CharacterPhoneNumber,
+        value.DiscordId,
+        value.ReasonToJoin,
+        value.TotalPlaytime,
+        value.BeneficialSkills,
+        value.Availability,
+        value.Status,
+        value.ReviewedByUserId,
+        reviewerName,
+        value.ReviewedAt,
+        value.ReviewNotes,
+        value.CreatedAt,
+        value.UpdatedAt);
+}

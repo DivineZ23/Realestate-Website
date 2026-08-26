@@ -1,5 +1,10 @@
 export const API_ENDPOINTS = {
-  auth: { signIn: '/auth/discord', me: '/auth/me', logout: '/auth/logout' },
+  auth: {
+    signIn: '/auth/discord',
+    me: '/auth/me',
+    profile: '/auth/me/profile',
+    logout: '/auth/logout',
+  },
   blocks: { root: '/blocks', public: '/blocks/public' },
   properties: {
     root: '/properties',
@@ -7,6 +12,7 @@ export const API_ENDPOINTS = {
     featured: '/properties/featured',
   },
   enquiries: '/enquiries',
+  recruitmentApplications: '/recruitment/applications',
   tenants: '/tenants',
   evictions: '/tenants/evictions',
   notices: {

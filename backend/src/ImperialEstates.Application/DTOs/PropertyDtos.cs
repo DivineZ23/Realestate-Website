@@ -14,6 +14,7 @@ public sealed class PropertyQuery
     public decimal? MaxRent { get; init; }
     public int? Bedrooms { get; init; }
     public int? PersonCapacity { get; init; }
+    public int? StorageCapacity { get; init; }
     public string? Furnishing { get; init; }
     public string[] Amenities { get; init; } = [];
     public string SortBy { get; init; } = "newest";

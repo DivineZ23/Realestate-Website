@@ -50,19 +50,33 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
     <div class="users">
       @for (user of users(); track user.id) {
         <article class="panel">
-          <img [src]="user.avatarUrl || fallback" alt="" />
-          <div class="identity">
-            <h2>{{ user.displayName }}</h2>
-            <p>@{{ user.username }}</p>
-            <div class="badges">
-              <span [class.owner]="user.role === 'owner'">{{ roleLabel(user.role) }}</span
-              ><span>{{ user.approvalStatus | titlecase }}</span
-              ><span [class.revoked]="user.accessStatus === 'revoked'">{{
-                user.accessStatus | titlecase
-              }}</span>
+          <div class="profile-summary">
+            <img [src]="user.avatarUrl || fallback" alt="" />
+            <div class="identity">
+              <h2>{{ user.displayName }}</h2>
+              <p>@{{ user.username }}</p>
+              <div class="badges">
+                <span [class.owner]="user.role === 'owner'">{{ roleLabel(user.role) }}</span
+                ><span>{{ user.approvalStatus | titlecase }}</span
+                ><span [class.revoked]="user.accessStatus === 'revoked'">{{
+                  user.accessStatus | titlecase
+                }}</span>
+              </div>
             </div>
           </div>
-          <dl>
+          <dl class="staff-details">
+            <div>
+              <dt>Name</dt>
+              <dd>{{ user.fullName || 'Not set' }}</dd>
+            </div>
+            <div>
+              <dt>CID</dt>
+              <dd>{{ user.cid ?? 'Not set' }}</dd>
+            </div>
+            <div>
+              <dt>Number</dt>
+              <dd>{{ user.phoneNumber || 'Not set' }}</dd>
+            </div>
             <div>
               <dt>Registered</dt>
               <dd>{{ user.createdAt | date: 'mediumDate' }}</dd>
@@ -162,39 +176,55 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
       }
       .users {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
+        gap: 12px;
       }
       .users article {
         display: grid;
-        grid-template-columns: 60px 1fr auto;
-        gap: 16px;
-        padding: 20px;
+        grid-template-columns: minmax(220px, 0.8fr) minmax(500px, 2fr) auto;
+        align-items: center;
+        gap: 20px;
+        padding: 16px 18px;
       }
-      .users img {
-        width: 60px;
-        height: 60px;
+      .profile-summary {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        gap: 13px;
+      }
+      .profile-summary img {
+        flex: 0 0 auto;
+        width: 52px;
+        height: 52px;
         border-radius: 50%;
         object-fit: cover;
       }
+      .identity {
+        min-width: 0;
+      }
       .identity h2 {
-        font-size: 1.15rem;
-        margin: 2px 0;
+        margin: 0;
+        overflow: hidden;
+        font-size: 1rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .identity p {
+        margin: 2px 0 7px;
         color: var(--muted);
-        font-size: 0.78rem;
+        font-size: 0.72rem;
       }
       .badges {
         display: flex;
+        flex-wrap: wrap;
         gap: 6px;
       }
       .badges span {
-        padding: 4px 7px;
+        padding: 3px 7px;
         border-radius: 99px;
         background: var(--forest-light);
         color: var(--forest);
-        font-size: 0.65rem;
+        font-size: 0.61rem;
+        font-weight: 700;
       }
       .badges .revoked {
         background: var(--danger-soft);
@@ -204,26 +234,35 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
         background: var(--bronze);
         color: var(--on-primary);
       }
-      dl {
+      .staff-details {
+        display: grid;
+        grid-template-columns:
+          minmax(130px, 1.45fr) minmax(70px, 0.6fr) minmax(100px, 0.8fr)
+          repeat(2, minmax(105px, 0.9fr));
+        align-items: center;
+        gap: 0;
         font-size: 0.72rem;
         margin: 0;
       }
-      dl div {
-        margin-bottom: 8px;
+      .staff-details div {
+        min-width: 0;
+        padding: 2px 14px;
+        border-left: 1px solid var(--border);
       }
       dt {
         color: var(--muted);
+        font-size: 0.65rem;
       }
       dd {
-        margin: 0;
+        margin: 3px 0 0;
         font-weight: 600;
+        overflow-wrap: anywhere;
       }
       .actions {
-        grid-column: 2/-1;
         display: flex;
+        justify-content: flex-end;
         gap: 8px;
-        border-top: 1px solid var(--border);
-        padding-top: 14px;
+        max-width: 300px;
         flex-wrap: wrap;
       }
       .actions button {
@@ -248,27 +287,46 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
         background: var(--danger-soft);
         color: var(--danger);
       }
-      @media (max-width: 1050px) {
-        .users {
+      @media (max-width: 1280px) {
+        .users article {
+          grid-template-columns: minmax(220px, 0.8fr) minmax(450px, 2fr);
+        }
+        .actions {
+          grid-column: 1 / -1;
+          max-width: none;
+          padding-top: 12px;
+          border-top: 1px solid var(--border);
+        }
+      }
+      @media (max-width: 820px) {
+        .users article {
           grid-template-columns: 1fr;
+          align-items: start;
+        }
+        .staff-details {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          row-gap: 13px;
+        }
+        .staff-details div:nth-child(4) {
+          border-left: 0;
+        }
+        .actions {
+          grid-column: auto;
+          justify-content: flex-start;
         }
       }
       @media (max-width: 600px) {
         .tabs {
           overflow-x: auto;
         }
-        .users article {
-          grid-template-columns: 50px 1fr;
+        .staff-details {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
-        .users img {
-          width: 50px;
-          height: 50px;
+        .staff-details div:nth-child(odd) {
+          border-left: 0;
         }
-        .users dl {
-          grid-column: 2;
-        }
-        .actions {
-          grid-column: 1/-1;
+        .staff-details div:nth-child(even) {
+          border-left: 1px solid var(--border);
         }
       }
     `,

@@ -29,6 +29,7 @@ import { Block, Property, PropertyStatus, PropertyType } from '../../core/models
 import { AuthService } from '../../core/services/auth.service';
 import { BlockService } from '../../core/services/management.services';
 import { PropertyService } from '../../core/services/property.service';
+import { PageAccessService } from '../../core/services/page-access.service';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
@@ -62,7 +63,7 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
         <h1>Properties</h1>
         <p>Search, update, and progress every property through its lifecycle.</p>
       </div>
-      @if (auth.isManager()) {
+      @if (auth.isManager() && access.canAccess('portfolio.properties.add')) {
         <a class="btn btn-primary" routerLink="new"><svg lucidePlus></svg>Add property</a>
       }
     </div>
@@ -134,7 +135,10 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
               </td>
               <td>
                 <div class="row-actions">
-                  @if (property.status === 'available' || property.status === 'booked') {
+                  @if (
+                    access.canAccess('portfolio.properties.sell') &&
+                    (property.status === 'available' || property.status === 'booked')
+                  ) {
                     <a [routerLink]="[property.id, 'assign']"><svg lucideUserPlus></svg>Sell</a>
                   }
                   @if (property.currentTenantId) {
@@ -157,18 +161,18 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
                       <button (click)="auction(property)"><svg lucideGavel></svg>Auction</button>
                     }
                     @if (!property.currentTenantId && property.status !== 'onHold') {
-                      <button (click)="hold(property)">
-                        <svg lucidePauseCircle></svg>Hold
-                      </button>
+                      <button (click)="hold(property)"><svg lucidePauseCircle></svg>Hold</button>
                     }
-                    <a
-                      class="edit-action"
-                      [routerLink]="[property.id, 'edit']"
-                      [attr.aria-label]="'Edit ' + property.propertyName"
-                      title="Edit property"
-                    >
-                      <svg lucidePencil></svg>
-                    </a>
+                    @if (access.canAccess('portfolio.properties.edit')) {
+                      <a
+                        class="edit-action"
+                        [routerLink]="[property.id, 'edit']"
+                        [attr.aria-label]="'Edit ' + property.propertyName"
+                        title="Edit property"
+                      >
+                        <svg lucidePencil></svg>
+                      </a>
+                    }
                     <button class="danger" (click)="remove(property)">
                       <svg lucideTrash2></svg>Delete
                     </button>
@@ -312,6 +316,7 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
 })
 export class PropertyManagementComponent {
   readonly auth = inject(AuthService);
+  readonly access = inject(PageAccessService);
   private service = inject(PropertyService);
   private blockService = inject(BlockService);
   private dialog = inject(MatDialog);
@@ -376,7 +381,12 @@ export class PropertyManagementComponent {
       });
   }
   release(property: Property) {
-    const source = property.status === 'booked' ? 'booking' : property.status === 'auction' ? 'auction listing' : 'hold';
+    const source =
+      property.status === 'booked'
+        ? 'booking'
+        : property.status === 'auction'
+          ? 'auction listing'
+          : 'hold';
     this.dialog
       .open(ConfirmDialogComponent, {
         data: {
@@ -396,7 +406,8 @@ export class PropertyManagementComponent {
       .open(ConfirmDialogComponent, {
         data: {
           title: 'List this property for auction?',
-          message: 'The property will leave public availability and its status will become Auction.',
+          message:
+            'The property will leave public availability and its status will become Auction.',
           confirmLabel: 'List for auction',
         },
       })

@@ -1,18 +1,29 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { LucideArrowLeft, LucideUserPlus } from '@lucide/angular';
+import { LucideArrowLeft, LucideCheck, LucideCopy, LucideUserPlus } from '@lucide/angular';
+import { PHONE_NUMBER_PATTERN, PHONE_NUMBER_PLACEHOLDER } from '../../core/constants/app.constants';
 import {
   propertyTypeCapacity,
   propertyTypeLabel,
+  propertyTypeStorageCapacity,
 } from '../../core/constants/property-status.constants';
 import { AssignTenantRequest, Property } from '../../core/models/property.models';
+import { AuthService } from '../../core/services/auth.service';
 import { PropertyService } from '../../core/services/property.service';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 
 @Component({
   selector: 'app-tenant-assignment',
-  imports: [ReactiveFormsModule, RouterLink, StatusBadgeComponent, LucideArrowLeft, LucideUserPlus],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    StatusBadgeComponent,
+    LucideArrowLeft,
+    LucideCheck,
+    LucideCopy,
+    LucideUserPlus,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="back">
@@ -53,13 +64,17 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
               <dt>Person capacity</dt>
               <dd>{{ p.personCapacity ?? typeCapacity(p.type) ?? '—' }}</dd>
             </div>
+            <div>
+              <dt>Storage capacity</dt>
+              <dd>{{ storageCapacityLabel(p) }}</dd>
+            </div>
           </dl>
           <p class="locked">Property details are read-only during tenant assignment.</p>
         </section>
 
         @if (p.status === 'available' || p.status === 'booked') {
           <form class="panel tenant-form" [formGroup]="form" (ngSubmit)="assign()">
-            <div>
+            <div class="form-heading">
               <p class="eyebrow">Tenant information</p>
               <h2>Occupant details</h2>
               <p>CID, Discord ID, full name, phone number, rent, and deposit are required.</p>
@@ -88,9 +103,15 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
             </label>
             <label class="field">
               <span>Phone number</span>
-              <input formControlName="phoneNumber" autocomplete="tel" />
+              <input
+                formControlName="phoneNumber"
+                autocomplete="tel"
+                inputmode="tel"
+                maxlength="8"
+                [placeholder]="phonePlaceholder"
+              />
               @if (invalid('phoneNumber')) {
-                <small class="error">Enter a valid phone number.</small>
+                <small class="error">Use the format 123-4567.</small>
               }
             </label>
             <div class="two-columns">
@@ -119,6 +140,18 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
             </label>
             <div class="actions">
               <a class="btn btn-secondary" routerLink="/dashboard/properties">Cancel</a>
+              <button
+                class="btn btn-secondary"
+                type="button"
+                [disabled]="form.invalid"
+                (click)="copyReceipt()"
+              >
+                @if (receiptCopied()) {
+                  <svg lucideCheck></svg>Receipt copied
+                } @else {
+                  <svg lucideCopy></svg>Copy receipt
+                }
+              </button>
               <button class="btn btn-primary" [disabled]="form.invalid || saving()">
                 <svg lucideUserPlus></svg>{{ saving() ? 'Assigning…' : 'Assign tenant' }}
               </button>
@@ -160,9 +193,18 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         font-size: 2.5rem;
       }
       .page-title p:last-child,
-      .tenant-form > div:first-child > p:last-child {
+      .form-heading > p:last-child {
         margin-bottom: 0;
         color: var(--muted);
+      }
+      .form-heading .eyebrow {
+        margin-bottom: 0;
+      }
+      .form-heading h2 {
+        margin: 7px 0 8px;
+      }
+      .form-heading > p:last-child {
+        line-height: 1.55;
       }
       .assignment-grid {
         display: grid;
@@ -262,11 +304,14 @@ export class TenantAssignmentComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly properties = inject(PropertyService);
+  private readonly auth = inject(AuthService);
 
   readonly property = signal<Property | null>(null);
   readonly saving = signal(false);
+  readonly receiptCopied = signal(false);
   readonly typeLabel = propertyTypeLabel;
   readonly typeCapacity = propertyTypeCapacity;
+  readonly phonePlaceholder = PHONE_NUMBER_PLACEHOLDER;
   readonly form = new FormGroup({
     cid: new FormControl<number | null>(null, [
       Validators.required,
@@ -283,7 +328,7 @@ export class TenantAssignmentComponent {
     }),
     phoneNumber: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.pattern(/^[+0-9()\-\s]{7,24}$/)],
+      validators: [Validators.required, Validators.pattern(PHONE_NUMBER_PATTERN)],
     }),
     startDate: new FormControl(new Date().toISOString().slice(0, 10), {
       nonNullable: true,
@@ -317,6 +362,35 @@ export class TenantAssignmentComponent {
     return control.invalid && (control.dirty || control.touched);
   }
 
+  storageCapacityLabel(property: Property): string {
+    const capacity = property.storageCapacity ?? propertyTypeStorageCapacity(property.type);
+    return capacity?.toLocaleString('en-US') ?? '—';
+  }
+
+  async copyReceipt() {
+    const property = this.property();
+    if (!property || this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    const value = this.form.getRawValue();
+    const receipt = [
+      `Name: ${value.fullName.trim()}`,
+      `CID: ${value.cid}`,
+      `Number: ${value.phoneNumber.trim()}`,
+      `House Location: ${property.propertyName}`,
+      `House type: ${this.typeLabel(property.type)}`,
+      `Rent price: ${this.currency(value.monthlyRent!)}`,
+      `Deposit amount: ${this.currency(value.securityDeposit!)}`,
+      `Sold by: ${this.auth.user()?.displayName || this.auth.user()?.username || 'Unknown'}`,
+    ].join('\n');
+
+    await navigator.clipboard.writeText(receipt);
+    this.receiptCopied.set(true);
+    window.setTimeout(() => this.receiptCopied.set(false), 1800);
+  }
+
   assign() {
     const property = this.property();
     if (!property || this.form.invalid) {
@@ -340,5 +414,14 @@ export class TenantAssignmentComponent {
       next: () => this.router.navigate(['/dashboard/properties']),
       error: () => this.saving.set(false),
     });
+  }
+
+  private currency(value: number): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(value);
   }
 }

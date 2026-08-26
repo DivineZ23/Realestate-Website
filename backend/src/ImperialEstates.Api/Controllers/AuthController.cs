@@ -47,6 +47,11 @@ public sealed class AuthController(IDiscordOAuthService discord, AuthService aut
     [HttpGet("me")]
     public Task<UserDto> Me(CancellationToken ct) => users.GetAsync(User.UserId(), ct);
 
+    [Authorize]
+    [HttpPut("me/profile")]
+    public Task<UserDto> UpdateProfile(UpdateUserProfileRequest request, CancellationToken ct) =>
+        users.UpdateProfileAsync(User.UserId(), request, ct);
+
     [HttpPost("logout")]
     public IActionResult Logout()
     {

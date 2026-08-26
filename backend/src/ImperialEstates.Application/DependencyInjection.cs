@@ -13,6 +13,7 @@ public static class DependencyInjection
         services.AddScoped<PropertyService>();
         services.AddScoped<UserManagementService>();
         services.AddScoped<EnquiryService>();
+        services.AddScoped<RecruitmentService>();
         services.AddScoped<AuthService>();
         services.AddScoped<DashboardService>();
         services.AddScoped<RentSyncService>();

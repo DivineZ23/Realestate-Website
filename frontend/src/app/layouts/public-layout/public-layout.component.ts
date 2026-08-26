@@ -22,9 +22,7 @@ import { SiteCreditComponent } from '../../shared/components/site-credit/site-cr
     <header class="site-header">
       <div class="container nav">
         <a routerLink="/" class="brand"
-          ><span class="brand-logo" aria-hidden="true"></span><strong
-            >Imperial Estates</strong
-          ></a
+          ><span class="brand-logo" aria-hidden="true"></span><strong>Imperial Estates</strong></a
         >
         <nav [class.open]="menuOpen()">
           <a
@@ -36,6 +34,8 @@ import { SiteCreditComponent } from '../../shared/components/site-credit/site-cr
           ><a routerLink="/properties" routerLinkActive="active" (click)="menuOpen.set(false)"
             >Properties</a
           ><a routerLink="/about" routerLinkActive="active" (click)="menuOpen.set(false)">About</a
+          ><a routerLink="/join-us" routerLinkActive="active" (click)="menuOpen.set(false)"
+            >Join us</a
           ><app-theme-toggle /><button class="btn btn-primary" (click)="signIn()">
             <svg lucideLogIn></svg>Team sign in
           </button>
@@ -94,9 +94,12 @@ import { SiteCreditComponent } from '../../shared/components/site-credit/site-cr
         color: var(--bronze);
       }
       .brand strong {
-        font-size: 1rem;
-        font-weight: 750;
-        letter-spacing: -0.02em;
+        font-family: var(--font-brand);
+        font-size: 1.1rem;
+        font-weight: 650;
+        letter-spacing: 0.09em;
+        line-height: 1.2;
+        text-transform: uppercase;
       }
       nav {
         display: flex;

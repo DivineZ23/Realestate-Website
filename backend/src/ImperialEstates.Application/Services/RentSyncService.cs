@@ -287,7 +287,7 @@ public sealed class RentSyncService(
                 Interior = match.Groups["interior"].Value.Trim(),
                 Cid = ParseCid(match.Groups["cid"].Value, index + 1),
                 RenterName = Optional(match.Groups["name"].Value),
-                Phone = Optional(match.Groups["phone"].Value),
+                Phone = ParsePhone(match.Groups["phone"].Value, index + 1),
                 Income = ParseCurrency(match.Groups["income"].Value, index + 1),
                 Cost = ParseCurrency(match.Groups["cost"].Value, index + 1),
             });
@@ -325,6 +325,16 @@ public sealed class RentSyncService(
         if (value.Trim().Equals("N/A", StringComparison.OrdinalIgnoreCase)) return null;
         if (int.TryParse(value.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var cid) && cid > 0) return cid;
         throw new DomainRuleException($"Row {row} contains an invalid renter CID.", "RENT_SYNC_CID_INVALID");
+    }
+
+    private static string? ParsePhone(string value, int row)
+    {
+        var phone = Optional(value);
+        if (phone is null || Regex.IsMatch(phone, @"^\d{3}-\d{4}$", RegexOptions.CultureInvariant))
+            return phone;
+        throw new DomainRuleException(
+            $"Row {row} contains an invalid phone number. Use the format 123-4567.",
+            "RENT_SYNC_PHONE_INVALID");
     }
 
     private static decimal ParseCurrency(string value, int row)

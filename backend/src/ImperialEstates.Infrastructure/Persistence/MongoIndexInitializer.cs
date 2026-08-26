@@ -1,4 +1,5 @@
 using ImperialEstates.Domain.Entities;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace ImperialEstates.Infrastructure.Persistence;
@@ -20,6 +21,12 @@ public sealed class MongoIndexInitializer(MongoContext db)
         ], cancellationToken);
         await db.Users.Indexes.CreateManyAsync([
             new CreateIndexModel<User>(Builders<User>.IndexKeys.Ascending(x => x.DiscordUserId), new() { Unique = true, Name = "ux_user_discord" }),
+            new CreateIndexModel<User>(Builders<User>.IndexKeys.Ascending(x => x.Cid), new CreateIndexOptions<User>
+            {
+                Unique = true,
+                Name = "ux_user_cid",
+                PartialFilterExpression = new BsonDocument("Cid", new BsonDocument("$type", "number"))
+            }),
             new CreateIndexModel<User>(Builders<User>.IndexKeys.Ascending(x => x.ApprovalStatus).Ascending(x => x.AccessStatus).Ascending(x => x.Role), new() { Name = "ix_user_state" })
         ], cancellationToken);
         await db.Tenants.Indexes.CreateManyAsync([
@@ -27,6 +34,10 @@ public sealed class MongoIndexInitializer(MongoContext db)
             new CreateIndexModel<Tenant>(Builders<Tenant>.IndexKeys.Ascending(x => x.Cid).Descending(x => x.CreatedAt), new() { Name = "ix_tenant_cid_date" })
         ], cancellationToken);
         await db.Enquiries.Indexes.CreateOneAsync(new CreateIndexModel<Enquiry>(Builders<Enquiry>.IndexKeys.Ascending(x => x.PropertyId).Ascending(x => x.Status).Descending(x => x.CreatedAt), new() { Name = "ix_enquiry_property_status" }), cancellationToken: cancellationToken);
+        await db.RecruitmentApplications.Indexes.CreateManyAsync([
+            new CreateIndexModel<RecruitmentApplication>(Builders<RecruitmentApplication>.IndexKeys.Ascending(x => x.Status).Descending(x => x.CreatedAt), new() { Name = "ix_recruitment_status_date" }),
+            new CreateIndexModel<RecruitmentApplication>(Builders<RecruitmentApplication>.IndexKeys.Ascending(x => x.CharacterCid).Ascending(x => x.DiscordId).Ascending(x => x.Status), new() { Name = "ix_recruitment_applicant_status" })
+        ], cancellationToken);
         await db.StatusHistory.Indexes.CreateOneAsync(new CreateIndexModel<PropertyStatusHistory>(Builders<PropertyStatusHistory>.IndexKeys.Ascending(x => x.PropertyId).Descending(x => x.CreatedAt), new() { Name = "ix_history_property_date" }), cancellationToken: cancellationToken);
         await db.AuditLogs.Indexes.CreateOneAsync(new CreateIndexModel<AuditLog>(Builders<AuditLog>.IndexKeys.Ascending(x => x.EntityType).Ascending(x => x.EntityId).Descending(x => x.CreatedAt), new() { Name = "ix_audit_entity_date" }), cancellationToken: cancellationToken);
         await db.Settings.Indexes.CreateOneAsync(new CreateIndexModel<ApplicationSetting>(Builders<ApplicationSetting>.IndexKeys.Ascending(x => x.Key), new() { Name = "ux_setting_key", Unique = true }), cancellationToken: cancellationToken);

@@ -109,6 +109,10 @@ export function propertyTypeCapacity(type: PropertyType): number | null {
   return PROPERTY_TYPE_OPTIONS.find((option) => option.value === type)?.personCapacity ?? null;
 }
 
+export function propertyTypeStorageCapacity(type: PropertyType): number | null {
+  return PROPERTY_TYPE_OPTIONS.find((option) => option.value === type)?.storageCapacity ?? null;
+}
+
 export function isSupportedPropertyType(type: PropertyType): boolean {
   return PROPERTY_TYPES.includes(type);
 }

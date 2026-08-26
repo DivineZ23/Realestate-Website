@@ -3,14 +3,15 @@ import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { LucideCheck } from '@lucide/angular';
 import { catchError, of, switchMap } from 'rxjs';
+import { PHONE_NUMBER_PATTERN, PHONE_NUMBER_PLACEHOLDER } from '../../core/constants/app.constants';
 import { PublicProperty } from '../../core/models/property.models';
 import { EnquiryService } from '../../core/services/management.services';
 import { PropertyService } from '../../core/services/property.service';
 import {
   propertyTypeCapacity,
   propertyTypeLabel,
+  propertyTypeStorageCapacity,
 } from '../../core/constants/property-status.constants';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { PropertyCardComponent } from '../../shared/components/property-card/property-card.component';
@@ -25,7 +26,6 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
     StatusBadgeComponent,
     PropertyCardComponent,
     EmptyStateComponent,
-    LucideCheck,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `@if (property(); as p) {
@@ -33,81 +33,68 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         <div class="crumb">
           <a routerLink="/properties">Properties</a><span>/</span><span>{{ p.propertyName }}</span>
         </div>
-        <div class="gallery">
-          <div class="primary">
-            <img [src]="p.images[activeImage()] || fallback" [alt]="p.propertyName" />
+        <header class="listing-header">
+          <div class="listing-title">
+            <app-status-badge [status]="p.status" />
+            <p class="eyebrow">{{ p.blockName }} · Property {{ p.propertyId }}</p>
+            <h1>{{ p.propertyName }}</h1>
+            @if (p.description) {
+              <p class="listing-description">{{ p.description }}</p>
+            }
           </div>
-          @if (p.images.length > 1) {
-            <div class="thumbs">
-              @for (image of p.images; track image; let i = $index) {
-                <button [class.active]="activeImage() === i" (click)="activeImage.set(i)">
-                  <img [src]="image" alt="" />
-                </button>
+          <div class="listing-price">
+            <small>Monthly rent</small>
+            <strong>
+              @if (p.rent > 0) {
+                {{ p.rent | currency: 'USD' : 'symbol' : '1.0-0' }}
+              } @else {
+                Ask our team
+              }
+            </strong>
+          </div>
+        </header>
+
+        <div class="listing-layout">
+          <main class="listing-main">
+            <div class="gallery">
+              <div class="primary">
+                <img [src]="p.images[activeImage()] || fallback" [alt]="p.propertyName" />
+              </div>
+              @if (p.images.length > 1) {
+                <div class="thumbs">
+                  @for (image of p.images; track image; let i = $index) {
+                    <button [class.active]="activeImage() === i" (click)="activeImage.set(i)">
+                      <img [src]="image" alt="" />
+                    </button>
+                  }
+                </div>
               }
             </div>
-          }
-        </div>
-        <div class="content-grid">
-          <article>
-            <div class="headline">
+            <dl class="property-facts panel">
               <div>
-                <app-status-badge [status]="p.status" />
-                <p class="eyebrow">{{ p.blockName }} · Property {{ p.propertyId }}</p>
-                <h1>{{ p.propertyName }}</h1>
+                <dt>Interior structure</dt>
+                <dd>{{ typeLabel(p.type) }}</dd>
               </div>
-              <p class="price">
-                {{ p.rent | currency: 'USD' : 'symbol' : '1.0-0' }}<small> per month</small>
-              </p>
-            </div>
-            <div class="facts">
-              <span
-                ><b>{{ typeLabel(p.type) }}</b
-                >Interior structure</span
-              ><span
-                ><b>{{ p.personCapacity ?? typeCapacity(p.type) ?? '—' }}</b
-                >Person capacity</span
-              >
-            </div>
-            <section>
-              <h2>About this property</h2>
-              <p>{{ p.description }}</p>
-            </section>
-            <section>
-              <h2>Details</h2>
-              <dl>
-                <div>
-                  <dt>Furnishing</dt>
-                  <dd>{{ p.furnishingStatus || 'Not specified' }}</dd>
-                </div>
-                <div>
-                  <dt>Floor</dt>
-                  <dd>{{ p.floor ?? 'Not specified' }}</dd>
-                </div>
-                <div>
-                  <dt>Storage</dt>
-                  <dd>{{ p.storage || 'Not specified' }}</dd>
-                </div>
-                <div>
-                  <dt>Security deposit</dt>
-                  <dd>
-                    {{
-                      p.securityDeposit
-                        ? (p.securityDeposit | currency: 'USD' : 'symbol' : '1.0-0')
-                        : 'Ask our team'
-                    }}
-                  </dd>
-                </div>
-              </dl>
-            </section>
-            <section>
-              <h2>Amenities</h2>
-              <div class="amenities">
-                @for (item of p.amenities; track item) {
-                  <span><svg lucideCheck></svg>{{ item }}</span>
-                }
+              <div>
+                <dt>Person capacity</dt>
+                <dd>{{ p.personCapacity ?? typeCapacity(p.type) ?? '—' }}</dd>
               </div>
-            </section>
-          </article>
+              <div>
+                <dt>Storage capacity</dt>
+                <dd>{{ storageLabel(p) }}</dd>
+              </div>
+              <div>
+                <dt>Security deposit</dt>
+                <dd>
+                  {{
+                    p.securityDeposit && p.securityDeposit > 0
+                      ? (p.securityDeposit | currency: 'USD' : 'symbol' : '1.0-0')
+                      : 'Ask our team'
+                  }}
+                </dd>
+              </div>
+            </dl>
+          </main>
           <aside class="panel enquiry">
             <p class="eyebrow">Arrange a conversation</p>
             <h2>Interested in this home?</h2>
@@ -126,9 +113,15 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
                   }</label
                 ><label class="field"
                   ><span>Phone number</span
-                  ><input formControlName="phoneNumber" autocomplete="tel" />
+                  ><input
+                    formControlName="phoneNumber"
+                    autocomplete="tel"
+                    inputmode="tel"
+                    maxlength="8"
+                    [placeholder]="phonePlaceholder"
+                  />
                   @if (invalid('phoneNumber')) {
-                    <small class="error">Enter a valid phone number.</small>
+                    <small class="error">Use the format 123-4567.</small>
                   }</label
                 ><label class="field"
                   ><span>Email <i>optional</i></span
@@ -185,15 +178,67 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         font-size: 0.78rem;
         margin: 14px 0 24px;
       }
-      .gallery {
+      .listing-header {
         display: grid;
-        grid-template-columns: 1fr 110px;
-        gap: 12px;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: end;
+        gap: 36px;
+        margin-bottom: 26px;
+        padding-bottom: 26px;
+        border-bottom: 1px solid var(--border);
+      }
+      .listing-title {
+        min-width: 0;
+      }
+      .listing-title .eyebrow {
+        margin: 14px 0 7px;
+      }
+      .listing-title h1 {
+        margin: 0;
+        font-size: clamp(2.8rem, 5vw, 4.8rem);
+        line-height: 0.96;
+      }
+      .listing-description {
+        max-width: 760px;
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+        line-height: 1.65;
+      }
+      .listing-price {
+        display: grid;
+        min-width: 180px;
+        padding-left: 30px;
+        border-left: 1px solid var(--border);
+      }
+      .listing-price small {
+        color: var(--muted);
+        font-size: 0.7rem;
+        font-weight: 650;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .listing-price strong {
+        margin-top: 5px;
+        font-size: 1.65rem;
+        line-height: 1.15;
+      }
+      .listing-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 380px;
+        align-items: start;
+        gap: 28px;
+      }
+      .listing-main,
+      .gallery {
+        min-width: 0;
       }
       .primary {
-        height: min(650px, 65vw);
+        aspect-ratio: 16 / 9;
+        max-height: 540px;
         overflow: hidden;
         border-radius: var(--radius-lg);
+        background: var(--surface-subtle);
       }
       .primary img {
         width: 100%;
@@ -202,13 +247,17 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
       }
       .thumbs {
         display: flex;
-        flex-direction: column;
         gap: 10px;
+        margin-top: 12px;
+        padding-bottom: 2px;
+        overflow-x: auto;
       }
       .thumbs button {
+        flex: 0 0 88px;
+        width: 88px;
         padding: 0;
         border: 2px solid transparent;
-        border-radius: 12px;
+        border-radius: 10px;
         overflow: hidden;
         background: none;
         cursor: pointer;
@@ -217,105 +266,39 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         border-color: var(--forest);
       }
       .thumbs img {
+        display: block;
         width: 100%;
-        aspect-ratio: 1;
+        aspect-ratio: 4 / 3;
         object-fit: cover;
       }
-      .content-grid {
+      .property-facts {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 380px;
-        gap: 70px;
-        margin-top: 58px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0;
+        margin: 16px 0 0;
+        padding: 0;
+        overflow: hidden;
       }
-      .headline {
-        display: flex;
-        justify-content: space-between;
-        gap: 30px;
-        border-bottom: 1px solid var(--border);
-        padding-bottom: 34px;
-      }
-      .headline .eyebrow {
-        margin: 14px 0 8px;
-      }
-      .headline h1 {
-        font-size: clamp(2.5rem, 5vw, 4.5rem);
-        margin: 0;
-      }
-      .price {
-        font-size: 1.55rem;
-        font-weight: 750;
-        white-space: nowrap;
-      }
-      .price small {
-        display: block;
-        color: var(--muted);
-        font-size: 0.72rem;
-        font-weight: 500;
-        text-align: right;
-      }
-      .facts {
+      .property-facts div {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        padding: 26px 0;
-        border-bottom: 1px solid var(--border);
+        align-content: center;
+        min-width: 0;
+        min-height: 82px;
+        padding: 16px 18px;
+        border-right: 1px solid var(--border);
       }
-      .facts span {
-        display: grid;
+      .property-facts div:last-child {
+        border-right: 0;
+      }
+      .property-facts dt {
         color: var(--muted);
-        font-size: 0.75rem;
+        font-size: 0.67rem;
       }
-      .facts b {
-        color: var(--ink);
-        font-size: 1rem;
-      }
-      article section {
-        padding: 34px 0;
-        border-bottom: 1px solid var(--border);
-      }
-      article section h2 {
-        font-size: 1.35rem;
-      }
-      article section p {
-        color: var(--muted);
-      }
-      dl {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-        margin: 0;
-      }
-      dl div {
-        display: flex;
-        justify-content: space-between;
-        border-bottom: 1px dashed var(--border);
-        padding: 8px 0;
-      }
-      dt {
-        color: var(--muted);
-      }
-      dd {
-        margin: 0;
-        font-weight: 650;
-      }
-      .amenities {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-      }
-      .amenities span {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 9px 12px;
-        background: var(--forest-light);
-        border-radius: 99px;
-        color: var(--forest);
-        font-size: 0.8rem;
-      }
-      .amenities svg {
-        width: 14px;
-        height: 14px;
-        stroke-width: 2;
+      .property-facts dd {
+        margin: 5px 0 0;
+        overflow-wrap: anywhere;
+        font-size: 0.9rem;
+        font-weight: 700;
       }
       .enquiry {
         height: max-content;
@@ -362,8 +345,22 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         place-items: center;
         color: var(--muted);
       }
+      @media (max-width: 1100px) {
+        .listing-layout {
+          grid-template-columns: minmax(0, 1fr) 340px;
+        }
+        .property-facts {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .property-facts div:nth-child(2) {
+          border-right: 0;
+        }
+        .property-facts div:nth-child(-n + 2) {
+          border-bottom: 1px solid var(--border);
+        }
+      }
       @media (max-width: 900px) {
-        .content-grid {
+        .listing-layout {
           grid-template-columns: 1fr;
           gap: 40px;
         }
@@ -375,34 +372,34 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         }
       }
       @media (max-width: 620px) {
-        .gallery {
+        .listing-header {
           grid-template-columns: 1fr;
+          align-items: start;
+          gap: 20px;
+        }
+        .listing-price {
+          padding: 0;
+          border-left: 0;
+        }
+        .listing-title h1 {
+          font-size: 2.65rem;
         }
         .primary {
-          height: 420px;
+          aspect-ratio: 4 / 3;
+          max-height: none;
         }
-        .thumbs {
-          flex-direction: row;
-          overflow-x: auto;
-        }
-        .thumbs button {
-          width: 75px;
-          flex: 0 0 auto;
-        }
-        .headline {
-          flex-direction: column;
-        }
-        .price small {
-          text-align: left;
-        }
-        .facts {
-          grid-template-columns: repeat(2, 1fr);
-          gap: 18px;
-        }
-        .related-grid {
+        .property-facts {
           grid-template-columns: 1fr;
         }
-        dl {
+        .property-facts div,
+        .property-facts div:nth-child(2) {
+          border-right: 0;
+          border-bottom: 1px solid var(--border);
+        }
+        .property-facts div:last-child {
+          border-bottom: 0;
+        }
+        .related-grid {
           grid-template-columns: 1fr;
         }
       }
@@ -422,12 +419,13 @@ export class PropertyDetailsComponent {
   readonly submitted = signal(false);
   readonly typeLabel = propertyTypeLabel;
   readonly typeCapacity = propertyTypeCapacity;
+  readonly phonePlaceholder = PHONE_NUMBER_PLACEHOLDER;
   readonly fallback = '/assets/imperial-estate-hero.webp';
   readonly form = new FormGroup({
     fullName: new FormControl('', [Validators.required, Validators.maxLength(160)]),
     phoneNumber: new FormControl('', [
       Validators.required,
-      Validators.pattern(/^[+0-9()\-\s]{7,24}$/),
+      Validators.pattern(PHONE_NUMBER_PATTERN),
     ]),
     email: new FormControl('', Validators.email),
     message: new FormControl(''),
@@ -455,6 +453,10 @@ export class PropertyDetailsComponent {
   invalid(name: keyof typeof this.form.controls) {
     const c = this.form.controls[name];
     return c.invalid && (c.dirty || c.touched);
+  }
+  storageLabel(property: PublicProperty): string {
+    const capacity = property.storageCapacity ?? propertyTypeStorageCapacity(property.type);
+    return capacity ? `${capacity.toLocaleString()} units` : 'Ask our team';
   }
   submit(propertyId: string) {
     if (this.form.invalid) return;

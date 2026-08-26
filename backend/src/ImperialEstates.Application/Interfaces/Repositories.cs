@@ -56,6 +56,7 @@ public interface IUserRepository
     Task<PagedResult<User>> QueryAsync(int page, int pageSize, ApprovalStatus? approval, AccessStatus? access, UserRole? role, CancellationToken cancellationToken);
     Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken);
     Task<User?> GetByDiscordIdAsync(string discordId, CancellationToken cancellationToken);
+    Task<User?> GetByCidAsync(int cid, CancellationToken cancellationToken);
     Task<long> CountActiveManagersAsync(CancellationToken cancellationToken);
     Task<long> CountPendingAsync(CancellationToken cancellationToken);
     Task CreateAsync(User user, CancellationToken cancellationToken);
@@ -80,6 +81,15 @@ public interface IAuditRepository
 {
     Task CreateAsync(AuditLog auditLog, CancellationToken cancellationToken);
     Task<PagedResult<AuditLog>> QueryAsync(int page, int pageSize, CancellationToken cancellationToken);
+}
+
+public interface IRecruitmentApplicationRepository
+{
+    Task<PagedResult<RecruitmentApplication>> QueryAsync(int page, int pageSize, RecruitmentStatus? status, CancellationToken cancellationToken);
+    Task<RecruitmentApplication?> GetByIdAsync(string id, CancellationToken cancellationToken);
+    Task<bool> HasPendingAsync(int characterCid, string discordId, CancellationToken cancellationToken);
+    Task CreateAsync(RecruitmentApplication application, CancellationToken cancellationToken);
+    Task UpdateAsync(RecruitmentApplication application, CancellationToken cancellationToken);
 }
 
 public interface IStatusHistoryRepository

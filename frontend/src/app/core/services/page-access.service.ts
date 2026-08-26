@@ -1,41 +1,11 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { catchError, Observable, of, shareReplay, tap } from 'rxjs';
 import { AccessManagementSettings, UserRole } from '../models/user.models';
+import { defaultAccessSettings } from '../constants/access-resource.constants';
 import { AccessManagementService } from './management.services';
 import { AuthService } from './auth.service';
 
-const DEFAULTS: AccessManagementSettings = {
-  permissions: {
-    overview: all(),
-    team: all(),
-    analytics: all(),
-    'auction.createListing': all(),
-    'auction.listings': all(),
-    'portfolio.properties': all(),
-    'portfolio.blocks': all(),
-    'portfolio.tenants': all(),
-    'notices.overdue': all(),
-    'notices.eviction': all(),
-    'notices.overdueList': all(),
-    'notices.evictionList': all(),
-    'notices.syncedDataRecords': all(),
-    'notices.sync': managers(),
-    'administration.users': managers(),
-    'administration.auditLogs': managers(),
-    'administration.settings': managers(),
-    'administration.accessManagement': owners(),
-  },
-};
-
-function all(): Record<UserRole, boolean> {
-  return { agent: true, seniorAgent: true, manager: true, owner: true };
-}
-function managers(): Record<UserRole, boolean> {
-  return { agent: false, seniorAgent: false, manager: true, owner: true };
-}
-function owners(): Record<UserRole, boolean> {
-  return { agent: false, seniorAgent: false, manager: false, owner: true };
-}
+const DEFAULTS: AccessManagementSettings = defaultAccessSettings();
 
 @Injectable({ providedIn: 'root' })
 export class PageAccessService {

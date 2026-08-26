@@ -1,5 +1,45 @@
 @use './styles/design-tokens';
 
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url('/assets/fonts/cinzel-latin-variable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Libre Baskerville';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/assets/fonts/libre-baskerville-latin-variable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Libre Baskerville';
+  font-style: italic;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/assets/fonts/libre-baskerville-latin-italic-variable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Source Sans 3';
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('/assets/fonts/source-sans-3-latin-variable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Source Sans 3';
+  font-style: italic;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('/assets/fonts/source-sans-3-latin-italic-variable.woff2') format('woff2');
+}
+
 * {
   box-sizing: border-box;
 }
@@ -80,6 +120,13 @@ h2 {
 }
 h3 {
   font-size: 1.25rem;
+}
+app-public-layout main h1,
+app-public-layout main h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
 }
 .container {
   width: var(--space-page);
@@ -739,6 +786,27 @@ app-notices {
 @keyframes sheet-sync-pulse {
   50% {
     opacity: 0.45;
+  }
+}
+
+app-home {
+  .hero h1 {
+    max-width: 790px;
+    margin: 20px 0 22px;
+    font-size: clamp(3.35rem, 4.2vw, 4.35rem);
+    font-weight: 560;
+    letter-spacing: -0.045em;
+    line-height: 1.035;
+  }
+  .hero h1 span {
+    display: block;
+  }
+  .intro {
+    max-width: 620px;
+    margin-bottom: 0;
+    color: var(--muted);
+    font-size: 1rem;
+    line-height: 1.58;
   }
 }
 

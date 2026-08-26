@@ -15,7 +15,7 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
       <div class="container hero-grid">
         <div class="hero-copy">
           <p class="eyebrow">Property, thoughtfully managed</p>
-          <h1>A better place begins with better care.</h1>
+          <h1><span>A better place</span><span>begins with better care.</span></h1>
           <p class="intro">
             Distinctive homes, clear guidance, and a management team that stays present long after
             the keys change hands.
@@ -62,7 +62,10 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
               <svg lucideSearch></svg>
               <div>
                 <h3>New residences are being prepared</h3>
-                <p>There are no featured homes to display right now. Check the full property collection for the latest availability.</p>
+                <p>
+                  There are no featured homes to display right now. Check the full property
+                  collection for the latest availability.
+                </p>
               </div>
             </div>
           }
@@ -146,67 +149,75 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
   styles: [
     `
       .hero {
-        padding: 44px 0 82px;
-        background: linear-gradient(120deg, var(--paper) 58%, var(--surface-muted) 58%);
+        padding: 52px 0 64px;
+        background: linear-gradient(116deg, var(--paper) 61%, var(--surface-muted) 61%);
       }
       .hero-grid {
         display: grid;
-        grid-template-columns: 1.02fr 0.98fr;
+        grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
         align-items: center;
-        gap: 52px;
+        gap: clamp(64px, 6vw, 112px);
       }
       .hero-copy {
-        padding: 42px 0;
-      }
-      .hero h1 {
-        max-width: 690px;
-        margin: 18px 0 26px;
-      }
-      .intro {
-        max-width: 590px;
-        color: var(--muted);
-        font-size: 1.08rem;
+        max-width: 790px;
+        padding: 26px 0;
       }
       .actions {
         display: flex;
         gap: 12px;
-        margin: 34px 0 52px;
+        margin: 28px 0 44px;
+      }
+      .actions .btn {
+        min-height: 44px;
+        padding-inline: 17px;
       }
       .trust {
-        display: flex;
-        gap: 28px;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        max-width: 680px;
         border-top: 1px solid var(--border);
-        padding-top: 24px;
+        padding-top: 22px;
         color: var(--muted);
-        font-size: 0.75rem;
+        font-size: 0.72rem;
       }
       .trust span {
         display: grid;
+        gap: 3px;
+        padding: 0 22px;
+        border-left: 1px solid var(--border);
+      }
+      .trust span:first-child {
+        padding-left: 0;
+        border-left: 0;
       }
       .trust b {
         color: var(--ink);
-        font-size: 1.1rem;
+        font-size: 1.2rem;
+        line-height: 1;
       }
       .hero-image {
         position: relative;
-        height: min(650px, 70vh);
+        height: clamp(540px, 66vh, 720px);
       }
       .hero-image > img {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        border-radius: 220px 220px 24px 24px;
+        border-radius: clamp(120px, 10vw, 180px) clamp(120px, 10vw, 180px) 28px 28px;
       }
       .note {
         position: absolute;
-        left: -42px;
-        bottom: 30px;
+        left: -22px;
+        bottom: 28px;
         display: grid;
-        gap: 3px;
-        background: var(--surface);
-        padding: 20px 24px;
+        gap: 4px;
+        min-width: 190px;
+        padding: 18px 20px;
+        border: 1px solid var(--border);
         border-radius: 14px;
+        background: color-mix(in srgb, var(--surface) 94%, transparent);
         box-shadow: var(--shadow-lg);
+        backdrop-filter: blur(14px);
       }
       .note span {
         font-size: 0.65rem;
@@ -346,6 +357,7 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
         }
         .hero-grid {
           grid-template-columns: 1fr;
+          gap: 34px;
         }
         .hero-image {
           height: 500px;
@@ -378,7 +390,7 @@ import { PropertyCardComponent } from '../../shared/components/property-card/pro
           border-radius: 130px 130px 18px 18px;
         }
         .trust {
-          gap: 15px;
+          grid-template-columns: repeat(3, minmax(120px, 1fr));
           overflow-x: auto;
         }
         .grid,

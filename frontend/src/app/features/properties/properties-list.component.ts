@@ -85,16 +85,12 @@ import { LucideSearch, LucideSlidersHorizontal, LucideX } from '@lucide/angular'
           min="0"
           placeholder="Max rent"
           aria-label="Maximum rent"
-        /><select formControlName="furnishing" aria-label="Filter by furnishing">
-          <option value="">Any furnishing</option>
-          <option value="Furnished">Furnished</option>
-          <option value="Semi-furnished">Semi-furnished</option>
-          <option value="Unfurnished">Unfurnished</option></select
-        ><input
-          formControlName="amenitiesText"
-          placeholder="Amenities (comma separated)"
-          aria-label="Filter by amenities"
-        /><select formControlName="sort">
+        /><select formControlName="storageCapacity" aria-label="Filter by storage capacity">
+          <option [ngValue]="null">Any storage</option>
+          @for (storage of storageOptions; track storage.value) {
+            <option [ngValue]="storage.value">{{ storage.label }} storage</option>
+          }</select
+        ><select formControlName="sort">
           <option value="newest:desc">Newest</option>
           <option value="rent:asc">Rent: low to high</option>
           <option value="rent:desc">Rent: high to low</option>
@@ -308,6 +304,9 @@ export class PropertiesListComponent {
   private blockService = inject(BlockService);
   private destroyRef = inject(DestroyRef);
   readonly types = PROPERTY_TYPE_OPTIONS;
+  readonly storageOptions = Array.from(
+    new Set(PROPERTY_TYPE_OPTIONS.map((option) => option.storageCapacity)),
+  ).map((value) => ({ value, label: value.toLocaleString('en-US') }));
   readonly skeletons = [1, 2, 3, 4, 5, 6];
   readonly blocks = signal<Block[]>([]);
   readonly loading = signal(true);
@@ -328,8 +327,7 @@ export class PropertiesListComponent {
     personCapacity: new FormControl<number | null>(null),
     minRent: new FormControl<number | null>(null),
     maxRent: new FormControl<number | null>(null),
-    furnishing: new FormControl('', { nonNullable: true }),
-    amenitiesText: new FormControl('', { nonNullable: true }),
+    storageCapacity: new FormControl<number | null>(null),
     sort: new FormControl('newest:desc', { nonNullable: true }),
     page: new FormControl(1, { nonNullable: true }),
   });
@@ -346,13 +344,8 @@ export class PropertiesListComponent {
         }),
         switchMap((value) => {
           const [sortBy, sortDirection] = value.sort!.split(':');
-          const amenities = value.amenitiesText
-            ?.split(',')
-            .map((item) => item.trim())
-            .filter(Boolean);
           const query: PropertyQuery = {
             ...value,
-            amenities,
             pageSize: DEFAULT_PAGE_SIZE,
             sortBy,
             sortDirection: sortDirection as 'asc' | 'desc',
@@ -377,8 +370,7 @@ export class PropertiesListComponent {
       personCapacity: null,
       minRent: null,
       maxRent: null,
-      furnishing: '',
-      amenitiesText: '',
+      storageCapacity: null,
       sort: 'newest:desc',
       page: 1,
     });

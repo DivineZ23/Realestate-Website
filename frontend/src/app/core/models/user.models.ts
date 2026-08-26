@@ -13,6 +13,9 @@ export interface User {
   displayName: string;
   avatarUrl?: string;
   email?: string;
+  fullName?: string;
+  cid?: number;
+  phoneNumber?: string;
   role: UserRole;
   approvalStatus: ApprovalStatus;
   accessStatus: AccessStatus;
@@ -24,6 +27,12 @@ export interface User {
   lastLoginAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface UpdateUserProfileRequest {
+  fullName: string;
+  cid: number;
+  phoneNumber: string;
 }
 
 export interface AgentSummary {

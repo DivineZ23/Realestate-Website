@@ -59,19 +59,23 @@ public sealed class AccessManagementController(ISettingRepository settings, IUse
         foreach (var (resource, roles) in defaults)
             if (values.TryGetValue(resource, out var stored))
                 foreach (var role in roles.Keys.ToArray())
-                    if (stored.TryGetValue(role, out var allowed)) roles[role] = allowed;
+                    if (roles[role] && stored.TryGetValue(role, out var allowed)) roles[role] = allowed;
         foreach (var roles in defaults.Values) roles["owner"] = true;
         return defaults;
     }
 
     private static Dictionary<string, Dictionary<string, bool>> DefaultPermissions() => new()
     {
-        ["overview"] = All(), ["team"] = All(), ["analytics"] = All(),
+        ["overview"] = All(), ["team"] = All(), ["profile"] = All(), ["analytics"] = All(),
         ["auction.createListing"] = All(), ["auction.listings"] = All(),
-        ["portfolio.properties"] = All(), ["portfolio.blocks"] = All(), ["portfolio.tenants"] = All(),
+        ["portfolio.properties"] = All(), ["portfolio.properties.add"] = Managers(),
+        ["portfolio.properties.edit"] = Managers(), ["portfolio.properties.sell"] = All(),
+        ["portfolio.blocks"] = All(), ["portfolio.tenants"] = All(),
         ["notices.overdue"] = All(), ["notices.eviction"] = All(), ["notices.overdueList"] = All(),
         ["notices.evictionList"] = All(), ["notices.syncedDataRecords"] = All(),
-        ["notices.sync"] = Managers(), ["administration.users"] = Managers(),
+        ["notices.sync"] = Managers(),
+        ["recruitment.pending"] = Managers(), ["recruitment.accepted"] = Managers(),
+        ["recruitment.rejected"] = Managers(), ["administration.users"] = Managers(),
         ["administration.auditLogs"] = Managers(), ["administration.settings"] = Managers(),
         ["administration.accessManagement"] = Owners()
     };

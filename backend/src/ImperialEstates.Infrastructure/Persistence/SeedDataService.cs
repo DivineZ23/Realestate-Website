@@ -28,14 +28,14 @@ public sealed class SeedDataService(MongoContext db)
             Property(301, riverside.Id, "Riverside Villa", PropertyType.MichaelsMansion, 5800, PropertyStatus.Available, true, "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=1400&q=80"),
             Property(302, riverside.Id, "Garden House", PropertyType.FranklinsHouse, 4100, PropertyStatus.Available, false, "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1400&q=80")
         };
-        var tenant = new Tenant { Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString(), PropertyId = properties[2].Id, FullName = "Sample Tenant", PhoneNumber = "+1 555 0100", StartDate = DateTime.UtcNow.AddMonths(-3), MonthlyRent = properties[2].Rent, Status = TenantStatus.Active };
+        var tenant = new Tenant { Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString(), PropertyId = properties[2].Id, FullName = "Sample Tenant", PhoneNumber = "555-0100", StartDate = DateTime.UtcNow.AddMonths(-3), MonthlyRent = properties[2].Rent, Status = TenantStatus.Active };
         properties[2].SetTenantForPersistence(tenant.Id);
         properties[1].SetBookingForPersistence("seed-enquiry-booked");
         await db.Properties.InsertManyAsync(properties, cancellationToken: ct);
         await db.Tenants.InsertOneAsync(tenant, cancellationToken: ct);
         await db.Enquiries.InsertManyAsync([
-            new Enquiry { Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString(), PropertyId = properties[0].Id, FullName = "Jordan Lee", PhoneNumber = "+1 555 0199", Email = "jordan@example.test", Message = "I would like to arrange a viewing." },
-            new Enquiry { Id = "seed-enquiry-booked", PropertyId = properties[1].Id, FullName = "Morgan Reed", PhoneNumber = "+1 555 0128", Status = EnquiryStatus.Booked }
+            new Enquiry { Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString(), PropertyId = properties[0].Id, FullName = "Jordan Lee", PhoneNumber = "555-0199", Email = "jordan@example.test", Message = "I would like to arrange a viewing." },
+            new Enquiry { Id = "seed-enquiry-booked", PropertyId = properties[1].Id, FullName = "Morgan Reed", PhoneNumber = "555-0128", Status = EnquiryStatus.Booked }
         ], cancellationToken: ct);
         await db.StatusHistory.InsertManyAsync(properties.Select(p => new PropertyStatusHistory { Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString(), PropertyId = p.Id, PreviousStatus = PropertyStatus.Available, NewStatus = p.Status, Reason = "Development seed", ChangedByUserId = manager.Id }), cancellationToken: ct);
         var team = new[]

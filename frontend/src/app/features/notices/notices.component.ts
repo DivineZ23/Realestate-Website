@@ -795,7 +795,8 @@ export class NoticesComponent {
     if (this.sheetSyncState() === 'failed')
       return this.snapshot()?.googleSheetSyncError ?? 'The last publish attempt failed.';
     if (this.sheetSyncState() === 'pending') return 'The latest property rows are being published.';
-    if (this.sheetSyncState() === 'ready') return 'The next Data Sync will publish the latest rows.';
+    if (this.sheetSyncState() === 'ready')
+      return 'The next Data Sync will publish the latest rows.';
     return 'Add the Google service-account variables on the server to enable publishing.';
   });
 

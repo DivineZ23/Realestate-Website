@@ -51,6 +51,7 @@ public sealed class UserRepository(MongoContext db) : IUserRepository
     }
     public Task<User?> GetByIdAsync(string id, CancellationToken ct) => db.Users.Find(x => x.Id == id && !x.IsDeleted).FirstOrDefaultAsync(ct)!;
     public Task<User?> GetByDiscordIdAsync(string id, CancellationToken ct) => db.Users.Find(x => x.DiscordUserId == id && !x.IsDeleted).FirstOrDefaultAsync(ct)!;
+    public Task<User?> GetByCidAsync(int cid, CancellationToken ct) => db.Users.Find(x => x.Cid == cid && !x.IsDeleted).FirstOrDefaultAsync(ct)!;
     public Task<long> CountActiveManagersAsync(CancellationToken ct) => db.Users.CountDocumentsAsync(x => !x.IsDeleted && x.Role == UserRole.Manager && x.ApprovalStatus == ApprovalStatus.Approved && x.AccessStatus == AccessStatus.Active, cancellationToken: ct);
     public Task<long> CountPendingAsync(CancellationToken ct) => db.Users.CountDocumentsAsync(x => !x.IsDeleted && x.ApprovalStatus == ApprovalStatus.Pending, cancellationToken: ct);
     public Task CreateAsync(User value, CancellationToken ct) { RepositoryHelpers.PrepareForInsert(value); return db.Users.InsertOneAsync(value, cancellationToken: ct); }

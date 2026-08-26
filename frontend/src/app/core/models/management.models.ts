@@ -27,6 +27,35 @@ export interface CreateEnquiryRequest {
   message?: string;
   preferredContactMethod?: string;
 }
+export type RecruitmentStatus = 'pending' | 'accepted' | 'rejected';
+export interface RecruitmentApplication {
+  id: string;
+  characterName: string;
+  characterCid: number;
+  characterPhoneNumber: string;
+  discordId: string;
+  reasonToJoin: string;
+  totalPlaytime: string;
+  beneficialSkills: string;
+  availability: string;
+  status: RecruitmentStatus;
+  reviewedByUserId?: string;
+  reviewedByDisplayName?: string;
+  reviewedAt?: string;
+  reviewNotes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface CreateRecruitmentApplicationRequest {
+  characterName: string;
+  characterCid: number;
+  characterPhoneNumber: string;
+  discordId: string;
+  reasonToJoin: string;
+  totalPlaytime: string;
+  beneficialSkills: string;
+  availability: string;
+}
 export interface Tenant {
   id: string;
   cid?: number;

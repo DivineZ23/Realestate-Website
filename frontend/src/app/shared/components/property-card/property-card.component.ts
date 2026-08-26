@@ -35,7 +35,11 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
             <h3>{{ property().propertyName }}</h3>
           </div>
           <p class="rent">
-            {{ property().rent | currency: 'USD' : 'symbol' : '1.0-0' }}<small>/mo</small>
+            @if (property().rent > 0) {
+              {{ property().rent | currency: 'USD' : 'symbol' : '1.0-0' }}<small>/mo</small>
+            } @else {
+              Ask our team
+            }
           </p>
         </div>
         <div class="details">
@@ -123,9 +127,10 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
       }
       .rent {
         margin: 0;
+        max-width: 120px;
         font-size: 1.1rem;
         font-weight: 760;
-        white-space: nowrap;
+        text-align: right;
       }
       .rent small {
         color: var(--muted);

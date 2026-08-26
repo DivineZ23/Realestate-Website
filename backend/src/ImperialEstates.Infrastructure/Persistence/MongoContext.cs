@@ -20,6 +20,7 @@ public sealed class MongoContext
     public IMongoCollection<RentSyncSnapshot> RentSyncSnapshots => Database.GetCollection<RentSyncSnapshot>("rent_sync_snapshots");
     public IMongoCollection<User> Users => Database.GetCollection<User>("users");
     public IMongoCollection<Enquiry> Enquiries => Database.GetCollection<Enquiry>("enquiries");
+    public IMongoCollection<RecruitmentApplication> RecruitmentApplications => Database.GetCollection<RecruitmentApplication>("recruitment_applications");
     public IMongoCollection<PropertyStatusHistory> StatusHistory => Database.GetCollection<PropertyStatusHistory>("property_status_history");
     public IMongoCollection<AuditLog> AuditLogs => Database.GetCollection<AuditLog>("audit_logs");
     public IMongoCollection<ApplicationSetting> Settings => Database.GetCollection<ApplicationSetting>("application_settings");

@@ -188,12 +188,10 @@ export class TenantsComponent {
     );
   });
   constructor() {
-    this.service
-      .all()
-      .subscribe({
-        next: (result) => this.tenants.set(result.items),
-        error: () => this.tenants.set([]),
-      });
+    this.service.all().subscribe({
+      next: (result) => this.tenants.set(result.items),
+      error: () => this.tenants.set([]),
+    });
   }
   async copyDiscord(tenant: Tenant) {
     await navigator.clipboard.writeText(tenant.discordId);

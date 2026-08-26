@@ -70,3 +70,4 @@ public enum UserRole { Agent = 0, Manager = 1, Owner = 2, SeniorAgent = 3 }
 public enum ApprovalStatus { Pending, Approved, Rejected }
 public enum AccessStatus { Active, Pending, Revoked }
 public enum EnquiryStatus { New, Contacted, ViewingScheduled, Booked, Closed, Rejected }
+public enum RecruitmentStatus { Pending, Accepted, Rejected }

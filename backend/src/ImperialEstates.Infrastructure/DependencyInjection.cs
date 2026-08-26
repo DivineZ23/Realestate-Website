@@ -32,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<IRentSyncRepository, RentSyncRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IEnquiryRepository, EnquiryRepository>();
+        services.AddScoped<IRecruitmentApplicationRepository, RecruitmentApplicationRepository>();
         services.AddScoped<IAuditRepository, AuditRepository>();
         services.AddScoped<IStatusHistoryRepository, StatusHistoryRepository>();
         services.AddScoped<IPropertyLifecycleStore, PropertyLifecycleStore>();

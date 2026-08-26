@@ -12,13 +12,7 @@ import { Property } from '../../core/models/property.models';
 
 @Component({
   selector: 'app-evict-tenant-dialog',
-  imports: [
-    FormsModule,
-    MatDialogActions,
-    MatDialogClose,
-    MatDialogContent,
-    MatDialogTitle,
-  ],
+  imports: [FormsModule, MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<h2 mat-dialog-title>Evict {{ data.tenantName || 'current tenant' }}?</h2>
     <mat-dialog-content>

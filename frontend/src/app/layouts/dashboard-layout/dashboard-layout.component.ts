@@ -3,6 +3,7 @@ import { NgIf } from '@angular/common';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   LucideBell,
+  LucideBriefcaseBusiness,
   LucideChartNoAxesCombined,
   LucideBlocks,
   LucideBuilding2,
@@ -15,6 +16,7 @@ import {
   LucideGauge,
   LucideHistory,
   LucideHousePlus,
+  LucideInbox,
   LucideLayoutDashboard,
   LucideList,
   LucideListX,
@@ -26,6 +28,8 @@ import {
   LucideSettings,
   LucideShieldCheck,
   LucideUploadCloud,
+  LucideUserRoundCheck,
+  LucideUserRoundX,
   LucideUsersRound,
 } from '@lucide/angular';
 import { AuthService } from '../../core/services/auth.service';
@@ -45,6 +49,7 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
     ThemeToggleComponent,
     SiteCreditComponent,
     LucideBell,
+    LucideBriefcaseBusiness,
     LucideChartNoAxesCombined,
     LucideLayoutDashboard,
     LucideUsersRound,
@@ -59,7 +64,10 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
     LucideGauge,
     LucideHistory,
     LucideHousePlus,
+    LucideInbox,
     LucideUploadCloud,
+    LucideUserRoundCheck,
+    LucideUserRoundX,
     LucideList,
     LucideListX,
     LucideShieldCheck,
@@ -98,10 +106,7 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
             </div>
           </ng-container>
         </section>
-        <section
-          class="nav-section"
-          *ngIf="hasAny(['auction.createListing', 'auction.listings'])"
-        >
+        <section class="nav-section" *ngIf="hasAny(['auction.createListing', 'auction.listings'])">
           <button
             class="section-toggle"
             type="button"
@@ -239,6 +244,49 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
             </div>
           </ng-container>
         </section>
+        <section
+          class="nav-section"
+          *ngIf="
+            auth.isManager() &&
+            hasAny(['recruitment.pending', 'recruitment.accepted', 'recruitment.rejected'])
+          "
+        >
+          <button
+            class="section-toggle"
+            type="button"
+            [attr.aria-expanded]="recruitmentOpen()"
+            aria-controls="recruitment-navigation"
+            (click)="recruitmentOpen.update((open) => !open)"
+          >
+            <span><svg lucideBriefcaseBusiness></svg><b>Recruitment</b></span>
+            <svg class="chevron" lucideChevronDown [class.rotated]="!recruitmentOpen()"></svg>
+          </button>
+          <ng-container *ngIf="recruitmentOpen()">
+            <div class="section-links" id="recruitment-navigation">
+              <a
+                *ngIf="access.canAccess('recruitment.pending')"
+                routerLink="/dashboard/recruitment/pending"
+                routerLinkActive="active"
+              >
+                <svg lucideInbox></svg><b>Pending</b>
+              </a>
+              <a
+                *ngIf="access.canAccess('recruitment.accepted')"
+                routerLink="/dashboard/recruitment/accepted"
+                routerLinkActive="active"
+              >
+                <svg lucideUserRoundCheck></svg><b>Accepted</b>
+              </a>
+              <a
+                *ngIf="access.canAccess('recruitment.rejected')"
+                routerLink="/dashboard/recruitment/rejected"
+                routerLinkActive="active"
+              >
+                <svg lucideUserRoundX></svg><b>Rejected</b>
+              </a>
+            </div>
+          </ng-container>
+        </section>
         <ng-container
           *ngIf="
             auth.isManager() &&
@@ -315,9 +363,6 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
         >
           <svg lucideMenu></svg>
         </button>
-        <div class="header-greeting">
-          <strong>Good {{ greeting() }}, {{ auth.user()?.displayName }}</strong>
-        </div>
         <nav class="breadcrumb" aria-label="Dashboard breadcrumb">
           <a
             *ngIf="access.canAccess('overview')"
@@ -334,7 +379,7 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
         </nav>
         <div class="account">
           <app-theme-toggle />
-          <a routerLink="/dashboard/profile"
+          <a *ngIf="access.canAccess('profile')" routerLink="/dashboard/profile"
             ><img [src]="auth.user()?.avatarUrl || fallback" alt="" /><span
               ><b>{{ auth.user()?.displayName }}</b
               ><small>{{ roleLabel() }}</small></span
@@ -360,17 +405,18 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
         height: 100vh;
         background: var(--sidebar-bg);
         color: var(--sidebar-text);
-        padding: 18px 14px;
+        padding: 0 14px 18px;
         display: flex;
         flex-direction: column;
         overflow-y: auto;
       }
       .aside-head {
-        height: 76px;
+        height: 72px;
+        flex: 0 0 72px;
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 0 6px 12px;
+        padding: 0 6px;
         border-bottom: 1px solid var(--sidebar-border);
       }
       .mark {
@@ -384,9 +430,13 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
         color: var(--sidebar-active);
       }
       .aside-head strong {
-        font-weight: 750;
-        line-height: 1.08;
-        letter-spacing: -0.02em;
+        font-family: var(--font-brand);
+        font-size: 0.78rem;
+        font-weight: 650;
+        line-height: 1.2;
+        letter-spacing: 0.055em;
+        text-transform: uppercase;
+        white-space: nowrap;
       }
       nav {
         display: flex;
@@ -494,6 +544,8 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
         z-index: 20;
       }
       .breadcrumb {
+        grid-column: 2;
+        justify-self: center;
         display: flex;
         flex-direction: row;
         align-items: center;
@@ -521,6 +573,7 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
         gap: 10px;
       }
       .account {
+        grid-column: 3;
         justify-self: end;
       }
       .account img {
@@ -629,9 +682,6 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
           grid-template-columns: auto 1fr auto;
           padding: 0 18px;
         }
-        .header-greeting {
-          display: none;
-        }
         .workspace main {
           padding: 20px 14px;
         }
@@ -651,11 +701,9 @@ export class DashboardLayoutComponent {
   readonly portfolioOpen = signal(true);
   readonly auctionOpen = signal(true);
   readonly noticesOpen = signal(true);
+  readonly recruitmentOpen = signal(true);
   readonly administrationOpen = signal(true);
   readonly fallback = 'https://api.dicebear.com/9.x/initials/svg?seed=Imperial';
-  readonly greeting = computed(() =>
-    new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening',
-  );
   readonly roleLabel = computed(() => {
     const role = this.auth.user()?.role;
     return role ? USER_ROLES[role] : '';

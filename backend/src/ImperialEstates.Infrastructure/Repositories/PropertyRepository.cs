@@ -28,6 +28,12 @@ public sealed class PropertyRepository(MongoContext db) : IPropertyRepository
                 .Where(type => type.PersonCapacity() == query.PersonCapacity.Value);
             filter &= f.In(x => x.Type, types);
         }
+        if (query.StorageCapacity.HasValue)
+        {
+            var types = Enum.GetValues<PropertyType>()
+                .Where(type => type.StorageCapacity() == query.StorageCapacity.Value);
+            filter &= f.In(x => x.Type, types);
+        }
         if (!string.IsNullOrWhiteSpace(query.Furnishing)) filter &= f.Eq(x => x.FurnishingStatus, query.Furnishing);
         if (query.Amenities.Length > 0) filter &= f.All(x => x.Amenities, query.Amenities);
         if (!string.IsNullOrWhiteSpace(query.Search))

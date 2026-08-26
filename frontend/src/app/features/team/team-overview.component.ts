@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { SettingsService } from '../../core/services/management.services';
+import { PageAccessService } from '../../core/services/page-access.service';
 
 @Component({
   selector: 'app-team-overview',
@@ -15,7 +16,7 @@ import { SettingsService } from '../../core/services/management.services';
         <h1>About the Team</h1>
         <p>Meet the people representing Imperial Estates and supporting its residents.</p>
       </div>
-      @if (auth.isManager()) {
+      @if (auth.isManager() && access.canAccess('administration.settings')) {
         <a class="btn btn-secondary" routerLink="/dashboard/settings">Edit team profiles</a>
       }
     </div>
@@ -141,6 +142,7 @@ import { SettingsService } from '../../core/services/management.services';
 })
 export class TeamOverviewComponent {
   readonly auth = inject(AuthService);
+  readonly access = inject(PageAccessService);
   private settings = inject(SettingsService);
   readonly team = toSignal(this.settings.team().pipe(catchError(() => of([]))), {
     initialValue: [],

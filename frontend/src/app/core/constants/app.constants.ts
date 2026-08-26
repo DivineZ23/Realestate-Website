@@ -3,6 +3,8 @@ export const DEFAULT_PAGE_SIZE = 12;
 export const DASHBOARD_PAGE_SIZE = 20;
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'] as const;
+export const PHONE_NUMBER_PATTERN = /^\d{3}-\d{4}$/;
+export const PHONE_NUMBER_PLACEHOLDER = '123-4567';
 
 export const ROUTES = {
   home: '/',

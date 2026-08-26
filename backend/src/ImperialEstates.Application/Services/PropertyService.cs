@@ -9,7 +9,8 @@ namespace ImperialEstates.Application.Services;
 
 public sealed class PropertyService(
     IPropertyRepository properties, IBlockRepository blocks, ITenantRepository tenants,
-    IUserRepository users, IStatusHistoryRepository history, IAuditRepository audits, IPropertyLifecycleStore lifecycle)
+    IUserRepository users, IStatusHistoryRepository history, IAuditRepository audits,
+    IPropertyLifecycleStore lifecycle, CommissionService commissionService)
 {
     public async Task<PagedResult<PublicPropertyDto>> GetAvailableAsync(PropertyQuery query, CancellationToken cancellationToken)
     {
@@ -123,7 +124,8 @@ public sealed class PropertyService(
         value.UpdatedBy = actorId;
         var statusHistory = StatusHistory(value, previous, "Tenant assigned", actorId);
         var audit = Audit("tenant.assigned", value.Id, actorId, new() { ["tenantId"] = tenant.Id });
-        await lifecycle.AssignTenantAsync(value, tenant, statusHistory, audit, cancellationToken);
+        var commission = await commissionService.PrepareForSaleAsync(value, tenant, actorId, cancellationToken);
+        await lifecycle.AssignTenantAsync(value, tenant, statusHistory, audit, commission, cancellationToken);
         return value.ToDto((await GetBlockAsync(value.BlockId, cancellationToken)).BlockName);
     }
 

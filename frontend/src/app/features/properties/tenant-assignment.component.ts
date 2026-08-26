@@ -12,6 +12,7 @@ import { AssignTenantRequest, Property } from '../../core/models/property.models
 import { AuthService } from '../../core/services/auth.service';
 import { PropertyService } from '../../core/services/property.service';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
+import { depositAtLeastRentValidator } from '../../core/validators/financial.validators';
 
 @Component({
   selector: 'app-tenant-assignment',
@@ -129,9 +130,19 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
             </div>
             <label class="field">
               <span>Security deposit</span>
-              <input type="number" min="0" formControlName="securityDeposit" />
+              <input
+                type="number"
+                [min]="form.controls.monthlyRent.value ?? 0"
+                formControlName="securityDeposit"
+              />
               @if (invalid('securityDeposit')) {
-                <small class="error">Security deposit is required.</small>
+                <small class="error">
+                  @if (form.hasError('depositBelowRent')) {
+                    Deposit must be at least equal to the monthly rent.
+                  } @else {
+                    Security deposit is required.
+                  }
+                </small>
               }
             </label>
             <label class="field">
@@ -312,32 +323,38 @@ export class TenantAssignmentComponent {
   readonly typeLabel = propertyTypeLabel;
   readonly typeCapacity = propertyTypeCapacity;
   readonly phonePlaceholder = PHONE_NUMBER_PLACEHOLDER;
-  readonly form = new FormGroup({
-    cid: new FormControl<number | null>(null, [
-      Validators.required,
-      Validators.min(1),
-      Validators.pattern(/^\d+$/),
-    ]),
-    discordId: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.pattern(/^\d+$/), Validators.maxLength(32)],
-    }),
-    fullName: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.maxLength(160)],
-    }),
-    phoneNumber: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.pattern(PHONE_NUMBER_PATTERN)],
-    }),
-    startDate: new FormControl(new Date().toISOString().slice(0, 10), {
-      nonNullable: true,
-      validators: Validators.required,
-    }),
-    monthlyRent: new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
-    securityDeposit: new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
-    notes: new FormControl('', { nonNullable: true }),
-  });
+  readonly form = new FormGroup(
+    {
+      cid: new FormControl<number | null>(null, [
+        Validators.required,
+        Validators.min(1),
+        Validators.pattern(/^\d+$/),
+      ]),
+      discordId: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required, Validators.pattern(/^\d+$/), Validators.maxLength(32)],
+      }),
+      fullName: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required, Validators.maxLength(160)],
+      }),
+      phoneNumber: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required, Validators.pattern(PHONE_NUMBER_PATTERN)],
+      }),
+      startDate: new FormControl(new Date().toISOString().slice(0, 10), {
+        nonNullable: true,
+        validators: Validators.required,
+      }),
+      monthlyRent: new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
+      securityDeposit: new FormControl<number | null>(null, [
+        Validators.required,
+        Validators.min(0),
+      ]),
+      notes: new FormControl('', { nonNullable: true }),
+    },
+    { validators: depositAtLeastRentValidator('monthlyRent') },
+  );
 
   constructor() {
     const id = this.route.snapshot.paramMap.get('id');
@@ -359,7 +376,8 @@ export class TenantAssignmentComponent {
     name: 'cid' | 'discordId' | 'fullName' | 'phoneNumber' | 'monthlyRent' | 'securityDeposit',
   ) {
     const control = this.form.controls[name];
-    return control.invalid && (control.dirty || control.touched);
+    const depositMismatch = name === 'securityDeposit' && this.form.hasError('depositBelowRent');
+    return (control.invalid || depositMismatch) && (control.dirty || control.touched);
   }
 
   storageCapacityLabel(property: Property): string {

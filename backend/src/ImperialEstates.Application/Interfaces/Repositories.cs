@@ -101,8 +101,16 @@ public interface IStatusHistoryRepository
 
 public interface IPropertyLifecycleStore
 {
-    Task AssignTenantAsync(Property property, Tenant tenant, PropertyStatusHistory history, AuditLog audit, CancellationToken cancellationToken);
+    Task AssignTenantAsync(Property property, Tenant tenant, PropertyStatusHistory history, AuditLog audit, CommissionRecord? commission, CancellationToken cancellationToken);
     Task EvictAsync(Property property, Tenant tenant, PropertyStatusHistory history, AuditLog audit, CancellationToken cancellationToken);
+}
+
+public interface ICommissionRepository
+{
+    Task<IReadOnlyList<CommissionRecord>> GetAllAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<CommissionRecord>> GetByAgentAsync(string userId, CancellationToken cancellationToken);
+    Task<CommissionRecord?> GetByIdAsync(string id, CancellationToken cancellationToken);
+    Task UpdateAsync(CommissionRecord commission, CancellationToken cancellationToken);
 }
 
 public interface ISettingRepository

@@ -29,4 +29,5 @@ export const API_ENDPOINTS = {
   teamAgents: '/team/agents',
   settingsTeam: '/settings/team',
   accessManagement: '/access-management',
+  commissions: '/commissions',
 } as const;

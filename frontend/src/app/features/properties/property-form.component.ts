@@ -20,6 +20,7 @@ import { BlockService } from '../../core/services/management.services';
 import { PropertyService } from '../../core/services/property.service';
 import { ImageUploaderComponent } from '../../shared/components/image-uploader/image-uploader.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
+import { depositAtLeastRentValidator } from '../../core/validators/financial.validators';
 
 @Component({
   selector: 'app-property-form',
@@ -83,18 +84,26 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
               <small class="field-note"
                 >Leave empty or enter 0 to show “Ask our team”.</small
               ></label
-            ><label class="field"
-              ><span>Security deposit <small>Optional</small></span
-              ><input
+            ><label class="field">
+              <span>Security deposit <small>Optional</small></span>
+              <input
                 type="number"
-                min="0"
+                [min]="form.controls.rent.value ?? 0"
                 formControlName="securityDeposit"
                 placeholder="Ask our team"
               />
               <small class="field-note"
-                >Leave empty or enter 0 to show “Ask our team”.</small
-              ></label
-            ><label class="field wide"
+                >Leave empty to show “Ask our team”. If entered, it must be at least the monthly
+                rent.</small
+              >
+              @if (
+                form.hasError('depositBelowRent') &&
+                (form.controls.securityDeposit.dirty || form.controls.securityDeposit.touched)
+              ) {
+                <small class="error">Deposit cannot be lower than the monthly rent.</small>
+              }
+            </label>
+            <label class="field wide"
               ><span>Description</span><textarea rows="5" formControlName="description"></textarea>
             </label>
           </div>
@@ -267,17 +276,20 @@ export class PropertyFormComponent {
   readonly saving = signal(false);
   readonly types = PROPERTY_TYPE_OPTIONS;
   readonly capacity = propertyTypeCapacity;
-  readonly form = new FormGroup({
-    propertyId: new FormControl<number | null>(null, [Validators.required, Validators.min(1)]),
-    blockId: new FormControl('', { nonNullable: true, validators: Validators.required }),
-    propertyName: new FormControl('', { nonNullable: true, validators: Validators.required }),
-    description: new FormControl(''),
-    type: new FormControl<PropertyType>('motel', { nonNullable: true }),
-    rent: new FormControl<number | null>(null, Validators.min(0)),
-    securityDeposit: new FormControl<number | null>(null, Validators.min(0)),
-    isFeatured: new FormControl(false, { nonNullable: true }),
-    isActive: new FormControl(true, { nonNullable: true }),
-  });
+  readonly form = new FormGroup(
+    {
+      propertyId: new FormControl<number | null>(null, [Validators.required, Validators.min(1)]),
+      blockId: new FormControl('', { nonNullable: true, validators: Validators.required }),
+      propertyName: new FormControl('', { nonNullable: true, validators: Validators.required }),
+      description: new FormControl(''),
+      type: new FormControl<PropertyType>('motel', { nonNullable: true }),
+      rent: new FormControl<number | null>(null, Validators.min(0)),
+      securityDeposit: new FormControl<number | null>(null, Validators.min(0)),
+      isFeatured: new FormControl(false, { nonNullable: true }),
+      isActive: new FormControl(true, { nonNullable: true }),
+    },
+    { validators: depositAtLeastRentValidator() },
+  );
   constructor() {
     this.blockService.all().subscribe((v) => this.blocks.set(v));
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroy)).subscribe((params) => {

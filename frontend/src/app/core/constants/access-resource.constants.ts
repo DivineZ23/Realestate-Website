@@ -31,6 +31,11 @@ export const ACCESS_SECTIONS: AccessSectionDefinition[] = [
     resources: [{ key: 'analytics', label: 'Personal Analytics', tier: 'all' }],
   },
   {
+    key: 'finance',
+    label: 'Finance',
+    resources: [{ key: 'commissions', label: 'Commissions', tier: 'all' }],
+  },
+  {
     key: 'auction',
     label: 'Auction',
     resources: [

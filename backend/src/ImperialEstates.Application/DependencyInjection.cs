@@ -17,6 +17,7 @@ public static class DependencyInjection
         services.AddScoped<AuthService>();
         services.AddScoped<DashboardService>();
         services.AddScoped<RentSyncService>();
+        services.AddScoped<CommissionService>();
         return services;
     }
 }

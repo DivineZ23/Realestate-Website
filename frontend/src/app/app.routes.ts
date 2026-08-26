@@ -51,6 +51,15 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'commissions',
+        data: { accessKey: 'commissions' },
+        canActivate: [pageAccessGuard],
+        loadComponent: () =>
+          import('./features/commissions/commissions.component').then(
+            (m) => m.CommissionsComponent,
+          ),
+      },
+      {
         path: 'properties',
         data: { accessKey: 'portfolio.properties' },
         canActivate: [pageAccessGuard],

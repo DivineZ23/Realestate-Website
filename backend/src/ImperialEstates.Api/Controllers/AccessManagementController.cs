@@ -66,7 +66,7 @@ public sealed class AccessManagementController(ISettingRepository settings, IUse
 
     private static Dictionary<string, Dictionary<string, bool>> DefaultPermissions() => new()
     {
-        ["overview"] = All(), ["team"] = All(), ["profile"] = All(), ["analytics"] = All(),
+        ["overview"] = All(), ["team"] = All(), ["profile"] = All(), ["analytics"] = All(), ["commissions"] = All(),
         ["auction.createListing"] = All(), ["auction.listings"] = All(),
         ["portfolio.properties"] = All(), ["portfolio.properties.add"] = Managers(),
         ["portfolio.properties.edit"] = Managers(), ["portfolio.properties.sell"] = All(),

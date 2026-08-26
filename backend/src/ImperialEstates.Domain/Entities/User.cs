@@ -13,6 +13,7 @@ public sealed class User : BaseDocument
     public int? Cid { get; set; }
     public string? PhoneNumber { get; set; }
     public UserRole Role { get; set; } = UserRole.Agent;
+    public int CommissionLevel { get; set; } = 1;
     public ApprovalStatus ApprovalStatus { get; set; } = ApprovalStatus.Pending;
     public AccessStatus AccessStatus { get; set; } = AccessStatus.Pending;
     public string? ApprovedBy { get; set; }

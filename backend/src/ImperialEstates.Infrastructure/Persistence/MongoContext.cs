@@ -24,4 +24,5 @@ public sealed class MongoContext
     public IMongoCollection<PropertyStatusHistory> StatusHistory => Database.GetCollection<PropertyStatusHistory>("property_status_history");
     public IMongoCollection<AuditLog> AuditLogs => Database.GetCollection<AuditLog>("audit_logs");
     public IMongoCollection<ApplicationSetting> Settings => Database.GetCollection<ApplicationSetting>("application_settings");
+    public IMongoCollection<CommissionRecord> Commissions => Database.GetCollection<CommissionRecord>("commissions");
 }

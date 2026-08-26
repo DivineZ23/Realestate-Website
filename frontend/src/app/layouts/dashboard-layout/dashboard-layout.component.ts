@@ -3,6 +3,7 @@ import { NgIf } from '@angular/common';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   LucideBell,
+  LucideBadgeDollarSign,
   LucideBriefcaseBusiness,
   LucideChartNoAxesCombined,
   LucideBlocks,
@@ -49,6 +50,7 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
     ThemeToggleComponent,
     SiteCreditComponent,
     LucideBell,
+    LucideBadgeDollarSign,
     LucideBriefcaseBusiness,
     LucideChartNoAxesCombined,
     LucideLayoutDashboard,
@@ -100,8 +102,31 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
           </button>
           <ng-container *ngIf="performanceOpen()">
             <div class="section-links" id="performance-navigation">
-              <a routerLink="/dashboard/analytics" routerLinkActive="active">
+              <a
+                *ngIf="access.canAccess('analytics')"
+                routerLink="/dashboard/analytics"
+                routerLinkActive="active"
+              >
                 <svg lucideChartNoAxesCombined></svg><b>Analytics</b>
+              </a>
+            </div>
+          </ng-container>
+        </section>
+        <section class="nav-section" *ngIf="access.canAccess('commissions')">
+          <button
+            class="section-toggle"
+            type="button"
+            [attr.aria-expanded]="financeOpen()"
+            aria-controls="finance-navigation"
+            (click)="financeOpen.update((open) => !open)"
+          >
+            <span><svg lucideBadgeDollarSign></svg><b>Finance</b></span>
+            <svg class="chevron" lucideChevronDown [class.rotated]="!financeOpen()"></svg>
+          </button>
+          <ng-container *ngIf="financeOpen()">
+            <div class="section-links" id="finance-navigation">
+              <a routerLink="/dashboard/commissions" routerLinkActive="active">
+                <svg lucideBadgeDollarSign></svg><b>Commissions</b>
               </a>
             </div>
           </ng-container>
@@ -698,6 +723,7 @@ export class DashboardLayoutComponent {
   readonly access = inject(PageAccessService);
   readonly collapsed = signal(false);
   readonly performanceOpen = signal(true);
+  readonly financeOpen = signal(true);
   readonly portfolioOpen = signal(true);
   readonly auctionOpen = signal(true);
   readonly noticesOpen = signal(true);

@@ -27,6 +27,11 @@ import {
   UserRole,
 } from '../models/user.models';
 import { ApiService } from './api.service';
+import {
+  CommissionOverview,
+  CommissionRecord,
+  CommissionSettings,
+} from '../models/commission.models';
 
 @Injectable({ providedIn: 'root' })
 export class BlockService {
@@ -133,6 +138,23 @@ export class UserService {
   }
   delete(id: string, reason: string): Observable<void> {
     return this.api.delete(`${API_ENDPOINTS.users}/${id}`, { reason });
+  }
+  setCommissionLevel(id: string, level: 1 | 2): Observable<User> {
+    return this.api.put(`${API_ENDPOINTS.users}/${id}/commission-level`, { level });
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class CommissionService {
+  private readonly api = inject(ApiService);
+  overview(): Observable<CommissionOverview> {
+    return this.api.get(API_ENDPOINTS.commissions);
+  }
+  updateSettings(settings: CommissionSettings): Observable<CommissionSettings> {
+    return this.api.put(`${API_ENDPOINTS.commissions}/settings`, settings);
+  }
+  setReceived(id: string, isReceived: boolean): Observable<CommissionRecord> {
+    return this.api.patch(`${API_ENDPOINTS.commissions}/${id}/received`, { isReceived });
   }
 }
 

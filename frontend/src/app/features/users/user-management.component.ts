@@ -78,6 +78,23 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
               <dd>{{ user.phoneNumber || 'Not set' }}</dd>
             </div>
             <div>
+              <dt>Commission level</dt>
+              <dd>
+                @if (user.role === 'agent' || user.role === 'seniorAgent') {
+                  <select
+                    aria-label="Commission level"
+                    [value]="user.commissionLevel"
+                    (change)="setCommissionLevel(user, $any($event.target).value)"
+                  >
+                    <option value="1">Level 1</option>
+                    <option value="2">Level 2</option>
+                  </select>
+                } @else {
+                  <span class="not-applicable">Not applicable</span>
+                }
+              </dd>
+            </div>
+            <div>
               <dt>Registered</dt>
               <dd>{{ user.createdAt | date: 'mediumDate' }}</dd>
             </div>
@@ -238,7 +255,7 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
         display: grid;
         grid-template-columns:
           minmax(130px, 1.45fr) minmax(70px, 0.6fr) minmax(100px, 0.8fr)
-          repeat(2, minmax(105px, 0.9fr));
+          minmax(115px, 0.9fr) repeat(2, minmax(105px, 0.9fr));
         align-items: center;
         gap: 0;
         font-size: 0.72rem;
@@ -257,6 +274,22 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
         margin: 3px 0 0;
         font-weight: 600;
         overflow-wrap: anywhere;
+      }
+      dd select {
+        width: 100%;
+        min-width: 92px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--surface-strong);
+        color: var(--ink);
+        padding: 6px 8px;
+        font: inherit;
+        font-weight: 650;
+        cursor: pointer;
+      }
+      .not-applicable {
+        color: var(--muted);
+        font-weight: 500;
       }
       .actions {
         display: flex;
@@ -378,6 +411,15 @@ export class UserManagementComponent {
   canChangeAccess(user: User): boolean {
     if (user.role === 'owner' || user.id === this.auth.user()?.id) return false;
     return this.auth.isOwner() || user.role === 'agent' || user.role === 'seniorAgent';
+  }
+  setCommissionLevel(user: User, rawLevel: string) {
+    const level = Number(rawLevel) as 1 | 2;
+    if (level === user.commissionLevel || ![1, 2].includes(level)) return;
+    this.service.setCommissionLevel(user.id, level).subscribe((updated) => {
+      this.users.update((values) =>
+        values.map((value) => (value.id === updated.id ? updated : value)),
+      );
+    });
   }
   simple(user: User, action: 'approve' | 'promote' | 'restore') {
     this.confirm(user, action, false);

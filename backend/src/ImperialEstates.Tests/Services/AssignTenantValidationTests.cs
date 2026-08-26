@@ -31,6 +31,30 @@ public sealed class AssignTenantValidationTests
     }
 
     [Theory]
+    [InlineData(2999, false)]
+    [InlineData(3000, true)]
+    [InlineData(6000, true)]
+    public void Security_deposit_must_be_at_least_monthly_rent(decimal deposit, bool expectedValid)
+    {
+        var result = _validator.Validate(Request(245, "Alex Mercer", "555-0123", "727075012489510944", 3000, deposit));
+
+        Assert.Equal(expectedValid, result.IsValid);
+    }
+
+    [Fact]
+    public void Property_deposit_cannot_be_below_rent_when_specified()
+    {
+        var validator = new UpsertPropertyRequestValidator();
+        var request = new UpsertPropertyRequest(
+            1, "block-1", "Forum Drive 1", null, ImperialEstates.Domain.Enums.PropertyType.Motel,
+            null, 3000, 2999, null, null, null, null, null, [], [], false);
+
+        var result = validator.Validate(request);
+
+        Assert.Contains(result.Errors, error => error.PropertyName == nameof(request.SecurityDeposit));
+    }
+
+    [Theory]
     [InlineData("5550123")]
     [InlineData("55-50123")]
     [InlineData("+1 555 0123")]

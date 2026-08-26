@@ -37,6 +37,7 @@ public static class DependencyInjection
         services.AddScoped<IStatusHistoryRepository, StatusHistoryRepository>();
         services.AddScoped<IPropertyLifecycleStore, PropertyLifecycleStore>();
         services.AddScoped<ISettingRepository, SettingRepository>();
+        services.AddScoped<ICommissionRepository, CommissionRepository>();
         services.AddSingleton<ITokenService, JwtTokenService>();
         services.AddSingleton<IOwnerIdentity, ConfiguredOwnerIdentity>();
         services.AddHttpClient<IDiscordOAuthService, DiscordOAuthService>();

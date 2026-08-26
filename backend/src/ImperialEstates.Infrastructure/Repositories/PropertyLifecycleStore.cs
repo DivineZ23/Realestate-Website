@@ -7,21 +7,25 @@ namespace ImperialEstates.Infrastructure.Repositories;
 
 public sealed class PropertyLifecycleStore(MongoContext db) : IPropertyLifecycleStore
 {
-    public Task AssignTenantAsync(Property property, Tenant tenant, PropertyStatusHistory history, AuditLog audit, CancellationToken ct) =>
+    public Task AssignTenantAsync(Property property, Tenant tenant, PropertyStatusHistory history, AuditLog audit, CommissionRecord? commission, CancellationToken ct) =>
         RunAsync(async session =>
         {
             RepositoryHelpers.PrepareForInsert(tenant); RepositoryHelpers.PrepareForInsert(history); RepositoryHelpers.PrepareForInsert(audit);
+            if (commission is not null) RepositoryHelpers.PrepareForInsert(commission);
             await db.Tenants.InsertOneAsync(session, tenant, cancellationToken: ct);
             await db.Properties.ReplaceOneAsync(session, x => x.Id == property.Id, property, cancellationToken: ct);
             await db.StatusHistory.InsertOneAsync(session, history, cancellationToken: ct);
             await db.AuditLogs.InsertOneAsync(session, audit, cancellationToken: ct);
+            if (commission is not null) await db.Commissions.InsertOneAsync(session, commission, cancellationToken: ct);
         }, async () =>
         {
             RepositoryHelpers.PrepareForInsert(tenant); RepositoryHelpers.PrepareForInsert(history); RepositoryHelpers.PrepareForInsert(audit);
+            if (commission is not null) RepositoryHelpers.PrepareForInsert(commission);
             await db.Tenants.InsertOneAsync(tenant, cancellationToken: ct);
             await db.Properties.ReplaceOneAsync(x => x.Id == property.Id, property, cancellationToken: ct);
             await db.StatusHistory.InsertOneAsync(history, cancellationToken: ct);
             await db.AuditLogs.InsertOneAsync(audit, cancellationToken: ct);
+            if (commission is not null) await db.Commissions.InsertOneAsync(commission, cancellationToken: ct);
         }, ct);
 
     public Task EvictAsync(Property property, Tenant tenant, PropertyStatusHistory history, AuditLog audit, CancellationToken ct) =>

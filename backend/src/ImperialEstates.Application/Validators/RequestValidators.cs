@@ -27,6 +27,9 @@ public sealed class UpsertPropertyRequestValidator : AbstractValidator<UpsertPro
             .WithMessage("Select a supported interior structure.");
         RuleFor(x => x.Rent).GreaterThanOrEqualTo(0);
         RuleFor(x => x.SecurityDeposit).GreaterThanOrEqualTo(0).When(x => x.SecurityDeposit.HasValue);
+        RuleFor(x => x.SecurityDeposit)
+            .Must((request, deposit) => !deposit.HasValue || deposit.Value >= request.Rent)
+            .WithMessage("Security deposit must be at least equal to the monthly rent.");
         RuleFor(x => x.Bedrooms).GreaterThanOrEqualTo(0).When(x => x.Bedrooms.HasValue);
         RuleForEach(x => x.Images).Must(uri => Uri.TryCreate(uri, UriKind.RelativeOrAbsolute, out _)).WithMessage("Image URL is invalid.");
     }
@@ -46,7 +49,27 @@ public sealed class AssignTenantRequestValidator : AbstractValidator<AssignTenan
         RuleFor(x => x.StartDate).NotEmpty();
         RuleFor(x => x.MonthlyRent).NotNull().GreaterThanOrEqualTo(0);
         RuleFor(x => x.SecurityDeposit).NotNull().GreaterThanOrEqualTo(0);
+        RuleFor(x => x.SecurityDeposit)
+            .Must((request, deposit) =>
+                !deposit.HasValue || !request.MonthlyRent.HasValue || deposit.Value >= request.MonthlyRent.Value)
+            .WithMessage("Security deposit must be at least equal to the monthly rent.");
     }
+}
+
+public sealed class UpdateCommissionSettingsRequestValidator : AbstractValidator<UpdateCommissionSettingsRequest>
+{
+    public UpdateCommissionSettingsRequestValidator()
+    {
+        RuleFor(x => x.AgentLevel1Percent).InclusiveBetween(0, 100);
+        RuleFor(x => x.AgentLevel2Percent).InclusiveBetween(0, 100);
+        RuleFor(x => x.SeniorAgentLevel1Percent).InclusiveBetween(0, 100);
+        RuleFor(x => x.SeniorAgentLevel2Percent).InclusiveBetween(0, 100);
+    }
+}
+
+public sealed class SetCommissionLevelRequestValidator : AbstractValidator<SetCommissionLevelRequest>
+{
+    public SetCommissionLevelRequestValidator() => RuleFor(x => x.Level).InclusiveBetween(1, 2);
 }
 
 public sealed class CreateEnquiryRequestValidator : AbstractValidator<CreateEnquiryRequest>

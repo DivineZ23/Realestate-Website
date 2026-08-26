@@ -103,6 +103,31 @@ public sealed class UserManagementServiceTests
         Assert.Equal("USER_CID_EXISTS", exception.ErrorCode);
     }
 
+    [Fact]
+    public async Task Manager_can_move_an_active_agent_to_commission_level_two()
+    {
+        var agent = new User { Id = "agent-1", Role = UserRole.Agent, ApprovalStatus = ApprovalStatus.Approved, AccessStatus = AccessStatus.Active };
+        var manager = ActiveManager("manager-1");
+        var service = new UserManagementService(new FakeUserRepository([agent, manager]), new FakeAuditRepository());
+
+        var result = await service.SetCommissionLevelAsync(agent.Id, 2, manager.Id, default);
+
+        Assert.Equal(2, result.CommissionLevel);
+    }
+
+    [Fact]
+    public async Task Commission_level_cannot_be_applied_to_a_manager()
+    {
+        var manager = ActiveManager("manager-1");
+        var owner = ActiveOwner("owner-1");
+        var service = new UserManagementService(new FakeUserRepository([manager, owner]), new FakeAuditRepository());
+
+        var exception = await Assert.ThrowsAsync<DomainRuleException>(() =>
+            service.SetCommissionLevelAsync(manager.Id, 2, owner.Id, default));
+
+        Assert.Equal("COMMISSION_LEVEL_NOT_APPLICABLE", exception.ErrorCode);
+    }
+
     private static User ActiveManager(string id) => new() { Id = id, Role = UserRole.Manager, ApprovalStatus = ApprovalStatus.Approved, AccessStatus = AccessStatus.Active };
     private static User ActiveOwner(string id) => new() { Id = id, Role = UserRole.Owner, ApprovalStatus = ApprovalStatus.Approved, AccessStatus = AccessStatus.Active };
 

@@ -28,7 +28,7 @@ import {
   RentSyncRecord,
   RentSyncSnapshot,
 } from '../../core/models/management.models';
-import { NoticeService, TenantService, UserService } from '../../core/services/management.services';
+import { NoticeService, TeamService, TenantService } from '../../core/services/management.services';
 import { AuthService } from '../../core/services/auth.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 
@@ -771,8 +771,8 @@ export class NoticesComponent {
   readonly expandedEvictionDays = signal<Record<string, boolean>>({});
   readonly imagesOpen = signal<Record<string, boolean>>({});
   private readonly tenantService = inject(TenantService);
-  readonly userService = inject(UserService);
-  readonly users = toSignal(this.userService.all().pipe(map((x) => x.items)), { initialValue: [] });
+  private readonly teamService = inject(TeamService);
+  readonly users = toSignal(this.teamService.agents(), { initialValue: [] });
   rawData = '';
   private readonly destroyRef = inject(DestroyRef);
 

@@ -87,7 +87,7 @@ public sealed class CommissionService(
             .ToList();
 
         return new CommissionOverviewDto(
-            await ReadSettingsAsync(ct),
+            canManage ? await ReadSettingsAsync(ct) : null,
             summaries,
             records.Select(ToDto).ToList(),
             records.Where(x => !x.IsReceived).Sum(x => x.CommissionAmount),

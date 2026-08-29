@@ -19,6 +19,10 @@ export class AuthService {
     () => this.isApproved() && ['manager', 'owner'].includes(this.state()?.role ?? ''),
   );
   readonly isOwner = computed(() => this.isApproved() && this.state()?.role === 'owner');
+  readonly canEvict = computed(
+    () =>
+      this.isApproved() && ['seniorAgent', 'manager', 'owner'].includes(this.state()?.role ?? ''),
+  );
 
   loadCurrentUser(): Observable<User | null> {
     if (this.state() !== undefined) return of(this.state() ?? null);

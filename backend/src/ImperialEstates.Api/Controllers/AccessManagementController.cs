@@ -70,6 +70,7 @@ public sealed class AccessManagementController(ISettingRepository settings, IUse
         ["auction.createListing"] = All(), ["auction.listings"] = All(),
         ["portfolio.properties"] = All(), ["portfolio.properties.add"] = Managers(),
         ["portfolio.properties.edit"] = Managers(), ["portfolio.properties.sell"] = All(),
+        ["portfolio.properties.evict"] = SeniorAgents(),
         ["portfolio.blocks"] = All(), ["portfolio.tenants"] = All(),
         ["notices.overdue"] = All(), ["notices.eviction"] = All(), ["notices.overdueList"] = All(),
         ["notices.evictionList"] = All(), ["notices.syncedDataRecords"] = All(),
@@ -82,5 +83,6 @@ public sealed class AccessManagementController(ISettingRepository settings, IUse
 
     private static Dictionary<string, bool> All() => new() { ["agent"] = true, ["seniorAgent"] = true, ["manager"] = true, ["owner"] = true };
     private static Dictionary<string, bool> Managers() => new() { ["agent"] = false, ["seniorAgent"] = false, ["manager"] = true, ["owner"] = true };
+    private static Dictionary<string, bool> SeniorAgents() => new() { ["agent"] = false, ["seniorAgent"] = true, ["manager"] = true, ["owner"] = true };
     private static Dictionary<string, bool> Owners() => new() { ["agent"] = false, ["seniorAgent"] = false, ["manager"] = false, ["owner"] = true };
 }

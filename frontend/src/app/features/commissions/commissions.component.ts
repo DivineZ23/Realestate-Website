@@ -68,101 +68,105 @@ type LedgerFilter = 'outstanding' | 'received' | 'all';
         </article>
       </section>
 
-      <section class="panel rate-panel">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Commission grades</p>
-            <h2>Deposit percentage by role and level</h2>
-            <p>New sales use these rates. Existing commission records never change.</p>
-          </div>
-          @if (auth.isOwner()) {
-            <div class="rate-actions">
-              @if (editingSettings()) {
-                <button
-                  class="btn btn-secondary"
-                  [disabled]="savingSettings()"
-                  (click)="cancelSettingsEdit()"
-                >
-                  <svg lucideX></svg>Cancel
-                </button>
-                <button
-                  class="btn btn-primary"
-                  [disabled]="settingsForm.invalid || savingSettings()"
-                  (click)="saveSettings()"
-                >
-                  <svg lucideSave></svg>{{ savingSettings() ? 'Saving…' : 'Save rates' }}
-                </button>
-              } @else {
-                <button class="btn btn-secondary" (click)="startSettingsEdit()">
-                  <svg lucidePencil></svg>Edit rates
-                </button>
+      @if (auth.isManager()) {
+        @if (data.settings; as settings) {
+          <section class="panel rate-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Commission grades</p>
+                <h2>Deposit percentage by role and level</h2>
+                <p>New sales use these rates. Existing commission records never change.</p>
+              </div>
+              @if (auth.isOwner()) {
+                <div class="rate-actions">
+                  @if (editingSettings()) {
+                    <button
+                      class="btn btn-secondary"
+                      [disabled]="savingSettings()"
+                      (click)="cancelSettingsEdit()"
+                    >
+                      <svg lucideX></svg>Cancel
+                    </button>
+                    <button
+                      class="btn btn-primary"
+                      [disabled]="settingsForm.invalid || savingSettings()"
+                      (click)="saveSettings()"
+                    >
+                      <svg lucideSave></svg>{{ savingSettings() ? 'Saving…' : 'Save rates' }}
+                    </button>
+                  } @else {
+                    <button class="btn btn-secondary" (click)="startSettingsEdit()">
+                      <svg lucidePencil></svg>Edit rates
+                    </button>
+                  }
+                </div>
               }
             </div>
-          }
-        </div>
 
-        @if (auth.isOwner() && editingSettings()) {
-          <form class="rate-grid" [formGroup]="settingsForm">
-            <label class="rate-card">
-              <span>Agent · Level 1</span>
-              <div>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  formControlName="agentLevel1Percent"
-                /><b>%</b>
-              </div>
-            </label>
-            <label class="rate-card elevated">
-              <span>Agent · Level 2</span>
-              <div>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  formControlName="agentLevel2Percent"
-                /><b>%</b>
-              </div>
-            </label>
-            <label class="rate-card">
-              <span>Senior Agent · Level 1</span>
-              <div>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  formControlName="seniorAgentLevel1Percent"
-                /><b>%</b>
-              </div>
-            </label>
-            <label class="rate-card elevated">
-              <span>Senior Agent · Level 2</span>
-              <div>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  formControlName="seniorAgentLevel2Percent"
-                /><b>%</b>
-              </div>
-            </label>
-          </form>
-        } @else {
-          <div class="rate-grid readonly">
-            @for (rate of rates(data.settings); track rate.label) {
-              <div class="rate-card" [class.elevated]="rate.level === 2">
-                <span>{{ rate.label }}</span>
-                <strong>{{ rate.value }}%</strong>
+            @if (auth.isOwner() && editingSettings()) {
+              <form class="rate-grid" [formGroup]="settingsForm">
+                <label class="rate-card">
+                  <span>Agent · Level 1</span>
+                  <div>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      formControlName="agentLevel1Percent"
+                    /><b>%</b>
+                  </div>
+                </label>
+                <label class="rate-card elevated">
+                  <span>Agent · Level 2</span>
+                  <div>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      formControlName="agentLevel2Percent"
+                    /><b>%</b>
+                  </div>
+                </label>
+                <label class="rate-card">
+                  <span>Senior Agent · Level 1</span>
+                  <div>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      formControlName="seniorAgentLevel1Percent"
+                    /><b>%</b>
+                  </div>
+                </label>
+                <label class="rate-card elevated">
+                  <span>Senior Agent · Level 2</span>
+                  <div>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      formControlName="seniorAgentLevel2Percent"
+                    /><b>%</b>
+                  </div>
+                </label>
+              </form>
+            } @else {
+              <div class="rate-grid readonly">
+                @for (rate of rates(settings); track rate.label) {
+                  <div class="rate-card" [class.elevated]="rate.level === 2">
+                    <span>{{ rate.label }}</span>
+                    <strong>{{ rate.value }}%</strong>
+                  </div>
+                }
               </div>
             }
-          </div>
+          </section>
         }
-      </section>
+      }
 
       @if (auth.isManager()) {
         <section class="agents-section">
@@ -645,7 +649,7 @@ export class CommissionsComponent {
   load() {
     this.service.overview().subscribe((value) => {
       this.overview.set(value);
-      this.settingsForm.patchValue(value.settings);
+      if (value.settings) this.settingsForm.patchValue(value.settings);
     });
   }
 

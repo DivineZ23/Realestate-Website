@@ -141,7 +141,11 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
                   ) {
                     <a [routerLink]="[property.id, 'assign']"><svg lucideUserPlus></svg>Sell</a>
                   }
-                  @if (property.currentTenantId) {
+                  @if (
+                    property.currentTenantId &&
+                    auth.canEvict() &&
+                    access.canAccess('portfolio.properties.evict')
+                  ) {
                     <button class="danger" (click)="evict(property)">
                       <svg lucideUserMinus></svg>Evict
                     </button>

@@ -41,7 +41,7 @@ export interface AgentCommissionSummary {
 }
 
 export interface CommissionOverview {
-  settings: CommissionSettings;
+  settings?: CommissionSettings;
   agents: AgentCommissionSummary[];
   records: CommissionRecord[];
   totalOutstanding: number;

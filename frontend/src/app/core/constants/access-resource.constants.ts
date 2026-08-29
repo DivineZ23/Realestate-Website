@@ -1,6 +1,6 @@
 import { AccessManagementSettings, UserRole } from '../models/user.models';
 
-export type AccessTier = 'all' | 'manager' | 'owner';
+export type AccessTier = 'all' | 'seniorAgent' | 'manager' | 'owner';
 
 export interface AccessResourceDefinition {
   key: string;
@@ -66,6 +66,12 @@ export const ACCESS_SECTIONS: AccessSectionDefinition[] = [
         tier: 'all',
         child: true,
       },
+      {
+        key: 'portfolio.properties.evict',
+        label: 'Evict Tenant',
+        tier: 'seniorAgent',
+        child: true,
+      },
       { key: 'portfolio.blocks', label: 'Blocks', tier: 'all' },
       { key: 'portfolio.tenants', label: 'Tenants', tier: 'all' },
     ],
@@ -112,6 +118,7 @@ const ROLE_LEVEL: Record<UserRole, number> = {
 
 const TIER_LEVEL: Record<AccessTier, number> = {
   all: 0,
+  seniorAgent: 1,
   manager: 2,
   owner: 3,
 };

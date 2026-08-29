@@ -46,7 +46,7 @@ public sealed record AgentCommissionSummaryDto(
     int OutstandingCount);
 
 public sealed record CommissionOverviewDto(
-    CommissionSettingsDto Settings,
+    CommissionSettingsDto? Settings,
     IReadOnlyList<AgentCommissionSummaryDto> Agents,
     IReadOnlyList<CommissionRecordDto> Records,
     decimal TotalOutstanding,

@@ -136,13 +136,15 @@ public sealed class PropertyService(
         var storageImages = request.StorageImageUrls?.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()).Distinct().ToList() ?? [];
         if (storageImages.Any(url => !Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https")))
             throw new DomainRuleException("Every storage image must be a valid HTTP or HTTPS URL.", "INVALID_STORAGE_IMAGE_URL");
+        var actor = await users.GetByIdAsync(actorId, cancellationToken) ?? throw new UnauthorizedAccessException();
+        if (!actor.Role.CanEvict())
+            throw new DomainRuleException("Eviction requires Senior Agent access or higher.", "SENIOR_AGENT_REQUIRED");
         var value = await GetEntityAsync(id, cancellationToken);
         var previous = value.Status;
         var tenantId = value.EvictTenant();
         var tenant = await tenants.GetByIdAsync(tenantId, cancellationToken) ?? throw new DomainRuleException("Active tenant record was not found.", "TENANT_NOT_FOUND");
         tenant.Status = TenantStatus.Evicted;
         tenant.EndDate = DateTime.UtcNow;
-        var actor = await users.GetByIdAsync(actorId, cancellationToken) ?? throw new UnauthorizedAccessException();
         tenant.EndReason = request.Reason.Trim();
         tenant.EvictionStorageImages = storageImages;
         tenant.EvictedByUserId = actorId;

@@ -15,7 +15,7 @@ public sealed class CommissionsController(CommissionService service) : Controlle
     public Task<CommissionOverviewDto> Get(CancellationToken ct) =>
         service.GetOverviewAsync(User.UserId(), ct);
 
-    [HttpGet("settings")]
+    [Authorize(Policy = "Manager"), HttpGet("settings")]
     public Task<CommissionSettingsDto> GetSettings(CancellationToken ct) =>
         service.GetSettingsAsync(ct);
 

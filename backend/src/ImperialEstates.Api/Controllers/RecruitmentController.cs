@@ -27,6 +27,16 @@ public sealed class RecruitmentController(
         return Created($"/api/v1/recruitment/applications/{value.Id}", value);
     }
 
+    [AllowAnonymous, HttpGet("settings")]
+    public Task<RecruitmentSettingsDto> Settings(CancellationToken ct) =>
+        service.GetSettingsAsync(ct);
+
+    [Authorize(Policy = "Manager"), HttpPut("settings")]
+    public Task<RecruitmentSettingsDto> UpdateSettings(
+        UpdateRecruitmentSettingsRequest request,
+        CancellationToken ct) =>
+        service.UpdateSettingsAsync(request, User.UserId(), ct);
+
     [Authorize(Policy = "Manager"), HttpGet("applications")]
     public Task<PagedResult<RecruitmentApplicationDto>> All(
         [FromQuery] int page = 1,

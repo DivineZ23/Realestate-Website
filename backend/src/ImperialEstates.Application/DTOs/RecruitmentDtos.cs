@@ -16,6 +16,10 @@ public sealed record ReviewRecruitmentApplicationRequest(
     RecruitmentStatus Status,
     string? ReviewNotes);
 
+public sealed record RecruitmentSettingsDto(bool IsEnabled);
+
+public sealed record UpdateRecruitmentSettingsRequest(bool IsEnabled);
+
 public sealed record RecruitmentApplicationDto(
     string Id,
     string CharacterName,

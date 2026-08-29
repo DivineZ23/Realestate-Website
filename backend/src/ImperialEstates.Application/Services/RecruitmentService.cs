@@ -10,12 +10,20 @@ namespace ImperialEstates.Application.Services;
 public sealed class RecruitmentService(
     IRecruitmentApplicationRepository applications,
     IUserRepository users,
-    IAuditRepository audits)
+    IAuditRepository audits,
+    ISettingRepository settings)
 {
+    private const string RecruitmentEnabledKey = "recruitment.enabled";
+
     public async Task<RecruitmentApplicationDto> CreateAsync(
         CreateRecruitmentApplicationRequest request,
         CancellationToken ct)
     {
+        if (!(await GetSettingsAsync(ct)).IsEnabled)
+            throw new DomainRuleException(
+                "Recruitment is currently closed.",
+                "RECRUITMENT_CLOSED");
+
         var discordId = request.DiscordId.Trim();
         if (await applications.HasPendingAsync(request.CharacterCid, discordId, ct))
             throw new DomainRuleException(
@@ -97,6 +105,37 @@ public sealed class RecruitmentService(
             }
         }, ct);
         return Map(value, reviewer.DisplayName);
+    }
+
+    public async Task<RecruitmentSettingsDto> GetSettingsAsync(CancellationToken ct)
+    {
+        var value = await settings.GetAsync(RecruitmentEnabledKey, ct);
+        return new(value is null || !bool.TryParse(value.Value, out var enabled) || enabled);
+    }
+
+    public async Task<RecruitmentSettingsDto> UpdateSettingsAsync(
+        UpdateRecruitmentSettingsRequest request,
+        string actorId,
+        CancellationToken ct)
+    {
+        var previous = await GetSettingsAsync(ct);
+        await settings.UpsertAsync(new ApplicationSetting
+        {
+            Key = RecruitmentEnabledKey,
+            Value = request.IsEnabled.ToString(),
+            IsPublic = true,
+            UpdatedBy = actorId
+        }, ct);
+        await audits.CreateAsync(new AuditLog
+        {
+            Action = "recruitment.settings.updated",
+            EntityType = "application_setting",
+            EntityId = RecruitmentEnabledKey,
+            PerformedByUserId = actorId,
+            PreviousValues = new() { ["isEnabled"] = previous.IsEnabled },
+            NewValues = new() { ["isEnabled"] = request.IsEnabled }
+        }, ct);
+        return new(request.IsEnabled);
     }
 
     private static RecruitmentApplicationDto Map(RecruitmentApplication value, string? reviewerName) => new(

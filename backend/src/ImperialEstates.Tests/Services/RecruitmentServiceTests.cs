@@ -42,7 +42,7 @@ public sealed class RecruitmentServiceTests
         var applications = new FakeRecruitmentRepository();
         var audits = new FakeAuditRepository();
         var manager = new User { Id = "manager-1", DisplayName = "Divine", Role = UserRole.Manager };
-        var service = new RecruitmentService(applications, new FakeUserRepository([manager]), audits);
+        var service = new RecruitmentService(applications, new FakeUserRepository([manager]), audits, new FakeSettingRepository());
         var submitted = await service.CreateAsync(Request(), default);
 
         var result = await service.ReviewAsync(
@@ -56,6 +56,48 @@ public sealed class RecruitmentServiceTests
         Assert.Contains(audits.Values, x => x.Action == "recruitment.application.reviewed");
     }
 
+    [Fact]
+    public async Task Closed_recruitment_rejects_new_applications()
+    {
+        var settings = new FakeSettingRepository();
+        await settings.UpsertAsync(new ApplicationSetting
+        {
+            Key = "recruitment.enabled",
+            Value = bool.FalseString
+        }, default);
+        var service = new RecruitmentService(
+            new FakeRecruitmentRepository(),
+            new FakeUserRepository([]),
+            new FakeAuditRepository(),
+            settings);
+
+        var exception = await Assert.ThrowsAsync<DomainRuleException>(() =>
+            service.CreateAsync(Request(), default));
+
+        Assert.Equal("RECRUITMENT_CLOSED", exception.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Manager_can_close_recruitment_and_change_is_audited()
+    {
+        var settings = new FakeSettingRepository();
+        var audits = new FakeAuditRepository();
+        var service = new RecruitmentService(
+            new FakeRecruitmentRepository(),
+            new FakeUserRepository([]),
+            audits,
+            settings);
+
+        var result = await service.UpdateSettingsAsync(
+            new UpdateRecruitmentSettingsRequest(false),
+            "manager-1",
+            default);
+
+        Assert.False(result.IsEnabled);
+        Assert.False((await service.GetSettingsAsync(default)).IsEnabled);
+        Assert.Contains(audits.Values, x => x.Action == "recruitment.settings.updated");
+    }
+
     private static CreateRecruitmentApplicationRequest Request() => new(
         "Alex Mercer",
         420,
@@ -67,7 +109,7 @@ public sealed class RecruitmentServiceTests
         "Weekdays after 7 PM and most weekends.");
 
     private static RecruitmentService NewService(FakeRecruitmentRepository applications) =>
-        new(applications, new FakeUserRepository([]), new FakeAuditRepository());
+        new(applications, new FakeUserRepository([]), new FakeAuditRepository(), new FakeSettingRepository());
 
     private sealed class FakeRecruitmentRepository : IRecruitmentApplicationRepository
     {
@@ -115,5 +157,19 @@ public sealed class RecruitmentServiceTests
         public List<AuditLog> Values { get; } = [];
         public Task CreateAsync(AuditLog value, CancellationToken ct) { Values.Add(value); return Task.CompletedTask; }
         public Task<PagedResult<AuditLog>> QueryAsync(int page, int pageSize, CancellationToken ct) => Task.FromResult(new PagedResult<AuditLog>(Values, page, pageSize, Values.Count));
+    }
+
+    private sealed class FakeSettingRepository : ISettingRepository
+    {
+        private readonly Dictionary<string, ApplicationSetting> _values = [];
+
+        public Task<ApplicationSetting?> GetAsync(string key, CancellationToken ct) =>
+            Task.FromResult(_values.GetValueOrDefault(key));
+
+        public Task UpsertAsync(ApplicationSetting setting, CancellationToken ct)
+        {
+            _values[setting.Key] = setting;
+            return Task.CompletedTask;
+        }
     }
 }

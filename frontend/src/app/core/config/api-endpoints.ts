@@ -13,6 +13,7 @@ export const API_ENDPOINTS = {
   },
   enquiries: '/enquiries',
   recruitmentApplications: '/recruitment/applications',
+  recruitmentSettings: '/recruitment/settings',
   tenants: '/tenants',
   evictions: '/tenants/evictions',
   notices: {

@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { LucideCheck, LucideSend } from '@lucide/angular';
+import { LucideBriefcaseBusiness, LucideCheck, LucideSend } from '@lucide/angular';
 import { PHONE_NUMBER_PATTERN, PHONE_NUMBER_PLACEHOLDER } from '../../core/constants/app.constants';
 import { RecruitmentService } from '../../core/services/management.services';
 
 @Component({
   selector: 'app-join-us',
-  imports: [ReactiveFormsModule, LucideCheck, LucideSend],
+  imports: [ReactiveFormsModule, LucideBriefcaseBusiness, LucideCheck, LucideSend],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<section class="application-section">
     <div class="container application-shell">
@@ -19,7 +19,27 @@ import { RecruitmentService } from '../../core/services/management.services';
         </p>
       </header>
 
-      @if (submitted()) {
+      @if (loadingSettings()) {
+        <div class="availability-panel panel loading-state" aria-live="polite">
+          <span class="loading-mark"></span>
+          <div>
+            <p class="eyebrow">Checking availability</p>
+            <h2>Loading recruitment status…</h2>
+          </div>
+        </div>
+      } @else if (!recruitmentEnabled()) {
+        <div class="availability-panel panel closed-state">
+          <span><svg lucideBriefcaseBusiness></svg></span>
+          <div>
+            <p class="eyebrow">Applications closed</p>
+            <h2>Recruitment is currently paused.</h2>
+            <p>
+              Imperial Estates is not accepting new applications at the moment. Please check back
+              later for the next recruitment window.
+            </p>
+          </div>
+        </div>
+      } @else if (submitted()) {
         <div class="success panel">
           <span><svg lucideCheck></svg></span>
           <div>
@@ -245,6 +265,58 @@ import { RecruitmentService } from '../../core/services/management.services';
         margin: 0;
         color: var(--muted);
       }
+      .availability-panel {
+        display: flex;
+        align-items: flex-start;
+        gap: 22px;
+        padding: clamp(28px, 5vw, 48px);
+      }
+      .availability-panel > span {
+        display: grid;
+        flex: 0 0 54px;
+        width: 54px;
+        height: 54px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--surface-subtle);
+        color: var(--forest);
+      }
+      .availability-panel svg {
+        width: 24px;
+      }
+      .availability-panel h2 {
+        margin: 7px 0 8px;
+        font-size: clamp(1.55rem, 3vw, 2.15rem);
+      }
+      .availability-panel p:last-child {
+        max-width: 650px;
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+      .loading-state {
+        align-items: center;
+      }
+      .loading-state h2 {
+        margin-bottom: 0;
+      }
+      .loading-mark {
+        position: relative;
+      }
+      .loading-mark::after {
+        width: 18px;
+        height: 18px;
+        border: 2px solid var(--border);
+        border-top-color: var(--forest);
+        border-radius: 50%;
+        content: '';
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
       @media (max-width: 600px) {
         .application-section {
           padding-top: 36px;
@@ -269,6 +341,8 @@ export class JoinUsComponent {
   readonly submitting = signal(false);
   readonly submitted = signal(false);
   readonly failed = signal(false);
+  readonly loadingSettings = signal(true);
+  readonly recruitmentEnabled = signal(false);
   readonly form = new FormGroup({
     characterName: new FormControl('', {
       nonNullable: true,
@@ -300,6 +374,19 @@ export class JoinUsComponent {
       validators: [Validators.required, Validators.maxLength(1000)],
     }),
   });
+
+  constructor() {
+    this.recruitment.settings().subscribe({
+      next: (settings) => {
+        this.recruitmentEnabled.set(settings.isEnabled);
+        this.loadingSettings.set(false);
+      },
+      error: () => {
+        this.recruitmentEnabled.set(false);
+        this.loadingSettings.set(false);
+      },
+    });
+  }
 
   invalid(name: keyof typeof this.form.controls): boolean {
     const control = this.form.controls[name];

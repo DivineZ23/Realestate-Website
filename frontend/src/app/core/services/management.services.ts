@@ -11,6 +11,7 @@ import {
   Enquiry,
   EnquiryStatus,
   RecruitmentApplication,
+  RecruitmentSettings,
   RecruitmentStatus,
   RentSyncSnapshot,
   EvictionHistory,
@@ -75,6 +76,12 @@ export class RecruitmentService {
   private readonly api = inject(ApiService);
   create(body: CreateRecruitmentApplicationRequest): Observable<RecruitmentApplication> {
     return this.api.post(API_ENDPOINTS.recruitmentApplications, body);
+  }
+  settings(): Observable<RecruitmentSettings> {
+    return this.api.get(API_ENDPOINTS.recruitmentSettings);
+  }
+  updateSettings(isEnabled: boolean): Observable<RecruitmentSettings> {
+    return this.api.put(API_ENDPOINTS.recruitmentSettings, { isEnabled });
   }
   all(status: RecruitmentStatus, page = 1): Observable<PagedResult<RecruitmentApplication>> {
     return this.api.get(API_ENDPOINTS.recruitmentApplications, { page, pageSize: 50, status });

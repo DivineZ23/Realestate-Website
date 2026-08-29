@@ -30,10 +30,25 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
   template: `<div class="page-title">
       <div>
         <p class="eyebrow">Recruitment</p>
-        <h1>{{ pageTitle() }}</h1>
+        <div class="title-line">
+          <h1>{{ pageTitle() }}</h1>
+          <span class="count"
+            >{{ total() }} {{ total() === 1 ? 'application' : 'applications' }}</span
+          >
+          <button
+            type="button"
+            class="recruitment-toggle"
+            [class.closed]="!recruitmentEnabled()"
+            [disabled]="savingSettings()"
+            [attr.aria-pressed]="recruitmentEnabled()"
+            (click)="toggleRecruitment()"
+          >
+            <span class="switch" aria-hidden="true"><i></i></span>
+            <span>{{ recruitmentEnabled() ? 'Recruitment open' : 'Recruitment closed' }}</span>
+          </button>
+        </div>
         <p>{{ pageDescription() }}</p>
       </div>
-      <span class="count">{{ total() }} {{ total() === 1 ? 'application' : 'applications' }}</span>
     </div>
 
     <div class="application-list">
@@ -124,11 +139,13 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
   styles: [
     `
       .page-title {
-        display: flex;
-        align-items: end;
-        justify-content: space-between;
-        gap: 20px;
         margin-bottom: 26px;
+      }
+      .title-line {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
       }
       .page-title h1 {
         margin: 4px 0;
@@ -146,6 +163,52 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
         color: var(--muted);
         font-size: 0.72rem;
         font-weight: 700;
+      }
+      .recruitment-toggle {
+        display: inline-flex;
+        align-items: center;
+        min-height: 34px;
+        gap: 9px;
+        padding: 5px 10px 5px 7px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--available-bg);
+        color: var(--available-ink);
+        font: inherit;
+        font-size: 0.72rem;
+        font-weight: 750;
+        cursor: pointer;
+      }
+      .recruitment-toggle.closed {
+        background: var(--surface-subtle);
+        color: var(--muted);
+      }
+      .recruitment-toggle:disabled {
+        cursor: wait;
+        opacity: 0.65;
+      }
+      .switch {
+        position: relative;
+        width: 31px;
+        height: 18px;
+        border-radius: 999px;
+        background: var(--available-ink);
+      }
+      .switch i {
+        position: absolute;
+        top: 3px;
+        left: 16px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--surface);
+        transition: left 150ms ease;
+      }
+      .closed .switch {
+        background: var(--muted);
+      }
+      .closed .switch i {
+        left: 3px;
       }
       .application-list {
         display: grid;
@@ -317,10 +380,6 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
         color: var(--forest);
       }
       @media (max-width: 700px) {
-        .page-title {
-          align-items: flex-start;
-          flex-direction: column;
-        }
         .contact-strip,
         .answers {
           grid-template-columns: 1fr;
@@ -356,12 +415,17 @@ export class RecruitmentApplicationsComponent {
   readonly status = signal<RecruitmentStatus>('pending');
   readonly applications = signal<RecruitmentApplication[]>([]);
   readonly total = signal(0);
+  readonly recruitmentEnabled = signal(true);
+  readonly savingSettings = signal(false);
 
   constructor() {
     this.route.data.subscribe((data) => {
       this.status.set(data['status'] as RecruitmentStatus);
       this.load();
     });
+    this.recruitment
+      .settings()
+      .subscribe((settings) => this.recruitmentEnabled.set(settings.isEnabled));
   }
 
   pageTitle(): string {
@@ -390,6 +454,18 @@ export class RecruitmentApplicationsComponent {
 
   copy(value: string) {
     void navigator.clipboard.writeText(value);
+  }
+
+  toggleRecruitment() {
+    const nextValue = !this.recruitmentEnabled();
+    this.savingSettings.set(true);
+    this.recruitment.updateSettings(nextValue).subscribe({
+      next: (settings) => {
+        this.recruitmentEnabled.set(settings.isEnabled);
+        this.savingSettings.set(false);
+      },
+      error: () => this.savingSettings.set(false),
+    });
   }
 
   load() {

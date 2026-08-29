@@ -28,6 +28,9 @@ export interface CreateEnquiryRequest {
   preferredContactMethod?: string;
 }
 export type RecruitmentStatus = 'pending' | 'accepted' | 'rejected';
+export interface RecruitmentSettings {
+  isEnabled: boolean;
+}
 export interface RecruitmentApplication {
   id: string;
   characterName: string;

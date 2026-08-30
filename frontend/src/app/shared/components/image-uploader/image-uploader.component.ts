@@ -1,27 +1,70 @@
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { HttpEventType } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
-import { LucideUpload, LucideX } from '@lucide/angular';
+import { LucideLink2, LucideUpload, LucideX } from '@lucide/angular';
 import { API_ENDPOINTS } from '../../../core/config/api-endpoints';
 import { ALLOWED_IMAGE_TYPES, MAX_UPLOAD_BYTES } from '../../../core/constants/app.constants';
 import { ApiService } from '../../../core/services/api.service';
 
 @Component({
   selector: 'app-image-uploader',
-  imports: [DragDropModule, LucideUpload, LucideX],
+  imports: [DragDropModule, LucideLink2, LucideUpload, LucideX],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<div class="drop" (dragover)="$event.preventDefault()" (drop)="dropFiles($event)">
-      <input
-        #picker
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/avif"
-        multiple
-        hidden
-        (change)="choose($event)"
-      /><button type="button" class="btn btn-secondary" (click)="picker.click()">
-        <svg lucideUpload></svg>Choose images
-      </button>
-      <p>or drag and drop · JPG, PNG, WebP or AVIF · 10 MB max</p>
+  template: `<div class="image-inputs">
+      <div class="url-input">
+        <div class="input-heading">
+          <div>
+            <b>Image URLs</b>
+            <small>Paste one HTTP or HTTPS URL per line.</small>
+          </div>
+          <svg lucideLink2></svg>
+        </div>
+        <textarea
+          rows="4"
+          [value]="urlText()"
+          (input)="updateUrlText($event)"
+          placeholder="https://example.com/property-front.jpg&#10;https://example.com/property-interior.jpg"
+        ></textarea>
+        @if (invalidUrls().length) {
+          <small class="error">Every image must be a valid HTTP or HTTPS URL.</small>
+        }
+        <div class="url-actions">
+          <small
+            >{{ parsedUrls().length }} {{ parsedUrls().length === 1 ? 'URL' : 'URLs' }} ready</small
+          >
+          <button
+            type="button"
+            class="btn btn-secondary"
+            [disabled]="parsedUrls().length === 0 || invalidUrls().length > 0"
+            (click)="addUrls()"
+          >
+            <svg lucideLink2></svg>Add image URLs
+          </button>
+        </div>
+      </div>
+
+      <div class="device-upload">
+        <div>
+          <b>Upload from PC</b>
+          <small>JPG, PNG, WebP or AVIF · 10 MB maximum per image.</small>
+        </div>
+        <input
+          #picker
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/avif"
+          multiple
+          hidden
+          (change)="choose($event)"
+        />
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="picker.click()"
+          [disabled]="uploading()"
+        >
+          <svg lucideUpload></svg>{{ uploading() ? 'Uploading…' : 'Choose images' }}
+        </button>
+      </div>
       @if (progress() !== null) {
         <div class="progress"><span [style.width.%]="progress()"></span></div>
       }
@@ -52,17 +95,51 @@ import { ApiService } from '../../../core/services/api.service';
     </div>`,
   styles: [
     `
-      .drop {
-        padding: 28px;
-        border: 1px dashed var(--drop-border);
+      .image-inputs,
+      .url-input {
+        display: grid;
+        gap: 14px;
+      }
+      .url-input {
+        padding: 18px;
+        border: 1px solid var(--border);
         border-radius: var(--radius-md);
-        text-align: center;
         background: var(--surface-subtle);
       }
-      .drop p {
-        margin: 10px 0 0;
+      .input-heading,
+      .url-actions,
+      .device-upload {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+      }
+      .input-heading > svg {
+        width: 21px;
+        color: var(--forest);
+      }
+      .input-heading b,
+      .device-upload b,
+      .input-heading small,
+      .device-upload small {
+        display: block;
+      }
+      .input-heading small,
+      .device-upload small,
+      .url-actions > small {
+        margin-top: 4px;
         color: var(--muted);
-        font-size: 0.8rem;
+        font-size: 0.72rem;
+      }
+      .url-input textarea {
+        min-height: 104px;
+        resize: vertical;
+      }
+      .device-upload {
+        padding: 15px 18px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--surface-strong);
       }
       .progress {
         height: 5px;
@@ -79,7 +156,7 @@ import { ApiService } from '../../../core/services/api.service';
       .error {
         display: block;
         color: var(--danger);
-        margin-top: 8px;
+        font-size: 0.75rem;
       }
       .previews {
         display: grid;
@@ -128,38 +205,75 @@ import { ApiService } from '../../../core/services/api.service';
         border-radius: 99px;
         font-size: 0.65rem;
       }
+      @media (max-width: 560px) {
+        .url-actions,
+        .device-upload {
+          align-items: stretch;
+          flex-direction: column;
+        }
+      }
     `,
   ],
 })
 export class ImageUploaderComponent {
   private api = inject(ApiService);
+  private latestImages: string[] | null = null;
   readonly images = input<string[]>([]);
   readonly imagesChange = output<string[]>();
+  readonly urlText = signal('');
   readonly progress = signal<number | null>(null);
   readonly error = signal('');
+  readonly uploading = signal(false);
+  readonly parsedUrls = signal<string[]>([]);
+  readonly invalidUrls = signal<string[]>([]);
+
+  updateUrlText(event: Event) {
+    const value = (event.target as HTMLTextAreaElement).value;
+    this.urlText.set(value);
+    const urls = value
+      .split(/\r?\n/)
+      .map((url) => url.trim())
+      .filter(Boolean);
+    this.parsedUrls.set(urls);
+    this.invalidUrls.set(urls.filter((url) => !this.isValidHttpUrl(url)));
+  }
+
+  addUrls() {
+    if (!this.parsedUrls().length || this.invalidUrls().length) return;
+    this.addImages(this.parsedUrls());
+    this.urlText.set('');
+    this.parsedUrls.set([]);
+    this.invalidUrls.set([]);
+  }
+
   choose(event: Event) {
     const files = (event.target as HTMLInputElement).files;
     if (files) this.upload([...files]);
-  }
-  dropFiles(event: DragEvent) {
-    event.preventDefault();
-    if (event.dataTransfer?.files) this.upload([...event.dataTransfer.files]);
+    (event.target as HTMLInputElement).value = '';
   }
   remove(index: number) {
-    this.imagesChange.emit(this.images().filter((_, i) => i !== index));
+    this.latestImages = this.currentImages().filter((_, i) => i !== index);
+    this.imagesChange.emit(this.latestImages);
   }
   reorder(event: CdkDragDrop<string[]>) {
-    const copy = [...this.images()];
+    const copy = [...this.currentImages()];
     moveItemInArray(copy, event.previousIndex, event.currentIndex);
+    this.latestImages = copy;
     this.imagesChange.emit(copy);
   }
   private upload(files: File[]) {
+    if (!files.length) return;
+    this.error.set('');
+    this.uploading.set(true);
+    let remaining = files.length;
     for (const file of files) {
       if (
         !ALLOWED_IMAGE_TYPES.includes(file.type as (typeof ALLOWED_IMAGE_TYPES)[number]) ||
         file.size > MAX_UPLOAD_BYTES
       ) {
         this.error.set(`${file.name} is not an accepted image.`);
+        remaining--;
+        if (remaining === 0) this.uploading.set(false);
         continue;
       }
       this.progress.set(0);
@@ -168,12 +282,36 @@ export class ImageUploaderComponent {
           if (event.type === HttpEventType.UploadProgress)
             this.progress.set(Math.round(100 * (event.loaded / (event.total || event.loaded))));
           if (event.type === HttpEventType.Response) {
-            this.imagesChange.emit([...this.images(), event.body!.url]);
+            this.addImages([event.body!.url]);
             this.progress.set(null);
+            remaining--;
+            if (remaining === 0) this.uploading.set(false);
           }
         },
-        error: () => this.progress.set(null),
+        error: () => {
+          this.error.set(`${file.name} could not be uploaded.`);
+          this.progress.set(null);
+          remaining--;
+          if (remaining === 0) this.uploading.set(false);
+        },
       });
+    }
+  }
+
+  private addImages(urls: string[]) {
+    this.latestImages = [...new Set([...this.currentImages(), ...urls])];
+    this.imagesChange.emit(this.latestImages);
+  }
+
+  private currentImages(): string[] {
+    return this.latestImages ?? [...this.images()];
+  }
+
+  private isValidHttpUrl(value: string): boolean {
+    try {
+      return ['http:', 'https:'].includes(new URL(value).protocol);
+    } catch {
+      return false;
     }
   }
 }

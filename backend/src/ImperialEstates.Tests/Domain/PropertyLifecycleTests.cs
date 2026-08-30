@@ -46,6 +46,18 @@ public sealed class PropertyLifecycleTests
     }
 
     [Fact]
+    public void Booked_property_can_receive_an_additional_booking()
+    {
+        var property = NewProperty();
+        property.MarkBooked("booking-1");
+
+        property.MarkBooked("booking-2");
+
+        Assert.Equal(PropertyStatus.Booked, property.Status);
+        Assert.Equal("booking-2", property.BookedByEnquiryId);
+    }
+
+    [Fact]
     public void On_hold_property_cannot_be_booked()
     {
         var property = NewProperty();

@@ -710,6 +710,116 @@ app-notices {
   .resolved-by span {
     color: var(--muted);
   }
+  .queue-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 180px));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .queue-summary .panel {
+    display: grid;
+    gap: 2px;
+    padding: 15px 17px;
+  }
+  .queue-summary b {
+    font-size: 1.45rem;
+  }
+  .queue-summary span,
+  .queue-detail small,
+  .queue-detail span {
+    color: var(--muted);
+    font-size: 0.7rem;
+  }
+  .queue-summary .ready b {
+    color: var(--danger);
+  }
+  .queue-summary .waiting b {
+    color: var(--warning-ink);
+  }
+  .queue-list {
+    display: grid;
+    gap: 10px;
+  }
+  .queue-card {
+    display: grid;
+    grid-template-columns: minmax(260px, 1.5fr) minmax(140px, 0.7fr) minmax(210px, 0.9fr) auto;
+    align-items: center;
+    gap: 20px;
+    padding: 17px 19px;
+    border-left: 3px solid var(--warning-ink);
+  }
+  .queue-card.ready {
+    border-left-color: var(--danger);
+  }
+  .queue-property {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 12px;
+  }
+  .queue-icon {
+    display: grid;
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border-radius: 10px;
+    background: var(--warning-soft);
+    color: var(--warning-ink);
+  }
+  .ready .queue-icon {
+    background: var(--danger-soft);
+    color: var(--danger);
+  }
+  .queue-icon svg,
+  .queue-action svg {
+    width: 17px;
+  }
+  .queue-property small,
+  .queue-property p {
+    color: var(--muted);
+    font-size: 0.7rem;
+  }
+  .queue-property h2,
+  .queue-property p {
+    margin: 0;
+  }
+  .queue-property h2 {
+    margin: 2px 0;
+    overflow: hidden;
+    font-size: 0.98rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .queue-detail {
+    display: grid;
+    gap: 2px;
+  }
+  .queue-detail b {
+    font-size: 0.8rem;
+  }
+  .eligibility b {
+    color: var(--warning-ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .ready .eligibility b {
+    color: var(--danger);
+  }
+  .queue-action {
+    display: flex;
+    justify-content: flex-end;
+  }
+  .queue-action .btn {
+    min-width: 88px;
+  }
+  .permission-note,
+  .queue-state {
+    color: var(--muted);
+    font-size: 0.72rem;
+  }
+  .queue-state {
+    padding: 24px;
+  }
   .eviction-history-card {
     margin-top: 12px;
     padding: 12px 14px;
@@ -844,6 +954,30 @@ app-home {
     }
     .message-resolve {
       white-space: normal;
+    }
+    .queue-summary {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .queue-card {
+      grid-template-columns: 1fr 1fr;
+    }
+    .queue-property {
+      grid-column: 1 / -1;
+    }
+    .queue-action {
+      justify-content: flex-start;
+    }
+  }
+}
+
+@media (max-width: 540px) {
+  app-notices {
+    .queue-summary,
+    .queue-card {
+      grid-template-columns: 1fr;
+    }
+    .queue-property {
+      grid-column: auto;
     }
   }
 }

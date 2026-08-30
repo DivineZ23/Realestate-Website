@@ -6,6 +6,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { RouterLink } from '@angular/router';
 import {
   LucideCalendarPlus,
+  LucideClipboardList,
   LucideChevronLeft,
   LucideChevronRight,
   LucideGavel,
@@ -45,6 +46,7 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
     StatusBadgeComponent,
     EmptyStateComponent,
     LucideCalendarPlus,
+    LucideClipboardList,
     LucideChevronLeft,
     LucideChevronRight,
     LucideGavel,
@@ -150,8 +152,21 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
                       <svg lucideUserMinus></svg>Evict
                     </button>
                   }
-                  @if (property.status === 'available') {
-                    <button (click)="book(property)"><svg lucideCalendarPlus></svg>Book</button>
+                  @if (
+                    access.canAccess('portfolio.properties.book') &&
+                    (property.status === 'available' || property.status === 'booked')
+                  ) {
+                    <a [routerLink]="[property.id, 'book']"><svg lucideCalendarPlus></svg>Book</a>
+                  }
+                  @if (
+                    access.canAccess('portfolio.properties.book') &&
+                    (property.status === 'available' ||
+                      property.status === 'booked' ||
+                      property.bookingCount > 0)
+                  ) {
+                    <a [routerLink]="[property.id, 'bookings']">
+                      <svg lucideClipboardList></svg>Bookings ({{ property.bookingCount }})
+                    </a>
                   }
                   @if (
                     property.status === 'booked' ||
@@ -368,21 +383,6 @@ export class PropertyManagementComponent {
   }
   refresh() {
     this.filters.controls.page.setValue(this.filters.controls.page.value, { emitEvent: true });
-  }
-  book(property: Property) {
-    this.dialog
-      .open(ConfirmDialogComponent, {
-        data: {
-          title: 'Book this property?',
-          message: 'The property will be removed from public availability and marked as Booked.',
-          confirmLabel: 'Book',
-        },
-      })
-      .afterClosed()
-      .subscribe((result) => {
-        if (result?.confirmed)
-          this.service.changeStatus(property.id, 'booked').subscribe(() => this.refresh());
-      });
   }
   release(property: Property) {
     const source =

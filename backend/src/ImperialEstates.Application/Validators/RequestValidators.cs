@@ -56,6 +56,27 @@ public sealed class AssignTenantRequestValidator : AbstractValidator<AssignTenan
     }
 }
 
+public sealed class CreatePropertyBookingRequestValidator : AbstractValidator<CreatePropertyBookingRequest>
+{
+    public CreatePropertyBookingRequestValidator()
+    {
+        RuleFor(x => x.Cid).GreaterThan(0);
+        RuleFor(x => x.FullName).NotEmpty().MaximumLength(160);
+        RuleFor(x => x.PhoneNumber)
+            .NotEmpty()
+            .Matches(@"^\d{3}-\d{4}$")
+            .WithMessage("Phone number must use the format 123-4567.");
+        RuleFor(x => x.DiscordId).NotEmpty().Matches(@"^\d+$").MaximumLength(32);
+        RuleFor(x => x.MonthlyRent).NotNull().GreaterThanOrEqualTo(0);
+        RuleFor(x => x.BookingAmount).NotNull().GreaterThanOrEqualTo(0);
+        RuleFor(x => x.BookingAmount)
+            .Must((request, amount) =>
+                !amount.HasValue || !request.MonthlyRent.HasValue || amount.Value >= request.MonthlyRent.Value)
+            .WithMessage("Booking amount must be at least equal to the monthly rent.");
+        RuleFor(x => x.Notes).MaximumLength(1000);
+    }
+}
+
 public sealed class UpdateCommissionSettingsRequestValidator : AbstractValidator<UpdateCommissionSettingsRequest>
 {
     public UpdateCommissionSettingsRequestValidator()

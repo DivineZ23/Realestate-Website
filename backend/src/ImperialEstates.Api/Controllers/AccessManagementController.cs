@@ -55,6 +55,9 @@ public sealed class AccessManagementController(ISettingRepository settings, IUse
 
     private static Dictionary<string, Dictionary<string, bool>> Normalize(Dictionary<string, Dictionary<string, bool>> values)
     {
+        if (!values.ContainsKey("notices.evictionHistory") &&
+            values.TryGetValue("notices.evictionList", out var legacyEvictionList))
+            values["notices.evictionHistory"] = legacyEvictionList;
         var defaults = DefaultPermissions();
         foreach (var (resource, roles) in defaults)
             if (values.TryGetValue(resource, out var stored))
@@ -70,10 +73,11 @@ public sealed class AccessManagementController(ISettingRepository settings, IUse
         ["auction.createListing"] = All(), ["auction.listings"] = All(),
         ["portfolio.properties"] = All(), ["portfolio.properties.add"] = Managers(),
         ["portfolio.properties.edit"] = Managers(), ["portfolio.properties.sell"] = All(),
+        ["portfolio.properties.book"] = All(),
         ["portfolio.properties.evict"] = SeniorAgents(),
-        ["portfolio.blocks"] = All(), ["portfolio.tenants"] = All(),
+        ["portfolio.blocks"] = All(), ["portfolio.tenants"] = All(), ["portfolio.bookings"] = All(),
         ["notices.overdue"] = All(), ["notices.eviction"] = All(), ["notices.overdueList"] = All(),
-        ["notices.evictionList"] = All(), ["notices.syncedDataRecords"] = All(),
+        ["notices.evictionQueue"] = All(), ["notices.evictionHistory"] = All(), ["notices.syncedDataRecords"] = All(),
         ["notices.sync"] = Managers(),
         ["recruitment.pending"] = Managers(), ["recruitment.accepted"] = Managers(),
         ["recruitment.rejected"] = Managers(), ["administration.users"] = Managers(),

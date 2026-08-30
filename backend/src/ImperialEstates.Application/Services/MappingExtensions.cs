@@ -11,14 +11,14 @@ internal static class MappingExtensions
         value.Id, value.BlockId, value.BlockName, value.Description, value.Address, value.ImageUrl,
         count, totalCost, totalRent, totalRent - totalCost, value.IsActive, value.CreatedAt, value.UpdatedAt);
 
-    public static PropertyDto ToDto(this Property value, string blockName, Tenant? tenant = null) => new(
+    public static PropertyDto ToDto(this Property value, string blockName, Tenant? tenant = null, int bookingCount = 0) => new(
         value.Id, value.PropertyId, value.BlockId, blockName, value.PropertyName, value.Description,
         value.Type, value.Type.PersonCapacity(), value.Type.StateCost(), value.Type.StorageCapacity(),
         value.Storage, value.Rent, value.SecurityDeposit, value.Status, value.Bedrooms,
         value.Bathrooms, value.Floor, value.Area, value.FurnishingStatus, value.Amenities, value.Images,
         value.CurrentTenantId, tenant?.FullName, tenant?.Cid, tenant?.PhoneNumber,
         tenant is null ? null : tenant.RentPaidThrough ?? tenant.StartDate.Date.AddDays(7),
-        value.BookedByEnquiryId, value.UnavailableReason, value.IsFeatured,
+        value.BookedByEnquiryId, bookingCount, value.UnavailableReason, value.IsFeatured,
         value.IsActive, value.CreatedAt, value.UpdatedAt);
 
     public static PublicPropertyDto ToPublicDto(this Property value, string blockName) => new(

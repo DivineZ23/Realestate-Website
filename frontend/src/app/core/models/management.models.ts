@@ -172,3 +172,16 @@ export interface EvictionHistory {
   evictedByDisplayName?: string;
   evictedAt: string;
 }
+export interface EvictionQueueItem {
+  propertyId: string;
+  propertyBusinessId: number;
+  propertyName: string;
+  tenantName?: string;
+  cid?: number;
+  phone?: string;
+  discordId?: string;
+  rent: number;
+  noticeSentAt: string;
+  eligibleAt: string;
+  isReady: boolean;
+}

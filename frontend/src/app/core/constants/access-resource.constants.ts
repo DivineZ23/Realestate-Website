@@ -67,6 +67,12 @@ export const ACCESS_SECTIONS: AccessSectionDefinition[] = [
         child: true,
       },
       {
+        key: 'portfolio.properties.book',
+        label: 'Book Property',
+        tier: 'all',
+        child: true,
+      },
+      {
         key: 'portfolio.properties.evict',
         label: 'Evict Tenant',
         tier: 'seniorAgent',
@@ -74,6 +80,7 @@ export const ACCESS_SECTIONS: AccessSectionDefinition[] = [
       },
       { key: 'portfolio.blocks', label: 'Blocks', tier: 'all' },
       { key: 'portfolio.tenants', label: 'Tenants', tier: 'all' },
+      { key: 'portfolio.bookings', label: 'Bookings', tier: 'all' },
     ],
   },
   {
@@ -83,7 +90,8 @@ export const ACCESS_SECTIONS: AccessSectionDefinition[] = [
       { key: 'notices.overdue', label: 'Overdue Notice', tier: 'all' },
       { key: 'notices.eviction', label: 'Eviction Notice', tier: 'all' },
       { key: 'notices.overdueList', label: 'Overdue List', tier: 'all' },
-      { key: 'notices.evictionList', label: 'Eviction List', tier: 'all' },
+      { key: 'notices.evictionQueue', label: 'Eviction Queue', tier: 'all' },
+      { key: 'notices.evictionHistory', label: 'Eviction History', tier: 'all' },
       { key: 'notices.sync', label: 'Data Sync', tier: 'manager' },
       { key: 'notices.syncedDataRecords', label: 'Sync History', tier: 'all' },
     ],

@@ -28,7 +28,7 @@ public sealed record PropertyDto(
     int? Bedrooms, int? Bathrooms, int? Floor, decimal? Area, string? FurnishingStatus,
     IReadOnlyList<string> Amenities, IReadOnlyList<string> Images, string? CurrentTenantId,
     string? TenantName, int? TenantCid, string? TenantPhoneNumber, DateTime? RentPaidThrough,
-    string? BookedByEnquiryId, string? UnavailableReason, bool IsFeatured, bool IsActive,
+    string? BookedByEnquiryId, int BookingCount, string? UnavailableReason, bool IsFeatured, bool IsActive,
     DateTime CreatedAt, DateTime UpdatedAt);
 
 public sealed record PublicPropertyDto(
@@ -52,6 +52,20 @@ public sealed record AssignTenantRequest(
     string? EmergencyContact, string? Notes);
 
 public sealed record EvictTenantRequest(string? Reason, IReadOnlyList<string>? StorageImageUrls);
+
+public sealed record CreatePropertyBookingRequest(
+    int Cid, string FullName, string PhoneNumber, string DiscordId,
+    decimal? MonthlyRent, decimal? BookingAmount, string? Notes);
+
+public sealed record PropertyBookingDto(
+    string Id, string PropertyId, int Cid, string FullName, string PhoneNumber,
+    string DiscordId, decimal MonthlyRent, decimal BookingAmount, string? Notes,
+    BookingStatus Status, string? CreatedByUserId,
+    string? CreatedByDisplayName, DateTime CreatedAt);
+
+public sealed record PropertyBookingGroupDto(
+    string PropertyId, int PropertyNumber, string PropertyName, string BlockName,
+    PropertyType Type, PropertyStatus Status, IReadOnlyList<PropertyBookingDto> Bookings);
 
 public sealed record PropertyStatusHistoryDto(
     string Id, PropertyStatus PreviousStatus, PropertyStatus NewStatus, string? Reason,

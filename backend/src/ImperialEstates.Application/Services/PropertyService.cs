@@ -10,7 +10,8 @@ namespace ImperialEstates.Application.Services;
 public sealed class PropertyService(
     IPropertyRepository properties, IBlockRepository blocks, ITenantRepository tenants,
     IUserRepository users, IStatusHistoryRepository history, IAuditRepository audits,
-    IPropertyLifecycleStore lifecycle, CommissionService commissionService)
+    IPropertyLifecycleStore lifecycle, CommissionService commissionService,
+    IPropertyBookingRepository bookings)
 {
     public async Task<PagedResult<PublicPropertyDto>> GetAvailableAsync(PropertyQuery query, CancellationToken cancellationToken)
     {
@@ -90,10 +91,23 @@ public sealed class PropertyService(
         var previous = value.Status;
         switch (request.Status)
         {
-            case PropertyStatus.Available: value.MakeAvailable(); break;
-            case PropertyStatus.Booked: value.MarkBooked(request.EnquiryId); break;
-            case PropertyStatus.Auction: value.MarkForAuction(); break;
-            case PropertyStatus.OnHold: value.PlaceOnHold(request.Reason ?? string.Empty); break;
+            case PropertyStatus.Available:
+                value.MakeAvailable();
+                if (previous == PropertyStatus.Booked)
+                    await bookings.CloseActiveAsync(value.Id, BookingStatus.Cancelled, actorId, cancellationToken);
+                break;
+            case PropertyStatus.Booked:
+                throw new DomainRuleException("Use the booking form to book a property.", "BOOKING_FORM_REQUIRED");
+            case PropertyStatus.Auction:
+                value.MarkForAuction();
+                if (previous == PropertyStatus.Booked)
+                    await bookings.CloseActiveAsync(value.Id, BookingStatus.Cancelled, actorId, cancellationToken);
+                break;
+            case PropertyStatus.OnHold:
+                value.PlaceOnHold(request.Reason ?? string.Empty);
+                if (previous == PropertyStatus.Booked)
+                    await bookings.CloseActiveAsync(value.Id, BookingStatus.Cancelled, actorId, cancellationToken);
+                break;
             case PropertyStatus.Paid:
             case PropertyStatus.Overdue:
             case PropertyStatus.Evictable:
@@ -126,7 +140,120 @@ public sealed class PropertyService(
         var audit = Audit("tenant.assigned", value.Id, actorId, new() { ["tenantId"] = tenant.Id });
         var commission = await commissionService.PrepareForSaleAsync(value, tenant, actorId, cancellationToken);
         await lifecycle.AssignTenantAsync(value, tenant, statusHistory, audit, commission, cancellationToken);
+        await bookings.CloseActiveAsync(value.Id, BookingStatus.Converted, actorId, cancellationToken);
         return value.ToDto((await GetBlockAsync(value.BlockId, cancellationToken)).BlockName);
+    }
+
+    public async Task<IReadOnlyList<PropertyBookingDto>> GetBookingsAsync(string propertyId, CancellationToken ct)
+    {
+        _ = await GetEntityAsync(propertyId, ct);
+        var values = await bookings.GetActiveByPropertyAsync(propertyId, ct);
+        var creatorIds = values
+            .Select(x => x.CreatedBy)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x!)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        var creatorNames = (await users.GetByIdsAsync(creatorIds, ct))
+            .ToDictionary(x => x.Id, x => x.DisplayName, StringComparer.Ordinal);
+        return values.Select(booking => ToBookingDto(
+            booking,
+            !string.IsNullOrWhiteSpace(booking.CreatedBy) && creatorNames.TryGetValue(booking.CreatedBy, out var name)
+                ? name
+                : null)).ToList();
+    }
+
+    public async Task<IReadOnlyList<PropertyBookingGroupDto>> GetAllBookingGroupsAsync(CancellationToken ct)
+    {
+        var bookingValues = await bookings.GetAllActiveAsync(ct);
+        if (bookingValues.Count == 0) return [];
+
+        var propertyValues = await properties.GetByIdsAsync(
+            bookingValues.Select(x => x.PropertyId).Distinct(StringComparer.Ordinal).ToArray(), ct);
+        var blockNames = await BlockNamesAsync(propertyValues, ct);
+        var creatorIds = bookingValues
+            .Select(x => x.CreatedBy)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x!)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        var creatorNames = (await users.GetByIdsAsync(creatorIds, ct))
+            .ToDictionary(x => x.Id, x => x.DisplayName, StringComparer.Ordinal);
+        var bookingsByProperty = bookingValues
+            .GroupBy(x => x.PropertyId, StringComparer.Ordinal)
+            .ToDictionary(x => x.Key, x => x.ToList(), StringComparer.Ordinal);
+
+        return propertyValues
+            .Where(property => bookingsByProperty.ContainsKey(property.Id))
+            .OrderBy(property => property.PropertyId)
+            .Select(property => new PropertyBookingGroupDto(
+                property.Id,
+                property.PropertyId,
+                property.PropertyName,
+                blockNames[property.BlockId],
+                property.Type,
+                property.Status,
+                bookingsByProperty[property.Id].Select(booking => ToBookingDto(
+                    booking,
+                    !string.IsNullOrWhiteSpace(booking.CreatedBy) && creatorNames.TryGetValue(booking.CreatedBy, out var name)
+                        ? name
+                        : null)).ToList()))
+            .ToList();
+    }
+
+    public async Task<PropertyBookingDto> CreateBookingAsync(
+        string propertyId, CreatePropertyBookingRequest request, string actorId, CancellationToken ct)
+    {
+        var property = await GetEntityAsync(propertyId, ct);
+        var previous = property.Status;
+        property.MarkBooked(null);
+        property.UpdatedBy = actorId;
+        var booking = new PropertyBooking
+        {
+            PropertyId = property.Id,
+            Cid = request.Cid,
+            FullName = request.FullName.Trim(),
+            PhoneNumber = request.PhoneNumber.Trim(),
+            DiscordId = request.DiscordId.Trim(),
+            MonthlyRent = request.MonthlyRent!.Value,
+            BookingAmount = request.BookingAmount!.Value,
+            Notes = request.Notes?.Trim(),
+            CreatedBy = actorId,
+            UpdatedBy = actorId
+        };
+        await bookings.CreateAsync(booking, ct);
+        await properties.UpdateAsync(property, ct);
+        if (previous != property.Status)
+            await RecordStatusAsync(property, previous, "Property booking added", actorId, "property.booked", ct);
+        await audits.CreateAsync(Audit("property.booking.created", property.Id, actorId,
+            new() { ["bookingId"] = booking.Id, ["cid"] = booking.Cid }), ct);
+        var creator = await users.GetByIdAsync(actorId, ct);
+        return ToBookingDto(booking, creator?.DisplayName);
+    }
+
+    public async Task CancelBookingAsync(string propertyId, string bookingId, string actorId, CancellationToken ct)
+    {
+        var property = await GetEntityAsync(propertyId, ct);
+        var booking = await bookings.GetByIdAsync(bookingId, ct)
+            ?? throw new KeyNotFoundException("Booking not found.");
+        if (booking.PropertyId != property.Id || booking.Status != BookingStatus.Active)
+            throw new DomainRuleException("This booking is not active for the selected property.", "BOOKING_NOT_ACTIVE");
+        booking.Status = BookingStatus.Cancelled;
+        booking.ClosedAt = DateTime.UtcNow;
+        booking.ClosedByUserId = actorId;
+        booking.UpdatedAt = DateTime.UtcNow;
+        booking.UpdatedBy = actorId;
+        await bookings.UpdateAsync(booking, ct);
+        if (property.Status == PropertyStatus.Booked && await bookings.CountActiveByPropertyAsync(property.Id, ct) == 0)
+        {
+            var previous = property.Status;
+            property.MakeAvailable();
+            property.UpdatedBy = actorId;
+            await properties.UpdateAsync(property, ct);
+            await RecordStatusAsync(property, previous, "Last booking removed", actorId, "property.booking.released", ct);
+        }
+        await audits.CreateAsync(Audit("property.booking.cancelled", property.Id, actorId,
+            new() { ["bookingId"] = booking.Id }), ct);
     }
 
     public async Task<PropertyDto> EvictAsync(string id, EvictTenantRequest request, string actorId, CancellationToken cancellationToken)
@@ -175,6 +302,7 @@ public sealed class PropertyService(
         value.IsActive = false;
         value.UpdatedAt = DateTime.UtcNow;
         value.UpdatedBy = actorId;
+        await bookings.CloseActiveAsync(value.Id, BookingStatus.Cancelled, actorId, cancellationToken);
         await properties.UpdateAsync(value, cancellationToken);
         await audits.CreateAsync(Audit("property.deleted", value.Id, actorId), cancellationToken);
     }
@@ -213,6 +341,12 @@ public sealed class PropertyService(
     private async Task<PropertyDto> ToManagementDtoAsync(Property value, string blockName, CancellationToken ct)
     {
         var tenant = string.IsNullOrWhiteSpace(value.CurrentTenantId) ? null : await tenants.GetByIdAsync(value.CurrentTenantId, ct);
-        return value.ToDto(blockName, tenant);
+        var bookingCount = await bookings.CountActiveByPropertyAsync(value.Id, ct);
+        return value.ToDto(blockName, tenant, checked((int)bookingCount));
     }
+
+    private static PropertyBookingDto ToBookingDto(PropertyBooking value, string? creatorName) => new(
+        value.Id, value.PropertyId, value.Cid, value.FullName, value.PhoneNumber,
+        value.DiscordId, value.MonthlyRent, value.BookingAmount, value.Notes,
+        value.Status, value.CreatedBy, creatorName, value.CreatedAt);
 }

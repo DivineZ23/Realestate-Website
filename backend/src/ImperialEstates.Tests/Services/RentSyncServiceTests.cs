@@ -55,22 +55,115 @@ public sealed class RentSyncServiceTests
         Assert.Equal("Divine", resolvedEviction.ResolvedByDisplayName);
     }
 
+    [Fact]
+    public async Task Sync_generates_notices_only_when_a_property_enters_a_notice_status()
+    {
+        var snapshots = new SnapshotRepository();
+        var service = CreateService(snapshots);
+
+        var firstOverdue = await service.SyncAsync(
+            new RentSyncRequest(Export("Overdue")), "owner-1", default);
+        var repeatedOverdue = await service.SyncAsync(
+            new RentSyncRequest(Export("Overdue")), "owner-1", default);
+        var becameEvictable = await service.SyncAsync(
+            new RentSyncRequest(Export("Evictable")), "owner-1", default);
+        var repeatedEvictable = await service.SyncAsync(
+            new RentSyncRequest(Export("Evictable")), "owner-1", default);
+        await service.SyncAsync(
+            new RentSyncRequest(Export("Paid 8/30/2026")), "owner-1", default);
+        var overdueAfterPayment = await service.SyncAsync(
+            new RentSyncRequest(Export("Overdue")), "owner-1", default);
+        var previouslyAbsent = await service.SyncAsync(
+            new RentSyncRequest(Export("Evictable", "New Property 2")), "owner-1", default);
+
+        Assert.NotNull(Assert.Single(firstOverdue.Records).OverdueNotice);
+        Assert.Null(Assert.Single(repeatedOverdue.Records).OverdueNotice);
+        Assert.NotNull(Assert.Single(becameEvictable.Records).EvictionNotice);
+        Assert.Null(Assert.Single(repeatedEvictable.Records).EvictionNotice);
+        Assert.NotNull(Assert.Single(overdueAfterPayment.Records).OverdueNotice);
+        Assert.NotNull(Assert.Single(previouslyAbsent.Records).EvictionNotice);
+    }
+
+    [Fact]
+    public async Task Eviction_queue_starts_twenty_four_hours_after_notice_is_sent()
+    {
+        var snapshots = new SnapshotRepository();
+        var tenant = new Tenant
+        {
+            Id = "tenant-1",
+            PropertyId = "property-1",
+            Cid = 99,
+            DiscordId = "727075012489510944"
+        };
+        var property = new Property { Id = "property-1", PropertyId = 8, PropertyName = "Marina Drive 8" };
+        property.SetTenantForPersistence(tenant.Id);
+        property.SetStatusForPersistence(PropertyStatus.Paid);
+        var service = new RentSyncService(
+            snapshots,
+            new TenantRepository(tenant),
+            new PropertyRepository(property),
+            new StatusHistoryRepository(),
+            new UserRepository(new User { Id = "owner-1", DisplayName = "Divine", Role = UserRole.Owner }),
+            new GoogleSheetsSyncService(),
+            new AuditRepository());
+
+        var synced = await service.SyncAsync(
+            new RentSyncRequest(Export("Evictable")), "owner-1", default);
+        Assert.Empty(await service.GetEvictionQueueAsync(default));
+
+        await service.SetResolutionAsync(synced.Id, 1, true, "owner-1", default);
+        var waiting = Assert.Single(await service.GetEvictionQueueAsync(default));
+        Assert.False(waiting.IsReady);
+
+        var stored = await snapshots.GetByIdAsync(synced.Id, default);
+        Assert.NotNull(stored);
+        Assert.Single(stored.Records).ResolvedAt = DateTime.UtcNow.AddHours(-25);
+        await snapshots.UpdateAsync(stored, default);
+
+        var ready = Assert.Single(await service.GetEvictionQueueAsync(default));
+        Assert.True(ready.IsReady);
+        Assert.Equal("property-1", ready.PropertyId);
+    }
+
+    private static RentSyncService CreateService(SnapshotRepository snapshots) => new(
+        snapshots,
+        new TenantRepository(),
+        new PropertyRepository(),
+        new StatusHistoryRepository(),
+        new UserRepository(new User { Id = "owner-1", DisplayName = "Divine", Role = UserRole.Owner }),
+        new GoogleSheetsSyncService(),
+        new AuditRepository());
+
+    private static string Export(string status, string address = "Marina Drive 8") => $"""
+        Status,Address,Interior,Renter CID,Renter Name,Phone,Income,Cost
+        {status},{address},Trevor's Trailer,99,Ashwin Patil,333-4444,$2,000,$1,000
+        """;
+
     private sealed class SnapshotRepository : IRentSyncRepository
     {
-        private RentSyncSnapshot? _snapshot;
-        public Task<RentSyncSnapshot?> GetCurrentAsync(CancellationToken cancellationToken) => Task.FromResult(_snapshot);
-        public Task<RentSyncSnapshot?> GetByIdAsync(string id, CancellationToken cancellationToken) => Task.FromResult(_snapshot?.Id == id ? _snapshot : null);
+        private readonly List<RentSyncSnapshot> _snapshots = [];
+        public Task<RentSyncSnapshot?> GetCurrentAsync(CancellationToken cancellationToken) => Task.FromResult(_snapshots.LastOrDefault());
+        public Task<RentSyncSnapshot?> GetByIdAsync(string id, CancellationToken cancellationToken) => Task.FromResult(_snapshots.FirstOrDefault(x => x.Id == id));
         public Task<IReadOnlyList<RentSyncSnapshot>> GetAllAsync(CancellationToken cancellationToken) =>
-            Task.FromResult<IReadOnlyList<RentSyncSnapshot>>(_snapshot is null ? [] : [_snapshot]);
+            Task.FromResult<IReadOnlyList<RentSyncSnapshot>>(_snapshots.AsEnumerable().Reverse().ToList());
         public Task SaveCurrentAsync(RentSyncSnapshot snapshot, CancellationToken cancellationToken)
         {
-            snapshot.Id = "snapshot-1";
-            snapshot.UpdatedAt = DateTime.UtcNow;
-            _snapshot = snapshot;
+            snapshot.Id = $"snapshot-{_snapshots.Count + 1}";
+            snapshot.UpdatedAt = DateTime.UtcNow.AddTicks(_snapshots.Count);
+            _snapshots.Add(snapshot);
             return Task.CompletedTask;
         }
-        public Task UpdateAsync(RentSyncSnapshot snapshot, CancellationToken cancellationToken) { _snapshot = snapshot; return Task.CompletedTask; }
-        public Task DeleteAsync(string id, CancellationToken cancellationToken) { _snapshot = null; return Task.CompletedTask; }
+        public Task UpdateAsync(RentSyncSnapshot snapshot, CancellationToken cancellationToken)
+        {
+            var index = _snapshots.FindIndex(x => x.Id == snapshot.Id);
+            if (index >= 0) _snapshots[index] = snapshot;
+            return Task.CompletedTask;
+        }
+        public Task DeleteAsync(string id, CancellationToken cancellationToken)
+        {
+            _snapshots.RemoveAll(x => x.Id == id);
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class UserRepository(params User[] values) : IUserRepository

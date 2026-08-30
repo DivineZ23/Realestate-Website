@@ -15,6 +15,7 @@ import {
   RecruitmentStatus,
   RentSyncSnapshot,
   EvictionHistory,
+  EvictionQueueItem,
   Tenant,
 } from '../models/management.models';
 import { Block, UpsertBlockRequest } from '../models/property.models';
@@ -193,6 +194,9 @@ export class NoticeService {
   }
   snapshots(): Observable<RentSyncSnapshot[]> {
     return this.api.get(API_ENDPOINTS.notices.snapshots);
+  }
+  evictionQueue(): Observable<EvictionQueueItem[]> {
+    return this.api.get(API_ENDPOINTS.notices.evictionQueue);
   }
   sync(rawData: string): Observable<RentSyncSnapshot> {
     return this.api.post(API_ENDPOINTS.notices.sync, { rawData });

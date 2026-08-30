@@ -10,7 +10,11 @@ namespace ImperialEstates.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/properties")]
-public sealed class PropertiesController(PropertyService service, IValidator<UpsertPropertyRequest> propertyValidator, IValidator<AssignTenantRequest> tenantValidator) : ControllerBase
+public sealed class PropertiesController(
+    PropertyService service,
+    IValidator<UpsertPropertyRequest> propertyValidator,
+    IValidator<AssignTenantRequest> tenantValidator,
+    IValidator<CreatePropertyBookingRequest> bookingValidator) : ControllerBase
 {
     [AllowAnonymous, HttpGet("available")]
     public Task<PagedResult<PublicPropertyDto>> Available([FromQuery] PropertyQuery query, CancellationToken ct) => service.GetAvailableAsync(query, ct);
@@ -23,6 +27,10 @@ public sealed class PropertiesController(PropertyService service, IValidator<Ups
 
     [Authorize(Policy = "ApprovedUser"), HttpGet]
     public Task<PagedResult<PropertyDto>> All([FromQuery] PropertyQuery query, CancellationToken ct) => service.GetAllAsync(query, ct);
+
+    [Authorize(Policy = "ApprovedUser"), HttpGet("bookings")]
+    public Task<IReadOnlyList<PropertyBookingGroupDto>> AllBookings(CancellationToken ct) =>
+        service.GetAllBookingGroupsAsync(ct);
 
     [Authorize(Policy = "ApprovedUser"), HttpGet("{id}/manage")]
     public Task<PropertyDto> Details(string id, CancellationToken ct) => service.GetAsync(id, ct);
@@ -54,6 +62,26 @@ public sealed class PropertiesController(PropertyService service, IValidator<Ups
 
     [Authorize(Policy = "ApprovedUser"), HttpPost("{id}/evict")]
     public Task<PropertyDto> Evict(string id, EvictTenantRequest request, CancellationToken ct) => service.EvictAsync(id, request, User.UserId(), ct);
+
+    [Authorize(Policy = "ApprovedUser"), HttpGet("{id}/bookings")]
+    public Task<IReadOnlyList<PropertyBookingDto>> Bookings(string id, CancellationToken ct) =>
+        service.GetBookingsAsync(id, ct);
+
+    [Authorize(Policy = "ApprovedUser"), HttpPost("{id}/bookings")]
+    public async Task<ActionResult<PropertyBookingDto>> CreateBooking(
+        string id, CreatePropertyBookingRequest request, CancellationToken ct)
+    {
+        await bookingValidator.ValidateAndThrowAsync(request, ct);
+        var value = await service.CreateBookingAsync(id, request, User.UserId(), ct);
+        return Created($"/api/v1/properties/{id}/bookings/{value.Id}", value);
+    }
+
+    [Authorize(Policy = "ApprovedUser"), HttpDelete("{id}/bookings/{bookingId}")]
+    public async Task<IActionResult> CancelBooking(string id, string bookingId, CancellationToken ct)
+    {
+        await service.CancelBookingAsync(id, bookingId, User.UserId(), ct);
+        return NoContent();
+    }
 
     [Authorize(Policy = "ApprovedUser"), HttpGet("{id}/history")]
     public Task<IReadOnlyList<PropertyStatusHistoryDto>> History(string id, CancellationToken ct) => service.GetHistoryAsync(id, ct);

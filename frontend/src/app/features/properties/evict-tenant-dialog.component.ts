@@ -8,7 +8,11 @@ import {
   MatDialogRef,
   MatDialogTitle,
 } from '@angular/material/dialog';
-import { Property } from '../../core/models/property.models';
+
+export interface EvictTenantDialogData {
+  propertyName: string;
+  tenantName?: string;
+}
 
 @Component({
   selector: 'app-evict-tenant-dialog',
@@ -89,7 +93,7 @@ import { Property } from '../../core/models/property.models';
   ],
 })
 export class EvictTenantDialogComponent {
-  readonly data = inject<Property>(MAT_DIALOG_DATA);
+  readonly data = inject<EvictTenantDialogData>(MAT_DIALOG_DATA);
   private readonly ref = inject(MatDialogRef<EvictTenantDialogComponent>);
   reason = '';
   imageUrls = '';

@@ -30,6 +30,17 @@ public interface IPropertyRepository
     Task UpdateAsync(Property property, CancellationToken cancellationToken);
 }
 
+public interface IPropertyBookingRepository
+{
+    Task<IReadOnlyList<PropertyBooking>> GetAllActiveAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<PropertyBooking>> GetActiveByPropertyAsync(string propertyId, CancellationToken cancellationToken);
+    Task<PropertyBooking?> GetByIdAsync(string id, CancellationToken cancellationToken);
+    Task<long> CountActiveByPropertyAsync(string propertyId, CancellationToken cancellationToken);
+    Task CreateAsync(PropertyBooking booking, CancellationToken cancellationToken);
+    Task UpdateAsync(PropertyBooking booking, CancellationToken cancellationToken);
+    Task CloseActiveAsync(string propertyId, BookingStatus status, string actorId, CancellationToken cancellationToken);
+}
+
 public interface ITenantRepository
 {
     Task<PagedResult<Tenant>> QueryAsync(int page, int pageSize, CancellationToken cancellationToken);
@@ -55,6 +66,16 @@ public interface IUserRepository
 {
     Task<PagedResult<User>> QueryAsync(int page, int pageSize, ApprovalStatus? approval, AccessStatus? access, UserRole? role, CancellationToken cancellationToken);
     Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken);
+    async Task<IReadOnlyList<User>> GetByIdsAsync(IReadOnlyCollection<string> ids, CancellationToken cancellationToken)
+    {
+        var values = new List<User>();
+        foreach (var id in ids)
+        {
+            var value = await GetByIdAsync(id, cancellationToken);
+            if (value is not null) values.Add(value);
+        }
+        return values;
+    }
     Task<User?> GetByDiscordIdAsync(string discordId, CancellationToken cancellationToken);
     Task<User?> GetByCidAsync(int cid, CancellationToken cancellationToken);
     Task<long> CountActiveManagersAsync(CancellationToken cancellationToken);

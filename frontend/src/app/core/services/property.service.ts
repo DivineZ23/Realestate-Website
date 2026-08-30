@@ -4,8 +4,11 @@ import { API_ENDPOINTS } from '../config/api-endpoints';
 import { PagedResult } from '../models/api.models';
 import {
   AssignTenantRequest,
+  CreatePropertyBookingRequest,
   EvictTenantRequest,
   Property,
+  PropertyBooking,
+  PropertyBookingGroup,
   PropertyQuery,
   PropertyStatus,
   PublicProperty,
@@ -52,6 +55,18 @@ export class PropertyService {
   }
   assignTenant(id: string, body: AssignTenantRequest): Observable<Property> {
     return this.api.post(`${API_ENDPOINTS.properties.root}/${id}/assign-tenant`, body);
+  }
+  bookings(id: string): Observable<PropertyBooking[]> {
+    return this.api.get(`${API_ENDPOINTS.properties.root}/${id}/bookings`);
+  }
+  bookingGroups(): Observable<PropertyBookingGroup[]> {
+    return this.api.get(`${API_ENDPOINTS.properties.root}/bookings`);
+  }
+  createBooking(id: string, body: CreatePropertyBookingRequest): Observable<PropertyBooking> {
+    return this.api.post(`${API_ENDPOINTS.properties.root}/${id}/bookings`, body);
+  }
+  cancelBooking(propertyId: string, bookingId: string): Observable<void> {
+    return this.api.delete(`${API_ENDPOINTS.properties.root}/${propertyId}/bookings/${bookingId}`);
   }
   evict(id: string, request: EvictTenantRequest): Observable<Property> {
     return this.api.post(`${API_ENDPOINTS.properties.root}/${id}/evict`, request);

@@ -27,6 +27,48 @@ public sealed class RentSyncService(
     public async Task<IReadOnlyList<RentSyncSnapshotDto>> GetAllAsync(CancellationToken ct) =>
         (await snapshots.GetAllAsync(ct)).Select(Map).ToList();
 
+    public async Task<IReadOnlyList<EvictionQueueItemDto>> GetEvictionQueueAsync(CancellationToken ct)
+    {
+        var allSnapshots = await snapshots.GetAllAsync(ct);
+        var currentSnapshot = allSnapshots.FirstOrDefault();
+        if (currentSnapshot is null) return [];
+
+        var now = DateTime.UtcNow;
+        var result = new List<EvictionQueueItemDto>();
+        foreach (var current in currentSnapshot.Records.Where(record => record.Status == "evictable"))
+        {
+            var property = !string.IsNullOrWhiteSpace(current.PropertyId)
+                ? await properties.GetByIdAsync(current.PropertyId, ct)
+                : await properties.GetByNameAsync(current.Address, ct);
+            if (property is null || property.Status != PropertyStatus.Evictable || property.CurrentTenantId is null)
+                continue;
+
+            var latestNotice = allSnapshots
+                .SelectMany(snapshot => snapshot.Records)
+                .FirstOrDefault(record =>
+                    record.Status == "evictable" &&
+                    record.NoticeGenerated != false &&
+                    IsSameProperty(current, record));
+            if (latestNotice is not { IsResolved: true, ResolvedAt: not null }) continue;
+
+            var eligibleAt = latestNotice.ResolvedAt.Value.AddHours(24);
+            result.Add(new EvictionQueueItemDto(
+                property.Id,
+                property.PropertyId,
+                property.PropertyName,
+                current.RenterName,
+                current.Cid,
+                current.Phone,
+                current.DiscordId,
+                current.Income,
+                latestNotice.ResolvedAt.Value,
+                eligibleAt,
+                eligibleAt <= now));
+        }
+
+        return result.OrderBy(item => item.EligibleAt).ToList();
+    }
+
     public async Task DeleteAsync(string id, string actorId, CancellationToken ct)
     {
         await snapshots.DeleteAsync(id, ct);
@@ -83,6 +125,7 @@ public sealed class RentSyncService(
     public async Task<RentSyncSnapshotDto> SyncAsync(RentSyncRequest request, string actorId, CancellationToken ct)
     {
         var records = Parse(request.RawData);
+        var previousSnapshot = await snapshots.GetCurrentAsync(ct);
         var cids = records.Where(x => x.Cid.HasValue).Select(x => x.Cid!.Value).Distinct().ToArray();
         var matchedTenants = await tenants.GetByCidsAsync(cids, ct);
         var tenantByCid = matchedTenants
@@ -108,7 +151,10 @@ public sealed class RentSyncService(
                     ? await properties.GetByNameAsync(record.Address, ct)
                     : null;
             if (property is not null)
+            {
+                record.PropertyId = property.Id;
                 await ApplyPropertyStatusAsync(property, record, actorId, ct);
+            }
 
             if (tenant is null) continue;
             var tenantChanged = false;
@@ -129,6 +175,8 @@ public sealed class RentSyncService(
                 await tenants.UpdateAsync(tenant, ct);
             }
         }
+
+        MarkNoticeTransitions(records, previousSnapshot?.Records ?? []);
 
         var snapshot = new RentSyncSnapshot
         {
@@ -151,6 +199,8 @@ public sealed class RentSyncService(
                 ["total"] = records.Count,
                 ["overdue"] = records.Count(x => x.Status == "overdue"),
                 ["evictable"] = records.Count(x => x.Status == "evictable"),
+                ["overdueNoticesGenerated"] = records.Count(x => x.Status == "overdue" && x.NoticeGenerated == true),
+                ["evictionNoticesGenerated"] = records.Count(x => x.Status == "evictable" && x.NoticeGenerated == true),
                 ["unmappedTenants"] = records.Count(x => x.Cid.HasValue && string.IsNullOrWhiteSpace(x.DiscordId)),
                 ["googleSheetSyncStatus"] = snapshot.GoogleSheetSyncStatus,
             },
@@ -346,6 +396,48 @@ public sealed class RentSyncService(
 
     private static string? Optional(string value) => value.Trim().Equals("N/A", StringComparison.OrdinalIgnoreCase) ? null : value.Trim();
 
+    private static void MarkNoticeTransitions(
+        IReadOnlyList<RentSyncRecord> currentRecords,
+        IReadOnlyList<RentSyncRecord> previousRecords)
+    {
+        foreach (var current in currentRecords)
+        {
+            var previous = FindPreviousRecord(current, previousRecords);
+            current.NoticeGenerated = current.Status switch
+            {
+                "overdue" => previous is null || previous.Status == "paid",
+                "evictable" => previous is null || previous.Status is "paid" or "overdue",
+                _ => false,
+            };
+        }
+    }
+
+    private static RentSyncRecord? FindPreviousRecord(
+        RentSyncRecord current,
+        IReadOnlyList<RentSyncRecord> previousRecords)
+    {
+        if (!string.IsNullOrWhiteSpace(current.PropertyId))
+        {
+            var propertyMatch = previousRecords.FirstOrDefault(previous =>
+                string.Equals(previous.PropertyId, current.PropertyId, StringComparison.Ordinal));
+            if (propertyMatch is not null) return propertyMatch;
+        }
+
+        var normalizedAddress = NormalizeAddress(current.Address);
+        return previousRecords.FirstOrDefault(previous =>
+            NormalizeAddress(previous.Address) == normalizedAddress);
+    }
+
+    private static bool IsSameProperty(RentSyncRecord left, RentSyncRecord right)
+    {
+        if (!string.IsNullOrWhiteSpace(left.PropertyId) && !string.IsNullOrWhiteSpace(right.PropertyId))
+            return string.Equals(left.PropertyId, right.PropertyId, StringComparison.Ordinal);
+        return NormalizeAddress(left.Address) == NormalizeAddress(right.Address);
+    }
+
+    private static string NormalizeAddress(string value) =>
+        Regex.Replace(value.Trim(), @"\s+", " ").ToUpperInvariant();
+
     private RentSyncSnapshotDto Map(RentSyncSnapshot? snapshot)
     {
         if (snapshot is null) return new(string.Empty, null, null, 0, 0, 0, 0, 0, 0,
@@ -355,8 +447,8 @@ public sealed class RentSyncService(
             record.RowNumber, record.Status, record.PaidThrough, record.Address, record.Interior,
             record.Cid, record.RenterName, record.Phone, record.Income, record.Cost,
             record.TenantId, record.DiscordId, !string.IsNullOrWhiteSpace(record.TenantId),
-            record.Status == "overdue" ? OverdueNotice(record, evictionDate) : null,
-            record.Status == "evictable" ? EvictionNotice(record) : null,
+            record.Status == "overdue" && record.NoticeGenerated != false ? OverdueNotice(record, evictionDate) : null,
+            record.Status == "evictable" && record.NoticeGenerated != false ? EvictionNotice(record) : null,
             record.IsResolved, record.ResolvedByUserId, record.ResolvedByDisplayName, record.ResolvedAt)).ToList();
         return new(
             snapshot.Id,

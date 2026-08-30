@@ -28,6 +28,7 @@ import {
   LucideScrollText,
   LucideSettings,
   LucideShieldCheck,
+  LucideTimer,
   LucideUploadCloud,
   LucideUserRoundCheck,
   LucideUserRoundX,
@@ -62,6 +63,7 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
     LucideBlocks,
     LucideContactRound,
     LucideFileWarning,
+    LucideTimer,
     LucideGavel,
     LucideGauge,
     LucideHistory,
@@ -163,7 +165,14 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
         </section>
         <section
           class="nav-section"
-          *ngIf="hasAny(['portfolio.properties', 'portfolio.blocks', 'portfolio.tenants'])"
+          *ngIf="
+            hasAny([
+              'portfolio.properties',
+              'portfolio.blocks',
+              'portfolio.tenants',
+              'portfolio.bookings',
+            ])
+          "
         >
           <button
             class="section-toggle"
@@ -183,6 +192,13 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
                 routerLinkActive="active"
               >
                 <svg lucideBuilding2></svg><b>Properties</b>
+              </a>
+              <a
+                *ngIf="access.canAccess('portfolio.bookings')"
+                routerLink="/dashboard/bookings"
+                routerLinkActive="active"
+              >
+                <svg lucideClipboardList></svg><b>Bookings</b>
               </a>
               <a
                 *ngIf="access.canAccess('portfolio.blocks')"
@@ -208,7 +224,8 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
               'notices.overdue',
               'notices.eviction',
               'notices.overdueList',
-              'notices.evictionList',
+              'notices.evictionQueue',
+              'notices.evictionHistory',
               'notices.sync',
               'notices.syncedDataRecords',
             ])
@@ -248,11 +265,18 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
                 <svg lucideList></svg><b>Overdue List</b>
               </a>
               <a
-                *ngIf="access.canAccess('notices.evictionList')"
-                routerLink="/dashboard/notices/eviction-list"
+                *ngIf="access.canAccess('notices.evictionQueue')"
+                routerLink="/dashboard/notices/eviction-queue"
                 routerLinkActive="active"
               >
-                <svg lucideListX></svg><b>Eviction List</b>
+                <svg lucideTimer></svg><b>Eviction Queue</b>
+              </a>
+              <a
+                *ngIf="access.canAccess('notices.evictionHistory')"
+                routerLink="/dashboard/notices/eviction-history"
+                routerLinkActive="active"
+              >
+                <svg lucideListX></svg><b>Eviction History</b>
               </a>
               <ng-container *ngIf="auth.isManager() && access.canAccess('notices.sync')">
                 <a routerLink="/dashboard/notices/sync" routerLinkActive="active">

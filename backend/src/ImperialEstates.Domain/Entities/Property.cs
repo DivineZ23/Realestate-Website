@@ -31,10 +31,13 @@ public sealed class Property : BaseDocument
     public void MarkBooked(string? enquiryId)
     {
         EnsureActive();
-        if (Status != PropertyStatus.Available)
-            throw new DomainRuleException("Only an available property can be booked.", "INVALID_STATUS_TRANSITION");
-        Status = PropertyStatus.Booked;
-        StatusChangedAt = DateTime.UtcNow;
+        if (Status is not (PropertyStatus.Available or PropertyStatus.Booked))
+            throw new DomainRuleException("Only an available or booked property can receive bookings.", "INVALID_STATUS_TRANSITION");
+        if (Status != PropertyStatus.Booked)
+        {
+            Status = PropertyStatus.Booked;
+            StatusChangedAt = DateTime.UtcNow;
+        }
         BookedByEnquiryId = enquiryId;
         UnavailableReason = null;
         Touch();

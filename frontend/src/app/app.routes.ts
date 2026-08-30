@@ -105,12 +105,45 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'properties/:id/book',
+        canActivate: [pageAccessGuard],
+        data: {
+          accessKey: 'portfolio.properties.book',
+          parentAccessKey: 'portfolio.properties',
+        },
+        loadComponent: () =>
+          import('./features/properties/property-booking.component').then(
+            (m) => m.PropertyBookingComponent,
+          ),
+      },
+      {
+        path: 'properties/:id/bookings',
+        canActivate: [pageAccessGuard],
+        data: {
+          accessKey: 'portfolio.properties.book',
+          parentAccessKey: 'portfolio.properties',
+        },
+        loadComponent: () =>
+          import('./features/properties/property-bookings.component').then(
+            (m) => m.PropertyBookingsComponent,
+          ),
+      },
+      {
         path: 'blocks',
         data: { accessKey: 'portfolio.blocks' },
         canActivate: [pageAccessGuard],
         loadComponent: () =>
           import('./features/blocks/block-management.component').then(
             (m) => m.BlockManagementComponent,
+          ),
+      },
+      {
+        path: 'bookings',
+        data: { accessKey: 'portfolio.bookings' },
+        canActivate: [pageAccessGuard],
+        loadComponent: () =>
+          import('./features/properties/portfolio-bookings.component').then(
+            (m) => m.PortfolioBookingsComponent,
           ),
       },
       {
@@ -170,11 +203,23 @@ export const routes: Routes = [
           import('./features/notices/notices.component').then((m) => m.NoticesComponent),
       },
       {
-        path: 'notices/eviction-list',
-        data: { mode: 'evictionList', accessKey: 'notices.evictionList' },
+        path: 'notices/eviction-queue',
+        data: { mode: 'evictionQueue', accessKey: 'notices.evictionQueue' },
         canActivate: [pageAccessGuard],
         loadComponent: () =>
           import('./features/notices/notices.component').then((m) => m.NoticesComponent),
+      },
+      {
+        path: 'notices/eviction-history',
+        data: { mode: 'evictionHistory', accessKey: 'notices.evictionHistory' },
+        canActivate: [pageAccessGuard],
+        loadComponent: () =>
+          import('./features/notices/notices.component').then((m) => m.NoticesComponent),
+      },
+      {
+        path: 'notices/eviction-list',
+        pathMatch: 'full',
+        redirectTo: 'notices/eviction-history',
       },
       {
         path: 'notices/sync',

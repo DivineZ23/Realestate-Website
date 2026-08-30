@@ -65,6 +65,7 @@ export interface Property {
   tenantPhoneNumber?: string;
   rentPaidThrough?: string;
   bookedByEnquiryId?: string;
+  bookingCount: number;
   unavailableReason?: string;
   isFeatured: boolean;
   isActive: boolean;
@@ -80,6 +81,7 @@ export type PublicProperty = Omit<
   | 'tenantPhoneNumber'
   | 'rentPaidThrough'
   | 'bookedByEnquiryId'
+  | 'bookingCount'
   | 'unavailableReason'
   | 'isActive'
   | 'updatedAt'
@@ -148,4 +150,40 @@ export interface AssignTenantRequest {
 export interface EvictTenantRequest {
   reason: string;
   storageImageUrls: string[];
+}
+
+export interface PropertyBooking {
+  id: string;
+  propertyId: string;
+  cid: number;
+  fullName: string;
+  phoneNumber: string;
+  discordId: string;
+  monthlyRent: number;
+  bookingAmount: number;
+  notes?: string;
+  status: 'active' | 'cancelled' | 'converted';
+  createdByUserId?: string;
+  createdByDisplayName?: string;
+  createdAt: string;
+}
+
+export interface PropertyBookingGroup {
+  propertyId: string;
+  propertyNumber: number;
+  propertyName: string;
+  blockName: string;
+  type: PropertyType;
+  status: PropertyStatus;
+  bookings: PropertyBooking[];
+}
+
+export interface CreatePropertyBookingRequest {
+  cid: number;
+  fullName: string;
+  phoneNumber: string;
+  discordId: string;
+  monthlyRent: number;
+  bookingAmount: number;
+  notes?: string;
 }

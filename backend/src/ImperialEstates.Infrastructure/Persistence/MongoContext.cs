@@ -16,6 +16,7 @@ public sealed class MongoContext
     public IMongoDatabase Database { get; }
     public IMongoCollection<Block> Blocks => Database.GetCollection<Block>("blocks");
     public IMongoCollection<Property> Properties => Database.GetCollection<Property>("properties");
+    public IMongoCollection<PropertyBooking> PropertyBookings => Database.GetCollection<PropertyBooking>("property_bookings");
     public IMongoCollection<Tenant> Tenants => Database.GetCollection<Tenant>("tenants");
     public IMongoCollection<RentSyncSnapshot> RentSyncSnapshots => Database.GetCollection<RentSyncSnapshot>("rent_sync_snapshots");
     public IMongoCollection<User> Users => Database.GetCollection<User>("users");

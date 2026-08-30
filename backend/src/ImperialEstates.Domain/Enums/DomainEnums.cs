@@ -75,4 +75,5 @@ public static class UserRolePermissions
 public enum ApprovalStatus { Pending, Approved, Rejected }
 public enum AccessStatus { Active, Pending, Revoked }
 public enum EnquiryStatus { New, Contacted, ViewingScheduled, Booked, Closed, Rejected }
+public enum BookingStatus { Active, Cancelled, Converted }
 public enum RecruitmentStatus { Pending, Accepted, Rejected }

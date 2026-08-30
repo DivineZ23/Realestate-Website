@@ -15,6 +15,10 @@ public sealed class NoticesController(RentSyncService service) : ControllerBase
     [Authorize(Policy = "ApprovedUser"), HttpGet("snapshots")]
     public Task<IReadOnlyList<RentSyncSnapshotDto>> Snapshots(CancellationToken ct) => service.GetAllAsync(ct);
 
+    [Authorize(Policy = "ApprovedUser"), HttpGet("eviction-queue")]
+    public Task<IReadOnlyList<EvictionQueueItemDto>> EvictionQueue(CancellationToken ct) =>
+        service.GetEvictionQueueAsync(ct);
+
     [Authorize(Policy = "Manager"), HttpPost("sync")]
     public Task<RentSyncSnapshotDto> Sync(RentSyncRequest request, CancellationToken ct) =>
         service.SyncAsync(request, User.UserId(), ct);

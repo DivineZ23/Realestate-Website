@@ -28,6 +28,7 @@ public static class DependencyInjection
         services.AddSingleton<SeedDataService>();
         services.AddScoped<IBlockRepository, BlockRepository>();
         services.AddScoped<IPropertyRepository, PropertyRepository>();
+        services.AddScoped<IPropertyBookingRepository, PropertyBookingRepository>();
         services.AddScoped<ITenantRepository, TenantRepository>();
         services.AddScoped<IRentSyncRepository, RentSyncRepository>();
         services.AddScoped<IUserRepository, UserRepository>();

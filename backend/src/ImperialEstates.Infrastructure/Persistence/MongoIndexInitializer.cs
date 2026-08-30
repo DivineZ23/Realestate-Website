@@ -19,6 +19,10 @@ public sealed class MongoIndexInitializer(MongoContext db)
             new CreateIndexModel<Property>(Builders<Property>.IndexKeys.Ascending(x => x.Status).Ascending(x => x.IsActive).Ascending(x => x.IsDeleted), new() { Name = "ix_property_public" }),
             new CreateIndexModel<Property>(Builders<Property>.IndexKeys.Text(x => x.PropertyName).Text(x => x.Description), new() { Name = "ix_property_search" })
         ], cancellationToken);
+        await db.PropertyBookings.Indexes.CreateManyAsync([
+            new CreateIndexModel<PropertyBooking>(Builders<PropertyBooking>.IndexKeys.Ascending(x => x.PropertyId).Ascending(x => x.Status).Descending(x => x.CreatedAt), new() { Name = "ix_booking_property_status_date" }),
+            new CreateIndexModel<PropertyBooking>(Builders<PropertyBooking>.IndexKeys.Ascending(x => x.Cid).Ascending(x => x.Status), new() { Name = "ix_booking_cid_status" })
+        ], cancellationToken);
         await db.Users.Indexes.CreateManyAsync([
             new CreateIndexModel<User>(Builders<User>.IndexKeys.Ascending(x => x.DiscordUserId), new() { Unique = true, Name = "ux_user_discord" }),
             new CreateIndexModel<User>(Builders<User>.IndexKeys.Ascending(x => x.Cid), new CreateIndexOptions<User>

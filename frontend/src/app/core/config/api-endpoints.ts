@@ -19,6 +19,7 @@ export const API_ENDPOINTS = {
   notices: {
     snapshot: '/notices/snapshot',
     snapshots: '/notices/snapshots',
+    evictionQueue: '/notices/eviction-queue',
     sync: '/notices/sync',
     retryGoogleSheet: '/notices/sync/google-sheet/retry',
   },

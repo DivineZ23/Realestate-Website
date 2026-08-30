@@ -18,6 +18,7 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Ex
                 KeyNotFoundException => (404, "NOT_FOUND", exception.Message, null),
                 UnauthorizedAccessException => (403, "FORBIDDEN", "You do not have permission to perform this action.", null),
                 MongoWriteException mongo when mongo.WriteError.Category == ServerErrorCategory.DuplicateKey => (409, "DUPLICATE_VALUE", "A record with the same unique identifier already exists.", null),
+                HttpRequestException http when http.StatusCode is not null => (502, "STORAGE_PROVIDER_ERROR", "The image storage provider rejected the upload. Verify the Zipline URL and API token.", null),
                 _ => (500, "SERVER_ERROR", "An unexpected server error occurred.", null)
             };
             if (status >= 500) logger.LogError(exception, "Unhandled request exception. TraceId {TraceId}", context.TraceIdentifier);
@@ -28,4 +29,3 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Ex
         }
     }
 }
-

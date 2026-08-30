@@ -41,9 +41,13 @@ public sealed class ZiplineFileStorageService(HttpClient httpClient, IOptions<St
         file.Headers.ContentType = new MediaTypeHeaderValue(contentType);
         content.Add(file, "file", Path.GetFileName(fileName));
         using var request = new HttpRequestMessage(HttpMethod.Post, $"{_options.ZiplineBaseUrl.TrimEnd('/')}/api/upload") { Content = content };
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ZiplineApiToken);
+        request.Headers.TryAddWithoutValidation("Authorization", _options.ZiplineApiToken.Trim());
         using var response = await httpClient.SendAsync(request, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+            throw new HttpRequestException(
+                $"Zipline rejected the image upload with HTTP {(int)response.StatusCode}.",
+                null,
+                response.StatusCode);
         var result = await response.Content.ReadFromJsonAsync<ZiplineResponse>(cancellationToken) ?? throw new InvalidOperationException("Zipline returned an empty response.");
         return new(result.Files.FirstOrDefault() ?? throw new InvalidOperationException("Zipline did not return an uploaded URL."), fileName, stream.Length);
     }

@@ -154,8 +154,13 @@ import { depositAtLeastRentValidator } from '../../core/validators/financial.val
       .page-title {
         display: flex;
         justify-content: space-between;
-        align-items: end;
+        align-items: center;
+        gap: 20px;
+        width: calc(100% - 360px);
         margin-bottom: 24px;
+      }
+      .page-title .btn {
+        flex: 0 0 auto;
       }
       .page-title h1 {
         font-size: 2.5rem;
@@ -238,6 +243,9 @@ import { depositAtLeastRentValidator } from '../../core/validators/financial.val
         font-weight: 650;
       }
       @media (max-width: 1000px) {
+        .page-title {
+          width: 100%;
+        }
         .editor-grid {
           grid-template-columns: 1fr;
         }

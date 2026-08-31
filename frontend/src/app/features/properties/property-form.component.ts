@@ -200,6 +200,13 @@ import { depositAtLeastRentValidator } from '../../core/validators/financial.val
         <section class="checks" [formGroup]="form">
           <label><input type="checkbox" formControlName="isFeatured" /> Feature publicly</label
           ><label><input type="checkbox" formControlName="isActive" /> Active property</label>
+          <label class="booking-setting">
+            <input type="checkbox" formControlName="allowOccupiedBookings" />
+            <span>
+              Allow bookings while occupied
+              <small>Show the Book action even while this property has an active tenant.</small>
+            </span>
+          </label>
         </section>
       </div>
       <aside>
@@ -334,11 +341,25 @@ import { depositAtLeastRentValidator } from '../../core/validators/financial.val
       }
       .checks {
         display: flex;
+        flex-wrap: wrap;
         gap: 30px;
       }
       .checks label {
         display: flex;
         gap: 8px;
+      }
+      .booking-setting {
+        flex: 1 1 100%;
+        align-items: flex-start;
+      }
+      .booking-setting span {
+        display: grid;
+        gap: 3px;
+      }
+      .booking-setting small {
+        color: var(--muted);
+        font-size: 0.7rem;
+        font-weight: 500;
       }
       .summary {
         padding: 22px;
@@ -420,6 +441,7 @@ export class PropertyFormComponent {
       securityDeposit: new FormControl<number | null>(null, Validators.min(0)),
       isFeatured: new FormControl(false, { nonNullable: true }),
       isActive: new FormControl(true, { nonNullable: true }),
+      allowOccupiedBookings: new FormControl(false, { nonNullable: true }),
     },
     { validators: depositAtLeastRentValidator() },
   );
@@ -507,6 +529,7 @@ export class PropertyFormComponent {
       images: this.images(),
       isFeatured: raw.isFeatured,
       isActive: raw.isActive,
+      allowOccupiedBookings: raw.allowOccupiedBookings,
     };
     const isEditing = Boolean(this.id());
     let request = isEditing ? this.service.update(this.id()!, body) : this.service.create(body);

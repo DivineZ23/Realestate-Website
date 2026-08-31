@@ -76,6 +76,7 @@ export interface Property {
   unavailableReason?: string;
   isFeatured: boolean;
   isActive: boolean;
+  allowOccupiedBookings: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -98,6 +99,7 @@ export type PublicProperty = Omit<
   | 'bookingCount'
   | 'unavailableReason'
   | 'isActive'
+  | 'allowOccupiedBookings'
   | 'updatedAt'
 >;
 
@@ -137,6 +139,7 @@ export interface UpsertPropertyRequest {
   images: string[];
   isFeatured: boolean;
   isActive: boolean;
+  allowOccupiedBookings: boolean;
 }
 
 export interface UpsertBlockRequest {
@@ -189,6 +192,7 @@ export interface PropertyBookingGroup {
   blockName: string;
   type: PropertyType;
   status: PropertyStatus;
+  allowOccupiedBookings: boolean;
   bookings: PropertyBooking[];
 }
 

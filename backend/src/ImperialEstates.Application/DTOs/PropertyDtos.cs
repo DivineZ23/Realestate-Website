@@ -32,6 +32,7 @@ public sealed record PropertyDto(
     decimal? TenantSecurityDeposit, string? TenantEmergencyContact, string? TenantNotes,
     DateTime? RentPaidThrough,
     string? BookedByEnquiryId, int BookingCount, string? UnavailableReason, bool IsFeatured, bool IsActive,
+    bool AllowOccupiedBookings,
     DateTime CreatedAt, DateTime UpdatedAt);
 
 public sealed record PublicPropertyDto(
@@ -45,7 +46,7 @@ public sealed record UpsertPropertyRequest(
     int PropertyId, string BlockId, string PropertyName, string? Description, PropertyType Type,
     string? Storage, decimal Rent, decimal? SecurityDeposit, int? Bedrooms, int? Bathrooms,
     int? Floor, decimal? Area, string? FurnishingStatus, IReadOnlyList<string>? Amenities,
-    IReadOnlyList<string>? Images, bool IsFeatured, bool IsActive = true);
+    IReadOnlyList<string>? Images, bool IsFeatured, bool IsActive = true, bool AllowOccupiedBookings = false);
 
 public sealed record ChangePropertyStatusRequest(PropertyStatus Status, string? Reason, string? EnquiryId);
 
@@ -68,7 +69,8 @@ public sealed record PropertyBookingDto(
 
 public sealed record PropertyBookingGroupDto(
     string PropertyId, int PropertyNumber, string PropertyName, string BlockName,
-    PropertyType Type, PropertyStatus Status, IReadOnlyList<PropertyBookingDto> Bookings);
+    PropertyType Type, PropertyStatus Status, bool AllowOccupiedBookings,
+    IReadOnlyList<PropertyBookingDto> Bookings);
 
 public sealed record PropertyStatusHistoryDto(
     string Id, PropertyStatus PreviousStatus, PropertyStatus NewStatus, string? Reason,

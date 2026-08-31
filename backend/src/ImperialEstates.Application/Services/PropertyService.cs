@@ -253,6 +253,7 @@ public sealed class PropertyService(
                 blockNames[property.BlockId],
                 property.Type,
                 property.Status,
+                property.AllowOccupiedBookings,
                 bookingsByProperty[property.Id].Select(booking => ToBookingDto(
                     booking,
                     !string.IsNullOrWhiteSpace(booking.CreatedBy) && creatorNames.TryGetValue(booking.CreatedBy, out var name)
@@ -387,6 +388,7 @@ public sealed class PropertyService(
         value.Bathrooms = request.Bathrooms; value.Floor = request.Floor; value.Area = request.Area;
         value.FurnishingStatus = request.FurnishingStatus?.Trim(); value.Amenities = request.Amenities?.Distinct(StringComparer.OrdinalIgnoreCase).ToList() ?? [];
         value.Images = request.Images?.Distinct().ToList() ?? []; value.IsFeatured = request.IsFeatured; value.IsActive = request.IsActive;
+        value.AllowOccupiedBookings = request.AllowOccupiedBookings;
         return value;
     }
 

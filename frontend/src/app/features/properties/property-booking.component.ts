@@ -40,7 +40,11 @@ import { depositAtLeastRentValidator } from '../../core/validators/financial.val
           <p class="eyebrow">Selected property</p>
           <h2>{{ selected.propertyName }}</h2>
           <span class="status">{{
-            selected.status === 'booked' ? 'Already booked' : 'Available'
+            selected.status === 'booked'
+              ? 'Already booked'
+              : selected.currentTenantId
+                ? 'Occupied · bookings enabled'
+                : 'Available'
           }}</span>
           <dl>
             <div>
@@ -298,7 +302,7 @@ export class PropertyBookingComponent {
   constructor() {
     this.propertyService.details(this.route.snapshot.paramMap.get('id')!).subscribe({
       next: (property) => {
-        if (property.status !== 'available' && property.status !== 'booked')
+        if (!this.canBook(property))
           this.loadFailed.set(true);
         else {
           this.property.set(property);
@@ -382,5 +386,15 @@ export class PropertyBookingComponent {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(value);
+  }
+
+  private canBook(property: Property): boolean {
+    return (
+      property.status === 'available' ||
+      property.status === 'booked' ||
+      (property.allowOccupiedBookings &&
+        Boolean(property.currentTenantId) &&
+        ['paid', 'overdue', 'evictable'].includes(property.status))
+    );
   }
 }

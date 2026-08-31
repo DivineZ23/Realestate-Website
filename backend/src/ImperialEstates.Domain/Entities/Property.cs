@@ -27,16 +27,25 @@ public sealed class Property : BaseDocument
     public string? UnavailableReason { get; private set; }
     public bool IsFeatured { get; set; }
     public bool IsActive { get; set; } = true;
+    public bool AllowOccupiedBookings { get; set; }
 
     public void MarkBooked(string? enquiryId)
     {
         EnsureActive();
-        if (Status is not (PropertyStatus.Available or PropertyStatus.Booked))
-            throw new DomainRuleException("Only an available or booked property can receive bookings.", "INVALID_STATUS_TRANSITION");
+        var isOccupied = CurrentTenantId is not null &&
+            Status is PropertyStatus.Paid or PropertyStatus.Overdue or PropertyStatus.Evictable;
+        if (Status is not (PropertyStatus.Available or PropertyStatus.Booked) &&
+            !(isOccupied && AllowOccupiedBookings))
+            throw new DomainRuleException(
+                "Only an available, booked, or booking-enabled occupied property can receive bookings.",
+                "INVALID_STATUS_TRANSITION");
         if (Status != PropertyStatus.Booked)
         {
-            Status = PropertyStatus.Booked;
-            StatusChangedAt = DateTime.UtcNow;
+            if (!isOccupied)
+            {
+                Status = PropertyStatus.Booked;
+                StatusChangedAt = DateTime.UtcNow;
+            }
         }
         BookedByEnquiryId = enquiryId;
         UnavailableReason = null;

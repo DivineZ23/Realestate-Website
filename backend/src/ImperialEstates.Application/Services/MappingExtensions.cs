@@ -21,7 +21,7 @@ internal static class MappingExtensions
         tenant?.EmergencyContact, tenant?.Notes,
         tenant is null ? null : tenant.RentPaidThrough ?? tenant.StartDate.Date.AddDays(7),
         value.BookedByEnquiryId, bookingCount, value.UnavailableReason, value.IsFeatured,
-        value.IsActive, value.CreatedAt, value.UpdatedAt);
+        value.IsActive, value.AllowOccupiedBookings, value.CreatedAt, value.UpdatedAt);
 
     public static PublicPropertyDto ToPublicDto(this Property value, string blockName) => new(
         value.Id, value.PropertyId, value.BlockId, blockName, value.PropertyName, value.Description,

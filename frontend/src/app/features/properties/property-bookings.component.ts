@@ -43,7 +43,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
           <h1>{{ selected.propertyName }}</h1>
           <p>Review every active booking recorded for this property.</p>
         </div>
-        @if (selected.status === 'available' || selected.status === 'booked') {
+        @if (canBook(selected)) {
           <a class="btn btn-primary" [routerLink]="['/dashboard/properties', selected.id, 'book']">
             <svg lucideCalendarPlus></svg>Add another booking
           </a>
@@ -288,6 +288,16 @@ export class PropertyBookingsComponent {
 
   readonly property = signal<Property | null>(null);
   readonly bookings = signal<PropertyBooking[]>([]);
+
+  canBook(property: Property): boolean {
+    return (
+      property.status === 'available' ||
+      property.status === 'booked' ||
+      (property.allowOccupiedBookings &&
+        Boolean(property.currentTenantId) &&
+        ['paid', 'overdue', 'evictable'].includes(property.status))
+    );
+  }
   readonly loading = signal(true);
   readonly removing = signal<string | null>(null);
   readonly typeLabel = propertyTypeLabel;

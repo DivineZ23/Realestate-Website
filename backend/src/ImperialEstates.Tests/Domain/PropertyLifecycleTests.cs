@@ -57,6 +57,35 @@ public sealed class PropertyLifecycleTests
         Assert.Equal("booking-2", property.BookedByEnquiryId);
     }
 
+    [Theory]
+    [InlineData(PropertyStatus.Paid)]
+    [InlineData(PropertyStatus.Overdue)]
+    [InlineData(PropertyStatus.Evictable)]
+    public void Booking_enabled_occupied_property_keeps_its_rental_status(PropertyStatus status)
+    {
+        var property = NewProperty();
+        property.SetTenantForPersistence("tenant-1");
+        property.SetStatusForPersistence(status);
+        property.AllowOccupiedBookings = true;
+
+        property.MarkBooked(null);
+
+        Assert.Equal(status, property.Status);
+        Assert.Equal("tenant-1", property.CurrentTenantId);
+    }
+
+    [Fact]
+    public void Occupied_property_rejects_booking_when_override_is_disabled()
+    {
+        var property = NewProperty();
+        property.SetTenantForPersistence("tenant-1");
+        property.SetStatusForPersistence(PropertyStatus.Paid);
+
+        var exception = Assert.Throws<DomainRuleException>(() => property.MarkBooked(null));
+
+        Assert.Equal("INVALID_STATUS_TRANSITION", exception.ErrorCode);
+    }
+
     [Fact]
     public void On_hold_property_cannot_be_booked()
     {

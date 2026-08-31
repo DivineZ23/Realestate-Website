@@ -86,7 +86,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
                 <a [routerLink]="['/dashboard/properties', group.propertyId, 'bookings']">
                   Open property bookings
                 </a>
-                @if (group.status === 'available' || group.status === 'booked') {
+                @if (canBook(group)) {
                   <a
                     class="btn btn-secondary"
                     [routerLink]="['/dashboard/properties', group.propertyId, 'book']"
@@ -302,6 +302,15 @@ export class PortfolioBookingsComponent {
   private readonly properties = inject(PropertyService);
 
   readonly groups = signal<PropertyBookingGroup[]>([]);
+
+  canBook(group: PropertyBookingGroup): boolean {
+    return (
+      group.status === 'available' ||
+      group.status === 'booked' ||
+      (group.allowOccupiedBookings &&
+        ['paid', 'overdue', 'evictable'].includes(group.status))
+    );
+  }
   readonly loading = signal(true);
   readonly typeLabel = propertyTypeLabel;
   readonly totalBookings = computed(() =>

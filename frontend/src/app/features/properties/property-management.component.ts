@@ -169,7 +169,7 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
                   }
                   @if (
                     access.canAccess('portfolio.properties.book') &&
-                    (property.status === 'available' || property.status === 'booked')
+                    canBook(property)
                   ) {
                     <a [routerLink]="[property.id, 'book']"><svg lucideCalendarPlus></svg>Book</a>
                   }
@@ -418,6 +418,16 @@ export class PropertyManagementComponent {
   readonly types = PROPERTY_TYPE_OPTIONS;
   readonly typeLabel = propertyTypeLabel;
   readonly typeCapacity = propertyTypeCapacity;
+
+  canBook(property: Property): boolean {
+    return (
+      property.status === 'available' ||
+      property.status === 'booked' ||
+      (property.allowOccupiedBookings &&
+        Boolean(property.currentTenantId) &&
+        ['paid', 'overdue', 'evictable'].includes(property.status))
+    );
+  }
   readonly blocks = signal<Block[]>([]);
   readonly loading = signal(false);
   readonly result = signal<PagedResult<Property>>({

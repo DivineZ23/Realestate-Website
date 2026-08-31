@@ -60,6 +60,13 @@ public sealed class PropertiesController(
         return await service.AssignTenantAsync(id, request, User.UserId(), ct);
     }
 
+    [Authorize(Policy = "ApprovedUser"), HttpPut("{id}/tenant")]
+    public async Task<PropertyDto> UpdateTenant(string id, AssignTenantRequest request, CancellationToken ct)
+    {
+        await tenantValidator.ValidateAndThrowAsync(request, ct);
+        return await service.UpdateTenantAsync(id, request, User.UserId(), ct);
+    }
+
     [Authorize(Policy = "ApprovedUser"), HttpPost("{id}/evict")]
     public Task<PropertyDto> Evict(string id, EvictTenantRequest request, CancellationToken ct) => service.EvictAsync(id, request, User.UserId(), ct);
 

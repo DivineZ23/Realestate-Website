@@ -30,9 +30,30 @@ public sealed class PropertyService(
     public async Task<PagedResult<PropertyDto>> GetAllAsync(PropertyQuery query, CancellationToken cancellationToken)
     {
         var values = await properties.QueryAsync(query, false, cancellationToken);
-        var names = await BlockNamesAsync(values.Items, cancellationToken);
-        var items = new List<PropertyDto>();
-        foreach (var property in values.Items) items.Add(await ToManagementDtoAsync(property, names[property.BlockId], cancellationToken));
+        var tenantIds = values.Items
+            .Select(property => property.CurrentTenantId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id!)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        var propertyIds = values.Items.Select(property => property.Id).ToArray();
+        var namesTask = BlockNamesAsync(values.Items, cancellationToken);
+        var tenantsTask = tenants.GetByIdsAsync(tenantIds, cancellationToken);
+        var bookingCountsTask = bookings.CountActiveByPropertiesAsync(propertyIds, cancellationToken);
+        await Task.WhenAll(namesTask, tenantsTask, bookingCountsTask);
+
+        var names = namesTask.Result;
+        var tenantsById = tenantsTask.Result.ToDictionary(tenant => tenant.Id, StringComparer.Ordinal);
+        var bookingCounts = bookingCountsTask.Result;
+        var items = values.Items.Select(property =>
+        {
+            var tenant = !string.IsNullOrWhiteSpace(property.CurrentTenantId) &&
+                tenantsById.TryGetValue(property.CurrentTenantId, out var currentTenant)
+                    ? currentTenant
+                    : null;
+            var bookingCount = bookingCounts.TryGetValue(property.Id, out var count) ? count : 0;
+            return property.ToDto(names[property.BlockId], tenant, checked((int)bookingCount));
+        }).ToList();
         return new PagedResult<PropertyDto>(items, values.Page, values.PageSize, values.TotalItems);
     }
 
@@ -142,6 +163,45 @@ public sealed class PropertyService(
         await lifecycle.AssignTenantAsync(value, tenant, statusHistory, audit, commission, cancellationToken);
         await bookings.CloseActiveAsync(value.Id, BookingStatus.Converted, actorId, cancellationToken);
         return value.ToDto((await GetBlockAsync(value.BlockId, cancellationToken)).BlockName);
+    }
+
+    public async Task<PropertyDto> UpdateTenantAsync(
+        string id, AssignTenantRequest request, string actorId, CancellationToken cancellationToken)
+    {
+        var value = await GetEntityAsync(id, cancellationToken);
+        if (string.IsNullOrWhiteSpace(value.CurrentTenantId))
+            throw new DomainRuleException("This property does not have an active tenant.", "ACTIVE_TENANT_NOT_FOUND");
+
+        var tenant = await tenants.GetByIdAsync(value.CurrentTenantId, cancellationToken)
+            ?? throw new DomainRuleException("The active tenant record could not be found.", "TENANT_NOT_FOUND");
+        if (tenant.Status != TenantStatus.Active || tenant.PropertyId != value.Id)
+            throw new DomainRuleException("The tenant is not active for this property.", "TENANT_NOT_ACTIVE");
+
+        tenant.Cid = request.Cid;
+        tenant.FullName = request.FullName.Trim();
+        tenant.PhoneNumber = request.PhoneNumber.Trim();
+        tenant.DiscordId = request.DiscordId.Trim();
+        tenant.StartDate = request.StartDate;
+        tenant.ExpectedEndDate = request.ExpectedEndDate;
+        tenant.MonthlyRent = request.MonthlyRent!.Value;
+        tenant.SecurityDeposit = request.SecurityDeposit!.Value;
+        tenant.EmergencyContact = request.EmergencyContact?.Trim();
+        tenant.Notes = request.Notes?.Trim();
+        tenant.UpdatedBy = actorId;
+        tenant.UpdatedAt = DateTime.UtcNow;
+
+        value.Rent = tenant.MonthlyRent;
+        value.SecurityDeposit = tenant.SecurityDeposit;
+        value.UpdatedBy = actorId;
+        value.UpdatedAt = DateTime.UtcNow;
+        var audit = Audit("tenant.updated", value.Id, actorId, new()
+        {
+            ["tenantId"] = tenant.Id,
+            ["cid"] = tenant.Cid
+        });
+        await lifecycle.UpdateTenantAsync(value, tenant, audit, cancellationToken);
+        return await ToManagementDtoAsync(
+            value, (await GetBlockAsync(value.BlockId, cancellationToken)).BlockName, cancellationToken);
     }
 
     public async Task<IReadOnlyList<PropertyBookingDto>> GetBookingsAsync(string propertyId, CancellationToken ct)

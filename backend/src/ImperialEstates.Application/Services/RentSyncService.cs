@@ -12,6 +12,7 @@ public sealed class RentSyncService(
     IRentSyncRepository snapshots,
     ITenantRepository tenants,
     IPropertyRepository properties,
+    IPropertyLifecycleStore lifecycle,
     IStatusHistoryRepository history,
     IUserRepository users,
     IGoogleSheetsSyncService googleSheets,
@@ -127,53 +128,44 @@ public sealed class RentSyncService(
         var records = Parse(request.RawData);
         var previousSnapshot = await snapshots.GetCurrentAsync(ct);
         var cids = records.Where(x => x.Cid.HasValue).Select(x => x.Cid!.Value).Distinct().ToArray();
-        var matchedTenants = await tenants.GetByCidsAsync(cids, ct);
-        var tenantByCid = matchedTenants
-            .Where(x => x.Cid.HasValue)
-            .GroupBy(x => x.Cid!.Value)
-            .ToDictionary(
-                group => group.Key,
-                group => group.OrderByDescending(x => x.Status == TenantStatus.Active).ThenByDescending(x => x.CreatedAt).First());
+        var matchedTenants = (await tenants.GetByCidsAsync(cids, ct)).ToList();
+        var propertyByAddress = (await properties.GetAllAsync(ct))
+            .GroupBy(property => NormalizeAddress(property.PropertyName))
+            .ToDictionary(group => group.Key, group => group.OrderByDescending(x => x.UpdatedAt).First());
 
         foreach (var record in records)
         {
-            Tenant? tenant = null;
-            if (record.Cid.HasValue && tenantByCid.TryGetValue(record.Cid.Value, out var matchedTenant))
+            propertyByAddress.TryGetValue(NormalizeAddress(record.Address), out var property);
+            if (property is null)
             {
-                tenant = matchedTenant;
-                record.TenantId = tenant.Id;
-                record.DiscordId = tenant.DiscordId;
+                MapKnownTenant(record, matchedTenants);
+                continue;
             }
 
-            var property = tenant is { Status: TenantStatus.Active }
-                ? await properties.GetByIdAsync(tenant.PropertyId, ct)
-                : record.Status == "empty"
-                    ? await properties.GetByNameAsync(record.Address, ct)
-                    : null;
-            if (property is not null)
+            record.PropertyId = property.Id;
+            if (record.Status == "empty")
             {
-                record.PropertyId = property.Id;
                 await ApplyPropertyStatusAsync(property, record, actorId, ct);
+                continue;
             }
 
-            if (tenant is null) continue;
-            var tenantChanged = false;
-            if (record.PaidThrough.HasValue && tenant.RentPaidThrough != record.PaidThrough)
+            if (!record.Cid.HasValue || string.IsNullOrWhiteSpace(record.RenterName) || string.IsNullOrWhiteSpace(record.Phone))
+                continue;
+
+            var tenant = await FindTenantForPropertyAsync(property, record.Cid.Value, matchedTenants, ct);
+            if (tenant is null)
             {
-                tenant.RentPaidThrough = record.PaidThrough;
-                tenantChanged = true;
+                tenant = await ImportTenantAsync(property, record, matchedTenants, actorId, ct);
+                matchedTenants.Add(tenant);
+                continue;
             }
-            if (!string.Equals(tenant.RentalStatus, record.Status, StringComparison.OrdinalIgnoreCase))
-            {
-                tenant.RentalStatus = record.Status;
-                tenantChanged = true;
-            }
-            if (tenantChanged)
-            {
-                tenant.UpdatedAt = DateTime.UtcNow;
-                tenant.UpdatedBy = actorId;
-                await tenants.UpdateAsync(tenant, ct);
-            }
+
+            record.TenantId = tenant.Id;
+            record.DiscordId = tenant.DiscordId;
+            var propertyChanged = UpdatePropertyFromRecord(property, tenant, record);
+            await ApplyPropertyStatusAsync(property, record, actorId, ct, propertyChanged);
+            var tenantChanged = UpdateTenantFromRecord(tenant, record, actorId);
+            if (tenantChanged) await tenants.UpdateAsync(tenant, ct);
         }
 
         MarkNoticeTransitions(records, previousSnapshot?.Records ?? []);
@@ -259,7 +251,12 @@ public sealed class RentSyncService(
         }, ct);
     }
 
-    private async Task ApplyPropertyStatusAsync(Property property, RentSyncRecord record, string actorId, CancellationToken ct)
+    private async Task ApplyPropertyStatusAsync(
+        Property property,
+        RentSyncRecord record,
+        string actorId,
+        CancellationToken ct,
+        bool forceUpdate = false)
     {
         var previous = property.Status;
         if (record.Status == "empty")
@@ -269,21 +266,20 @@ public sealed class RentSyncService(
         }
         else
         {
-            var target = record.Status switch
-            {
-                "paid" => PropertyStatus.Paid,
-                "evictable" => PropertyStatus.Evictable,
-                "overdue" when property.Status == PropertyStatus.Evictable => PropertyStatus.Evictable,
-                "overdue" when property.Status == PropertyStatus.Overdue &&
-                    property.StatusChangedAt <= DateTime.UtcNow.AddDays(-7) => PropertyStatus.Evictable,
-                "overdue" => PropertyStatus.Overdue,
-                _ => property.Status
-            };
+            var target = TargetStatus(property, record);
             property.ApplyRentStatus(target);
             if (target == PropertyStatus.Evictable) record.Status = "evictable";
         }
 
-        if (property.Status == previous) return;
+        if (property.Status == previous)
+        {
+            if (forceUpdate)
+            {
+                property.UpdatedBy = actorId;
+                await properties.UpdateAsync(property, ct);
+            }
+            return;
+        }
         property.UpdatedBy = actorId;
         await properties.UpdateAsync(property, ct);
         await history.CreateAsync(new PropertyStatusHistory
@@ -309,6 +305,185 @@ public sealed class RentSyncService(
             }
         }, ct);
     }
+
+    private async Task<Tenant?> FindTenantForPropertyAsync(
+        Property property,
+        int cid,
+        IReadOnlyList<Tenant> matchedTenants,
+        CancellationToken ct)
+    {
+        if (!string.IsNullOrWhiteSpace(property.CurrentTenantId))
+        {
+            var current = matchedTenants.FirstOrDefault(tenant => tenant.Id == property.CurrentTenantId)
+                ?? await tenants.GetByIdAsync(property.CurrentTenantId, ct);
+            if (current is null)
+                throw new DomainRuleException(
+                    $"{property.PropertyName} references a tenant record that no longer exists.",
+                    "RENT_SYNC_TENANT_MISSING");
+            if (current.Cid != cid)
+                throw new DomainRuleException(
+                    $"{property.PropertyName} is assigned to CID {current.Cid}, but the export contains CID {cid}.",
+                    "RENT_SYNC_TENANT_CONFLICT");
+            return current;
+        }
+
+        return matchedTenants
+            .Where(tenant => tenant.Cid == cid && tenant.PropertyId == property.Id && tenant.Status == TenantStatus.Active)
+            .OrderByDescending(tenant => tenant.CreatedAt)
+            .FirstOrDefault();
+    }
+
+    private async Task<Tenant> ImportTenantAsync(
+        Property property,
+        RentSyncRecord record,
+        IReadOnlyList<Tenant> matchedTenants,
+        string actorId,
+        CancellationToken ct)
+    {
+        var previous = property.Status;
+        var tenant = new Tenant
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            PropertyId = property.Id,
+            FullName = record.RenterName!,
+            PhoneNumber = record.Phone!,
+            Cid = record.Cid,
+            DiscordId = KnownDiscordId(record.Cid!.Value, matchedTenants),
+            StartDate = DateTime.UtcNow.Date,
+            MonthlyRent = record.Income,
+            SecurityDeposit = property.SecurityDeposit ?? 0,
+            RentPaidThrough = record.PaidThrough,
+            RentalStatus = record.Status,
+            Notes = "Imported from rent data sync. Verify Discord ID and security deposit.",
+            UpdatedBy = actorId,
+        };
+
+        property.Rent = record.Income;
+        property.SetTenantForPersistence(tenant.Id);
+        property.SetBookingForPersistence(null);
+        property.SetUnavailableReasonForPersistence(null);
+        property.SetStatusForPersistence(TargetStatus(property, record));
+        property.UpdatedBy = actorId;
+        record.TenantId = tenant.Id;
+        record.DiscordId = tenant.DiscordId;
+        if (property.Status == PropertyStatus.Evictable) record.Status = "evictable";
+        tenant.RentalStatus = record.Status;
+
+        await lifecycle.AssignTenantAsync(
+            property,
+            tenant,
+            new PropertyStatusHistory
+            {
+                PropertyId = property.Id,
+                PreviousStatus = previous,
+                NewStatus = property.Status,
+                Reason = "Tenant imported from rent data sync",
+                ChangedByUserId = actorId,
+                CreatedBy = actorId,
+            },
+            new AuditLog
+            {
+                Action = "tenant.imported-from-rent-sync",
+                EntityType = "property",
+                EntityId = property.Id,
+                PerformedByUserId = actorId,
+                Metadata = new Dictionary<string, object?>
+                {
+                    ["tenantId"] = tenant.Id,
+                    ["cid"] = tenant.Cid,
+                    ["address"] = record.Address,
+                },
+            },
+            null,
+            ct);
+        return tenant;
+    }
+
+    private static bool UpdatePropertyFromRecord(Property property, Tenant tenant, RentSyncRecord record)
+    {
+        var changed = false;
+        if (property.CurrentTenantId != tenant.Id)
+        {
+            property.SetTenantForPersistence(tenant.Id);
+            property.SetBookingForPersistence(null);
+            property.SetUnavailableReasonForPersistence(null);
+            changed = true;
+        }
+        if (property.Rent != record.Income)
+        {
+            property.Rent = record.Income;
+            changed = true;
+        }
+        return changed;
+    }
+
+    private static bool UpdateTenantFromRecord(Tenant tenant, RentSyncRecord record, string actorId)
+    {
+        var changed = false;
+        if (!string.Equals(tenant.FullName, record.RenterName, StringComparison.Ordinal))
+        {
+            tenant.FullName = record.RenterName!;
+            changed = true;
+        }
+        if (!string.Equals(tenant.PhoneNumber, record.Phone, StringComparison.Ordinal))
+        {
+            tenant.PhoneNumber = record.Phone!;
+            changed = true;
+        }
+        if (tenant.MonthlyRent != record.Income)
+        {
+            tenant.MonthlyRent = record.Income;
+            changed = true;
+        }
+        if (tenant.RentPaidThrough != record.PaidThrough)
+        {
+            tenant.RentPaidThrough = record.PaidThrough;
+            changed = true;
+        }
+        if (!string.Equals(tenant.RentalStatus, record.Status, StringComparison.OrdinalIgnoreCase))
+        {
+            tenant.RentalStatus = record.Status;
+            changed = true;
+        }
+        if (changed)
+        {
+            tenant.UpdatedAt = DateTime.UtcNow;
+            tenant.UpdatedBy = actorId;
+        }
+        return changed;
+    }
+
+    private static void MapKnownTenant(RentSyncRecord record, IReadOnlyList<Tenant> matchedTenants)
+    {
+        if (!record.Cid.HasValue) return;
+        var tenant = matchedTenants
+            .Where(value => value.Cid == record.Cid)
+            .OrderByDescending(value => value.Status == TenantStatus.Active)
+            .ThenByDescending(value => value.CreatedAt)
+            .FirstOrDefault();
+        if (tenant is null) return;
+        record.TenantId = tenant.Id;
+        record.DiscordId = tenant.DiscordId;
+    }
+
+    private static string KnownDiscordId(int cid, IReadOnlyList<Tenant> matchedTenants) =>
+        matchedTenants
+            .Where(tenant => tenant.Cid == cid && !string.IsNullOrWhiteSpace(tenant.DiscordId))
+            .OrderByDescending(tenant => tenant.Status == TenantStatus.Active)
+            .ThenByDescending(tenant => tenant.CreatedAt)
+            .Select(tenant => tenant.DiscordId)
+            .FirstOrDefault() ?? string.Empty;
+
+    private static PropertyStatus TargetStatus(Property property, RentSyncRecord record) => record.Status switch
+    {
+        "paid" => PropertyStatus.Paid,
+        "evictable" => PropertyStatus.Evictable,
+        "overdue" when property.Status == PropertyStatus.Evictable => PropertyStatus.Evictable,
+        "overdue" when property.Status == PropertyStatus.Overdue &&
+            property.StatusChangedAt <= DateTime.UtcNow.AddDays(-7) => PropertyStatus.Evictable,
+        "overdue" => PropertyStatus.Overdue,
+        _ => property.Status,
+    };
 
     private static List<RentSyncRecord> Parse(string? rawData)
     {

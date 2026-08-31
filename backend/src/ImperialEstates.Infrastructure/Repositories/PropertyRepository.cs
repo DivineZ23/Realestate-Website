@@ -90,6 +90,7 @@ public sealed class PropertyRepository(MongoContext db) : IPropertyRepository
         var s = Builders<Property>.Sort;
         return sortBy.ToLowerInvariant() switch
         {
+            "id" or "propertyid" => ascending ? s.Ascending(x => x.PropertyId) : s.Descending(x => x.PropertyId),
             "rent" => ascending ? s.Ascending(x => x.Rent) : s.Descending(x => x.Rent),
             "name" => ascending ? s.Ascending(x => x.PropertyName) : s.Descending(x => x.PropertyName),
             "updated" => ascending ? s.Ascending(x => x.UpdatedAt) : s.Descending(x => x.UpdatedAt),

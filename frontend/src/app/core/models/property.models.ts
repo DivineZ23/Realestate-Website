@@ -63,6 +63,13 @@ export interface Property {
   tenantName?: string;
   tenantCid?: number;
   tenantPhoneNumber?: string;
+  tenantDiscordId?: string;
+  tenantStartDate?: string;
+  tenantExpectedEndDate?: string;
+  tenantMonthlyRent?: number;
+  tenantSecurityDeposit?: number;
+  tenantEmergencyContact?: string;
+  tenantNotes?: string;
   rentPaidThrough?: string;
   bookedByEnquiryId?: string;
   bookingCount: number;
@@ -79,6 +86,13 @@ export type PublicProperty = Omit<
   | 'tenantName'
   | 'tenantCid'
   | 'tenantPhoneNumber'
+  | 'tenantDiscordId'
+  | 'tenantStartDate'
+  | 'tenantExpectedEndDate'
+  | 'tenantMonthlyRent'
+  | 'tenantSecurityDeposit'
+  | 'tenantEmergencyContact'
+  | 'tenantNotes'
   | 'rentPaidThrough'
   | 'bookedByEnquiryId'
   | 'bookingCount'

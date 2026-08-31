@@ -22,6 +22,7 @@ public sealed class RentSyncServiceTests
             snapshots,
             new TenantRepository(tenant),
             new PropertyRepository(property),
+            new LifecycleStore(),
             new StatusHistoryRepository(),
             new UserRepository(new User { Id = "owner-1", DisplayName = "Divine", Role = UserRole.Owner }),
             googleSheets,
@@ -102,6 +103,7 @@ public sealed class RentSyncServiceTests
             snapshots,
             new TenantRepository(tenant),
             new PropertyRepository(property),
+            new LifecycleStore(),
             new StatusHistoryRepository(),
             new UserRepository(new User { Id = "owner-1", DisplayName = "Divine", Role = UserRole.Owner }),
             new GoogleSheetsSyncService(),
@@ -129,6 +131,7 @@ public sealed class RentSyncServiceTests
         snapshots,
         new TenantRepository(),
         new PropertyRepository(),
+        new LifecycleStore(),
         new StatusHistoryRepository(),
         new UserRepository(new User { Id = "owner-1", DisplayName = "Divine", Role = UserRole.Owner }),
         new GoogleSheetsSyncService(),
@@ -138,6 +141,65 @@ public sealed class RentSyncServiceTests
         Status,Address,Interior,Renter CID,Renter Name,Phone,Income,Cost
         {status},{address},Trevor's Trailer,99,Ashwin Patil,333-4444,$2,000,$1,000
         """;
+
+    [Fact]
+    public async Task Sync_imports_missing_tenants_by_address_and_supports_multiple_properties_per_cid()
+    {
+        var snapshots = new SnapshotRepository();
+        var knownTenant = new Tenant
+        {
+            Id = "old-tenant",
+            PropertyId = "old-property",
+            Cid = 1002,
+            DiscordId = "727075012489510944",
+            Status = TenantStatus.Evicted,
+        };
+        var firstProperty = new Property
+        {
+            Id = "property-22",
+            PropertyId = 22,
+            PropertyName = "South Mo Milton Drive 22",
+        };
+        var secondProperty = new Property
+        {
+            Id = "property-22b",
+            PropertyId = 23,
+            PropertyName = "South Mo Milton Drive 22b",
+        };
+        var lifecycle = new LifecycleStore();
+        var service = new RentSyncService(
+            snapshots,
+            new TenantRepository(knownTenant),
+            new PropertyRepository(firstProperty, secondProperty),
+            lifecycle,
+            new StatusHistoryRepository(),
+            new UserRepository(new User { Id = "owner-1", DisplayName = "Divine", Role = UserRole.Owner }),
+            new GoogleSheetsSyncService(),
+            new AuditRepository());
+        const string export = """
+            Status,Address,Interior,Renter CID,Renter Name,Phone,Income,Cost
+            Paid 9/2/2026,South Mo Milton Drive 22,Mid-End Apartment (House),1002,Baali Singh,151-6364,$7,000,$4,500
+            Overdue,South Mo Milton Drive 22b,Low-End Apartment,1002,Baali Singh,151-6364,$3,000,$2,000
+            """;
+
+        var result = await service.SyncAsync(new RentSyncRequest(export), "owner-1", default);
+
+        Assert.Equal(2, lifecycle.ImportedTenants.Count);
+        Assert.Equal(2, lifecycle.ImportedTenants.Select(x => x.PropertyId).Distinct().Count());
+        Assert.All(lifecycle.ImportedTenants, tenant =>
+        {
+            Assert.Equal(1002, tenant.Cid);
+            Assert.Equal("727075012489510944", tenant.DiscordId);
+        });
+        Assert.Equal(PropertyStatus.Paid, firstProperty.Status);
+        Assert.Equal(PropertyStatus.Overdue, secondProperty.Status);
+        Assert.Equal(7_000m, firstProperty.Rent);
+        Assert.Equal(3_000m, secondProperty.Rent);
+        Assert.All(result.Records, record =>
+        {
+            Assert.NotNull(record.TenantId);
+        });
+    }
 
     private sealed class SnapshotRepository : IRentSyncRepository
     {
@@ -185,8 +247,9 @@ public sealed class RentSyncServiceTests
             Task.FromResult<IReadOnlyList<Tenant>>(values.Where(x => x.Cid.HasValue && cids.Contains(x.Cid.Value)).ToList());
         public Task<IReadOnlyList<Tenant>> GetEvictedAsync(CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<Tenant>>([]);
         public Task<PagedResult<Tenant>> QueryAsync(int page, int pageSize, CancellationToken cancellationToken) => throw new NotSupportedException();
-        public Task<Tenant?> GetByIdAsync(string id, CancellationToken cancellationToken) => throw new NotSupportedException();
-        public Task CreateAsync(Tenant tenant, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Tenant?> GetByIdAsync(string id, CancellationToken cancellationToken) =>
+            Task.FromResult(values.FirstOrDefault(x => x.Id == id));
+        public Task CreateAsync(Tenant tenant, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task UpdateAsync(Tenant tenant, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
@@ -198,7 +261,8 @@ public sealed class RentSyncServiceTests
         public Task<PagedResult<Property>> QueryAsync(PropertyQuery query, bool publicOnly, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<Property>> GetByIdsAsync(IReadOnlyCollection<string> ids, CancellationToken ct) => throw new NotSupportedException();
         public Task<Property?> GetByBusinessIdAsync(int propertyId, CancellationToken ct) => throw new NotSupportedException();
-        public Task<IReadOnlyList<Property>> GetAllAsync(CancellationToken ct) => throw new NotSupportedException();
+        public Task<IReadOnlyList<Property>> GetAllAsync(CancellationToken ct) =>
+            Task.FromResult<IReadOnlyList<Property>>(values);
         public Task<IReadOnlyList<Property>> GetFeaturedAsync(int limit, CancellationToken ct) => throw new NotSupportedException();
         public Task<long> CountByBlockAsync(string blockId, CancellationToken ct) => throw new NotSupportedException();
         public Task<long> CountByStatusAsync(PropertyStatus? status, CancellationToken ct) => throw new NotSupportedException();
@@ -210,6 +274,34 @@ public sealed class RentSyncServiceTests
         public Task CreateAsync(PropertyStatusHistory history, CancellationToken ct) => Task.CompletedTask;
         public Task<IReadOnlyList<PropertyStatusHistory>> GetByPropertyAsync(string propertyId, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<PropertyStatusHistory>> GetRecentAsync(int limit, CancellationToken ct) => throw new NotSupportedException();
+    }
+
+    private sealed class LifecycleStore : IPropertyLifecycleStore
+    {
+        public List<Tenant> ImportedTenants { get; } = [];
+
+        public Task AssignTenantAsync(
+            Property property,
+            Tenant tenant,
+            PropertyStatusHistory history,
+            AuditLog audit,
+            CommissionRecord? commission,
+            CancellationToken cancellationToken)
+        {
+            ImportedTenants.Add(tenant);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateTenantAsync(
+            Property property, Tenant tenant, AuditLog audit, CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+
+        public Task EvictAsync(
+            Property property,
+            Tenant tenant,
+            PropertyStatusHistory history,
+            AuditLog audit,
+            CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class AuditRepository : IAuditRepository

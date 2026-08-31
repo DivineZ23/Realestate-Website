@@ -24,6 +24,20 @@ public sealed class PropertyBookingRepository(MongoContext db) : IPropertyBookin
             x => x.PropertyId == propertyId && x.Status == BookingStatus.Active && !x.IsDeleted,
             cancellationToken: ct);
 
+    public async Task<IReadOnlyDictionary<string, long>> CountActiveByPropertiesAsync(
+        IReadOnlyCollection<string> propertyIds,
+        CancellationToken ct)
+    {
+        if (propertyIds.Count == 0) return new Dictionary<string, long>();
+        var filter = Builders<PropertyBooking>.Filter.In(x => x.PropertyId, propertyIds) &
+            Builders<PropertyBooking>.Filter.Eq(x => x.Status, BookingStatus.Active) &
+            Builders<PropertyBooking>.Filter.Eq(x => x.IsDeleted, false);
+        var matches = await db.PropertyBookings.Find(filter).Project(x => x.PropertyId).ToListAsync(ct);
+        return matches
+            .GroupBy(x => x, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => (long)group.Count(), StringComparer.Ordinal);
+    }
+
     public async Task CreateAsync(PropertyBooking booking, CancellationToken ct)
     {
         RepositoryHelpers.PrepareForInsert(booking);

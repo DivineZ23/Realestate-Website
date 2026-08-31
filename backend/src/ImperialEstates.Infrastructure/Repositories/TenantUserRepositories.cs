@@ -22,6 +22,13 @@ public sealed class TenantRepository(MongoContext db) : ITenantRepository
         return new(itemsTask.Result, page, pageSize, totalTask.Result);
     }
     public Task<Tenant?> GetByIdAsync(string id, CancellationToken ct) => db.Tenants.Find(x => x.Id == id && !x.IsDeleted).FirstOrDefaultAsync(ct)!;
+    public async Task<IReadOnlyList<Tenant>> GetByIdsAsync(IReadOnlyCollection<string> ids, CancellationToken ct)
+    {
+        if (ids.Count == 0) return [];
+        var filter = Builders<Tenant>.Filter.Eq(x => x.IsDeleted, false) &
+            Builders<Tenant>.Filter.In(x => x.Id, ids);
+        return await db.Tenants.Find(filter).ToListAsync(ct);
+    }
     public async Task<IReadOnlyList<Tenant>> GetByCidsAsync(IReadOnlyCollection<int> cids, CancellationToken ct)
     {
         if (cids.Count == 0) return [];

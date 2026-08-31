@@ -1,10 +1,11 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LucideArrowLeft, LucideSave } from '@lucide/angular';
+import { switchMap } from 'rxjs';
 import {
   isSupportedPropertyType,
   PROPERTY_TYPE_OPTIONS,
@@ -12,6 +13,7 @@ import {
 } from '../../core/constants/property-status.constants';
 import {
   Block,
+  AssignTenantRequest,
   Property,
   PropertyType,
   UpsertPropertyRequest,
@@ -45,13 +47,17 @@ import { depositAtLeastRentValidator } from '../../core/validators/financial.val
           <app-status-badge [status]="p.status" />
         }
       </div>
-      <button class="btn btn-primary" (click)="save()" [disabled]="form.invalid || saving()">
+      <button
+        class="btn btn-primary"
+        (click)="save()"
+        [disabled]="form.invalid || (hasTenant() && tenantForm.invalid) || saving()"
+      >
         <svg lucideSave></svg>{{ saving() ? 'Saving…' : 'Save property' }}
       </button>
     </div>
     <div class="editor-grid">
-      <form class="panel form" [formGroup]="form">
-        <section>
+      <div class="panel form">
+        <section [formGroup]="form">
           <h2>Core information</h2>
           <div class="fields">
             <label class="field"
@@ -78,45 +84,124 @@ import { depositAtLeastRentValidator } from '../../core/validators/financial.val
                   <option [value]="type.value">{{ type.label }}</option>
                 }
               </select></label
-            ><label class="field"
-              ><span>Monthly rent <small>Optional</small></span
-              ><input type="number" min="0" formControlName="rent" placeholder="Ask our team" />
-              <small class="field-note"
-                >Leave empty or enter 0 to show “Ask our team”.</small
-              ></label
-            ><label class="field">
-              <span>Security deposit <small>Optional</small></span>
-              <input
-                type="number"
-                [min]="form.controls.rent.value ?? 0"
-                formControlName="securityDeposit"
-                placeholder="Ask our team"
-              />
-              <small class="field-note"
-                >Leave empty to show “Ask our team”. If entered, it must be at least the monthly
-                rent.</small
-              >
-              @if (
-                form.hasError('depositBelowRent') &&
-                (form.controls.securityDeposit.dirty || form.controls.securityDeposit.touched)
-              ) {
-                <small class="error">Deposit cannot be lower than the monthly rent.</small>
-              }
-            </label>
+            >
+            @if (!hasTenant()) {
+              <label class="field"
+                ><span>Monthly rent <small>Optional</small></span
+                ><input type="number" min="0" formControlName="rent" placeholder="Ask our team" />
+                <small class="field-note"
+                  >Leave empty or enter 0 to show “Ask our team”.</small
+                ></label
+              ><label class="field">
+                <span>Security deposit <small>Optional</small></span>
+                <input
+                  type="number"
+                  [min]="form.controls.rent.value ?? 0"
+                  formControlName="securityDeposit"
+                  placeholder="Ask our team"
+                />
+                <small class="field-note"
+                  >Leave empty to show “Ask our team”. If entered, it must be at least the monthly
+                  rent.</small
+                >
+                @if (
+                  form.hasError('depositBelowRent') &&
+                  (form.controls.securityDeposit.dirty || form.controls.securityDeposit.touched)
+                ) {
+                  <small class="error">Deposit cannot be lower than the monthly rent.</small>
+                }
+              </label>
+            }
             <label class="field wide"
               ><span>Description</span><textarea rows="5" formControlName="description"></textarea>
             </label>
           </div>
         </section>
+        @if (hasTenant()) {
+          <section [formGroup]="tenantForm" class="tenant-section">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Active tenancy</p>
+                <h2>Tenant information</h2>
+                <p>Update the resident details attached to this property.</p>
+              </div>
+              @if (property()?.rentPaidThrough; as paidThrough) {
+                <div class="sync-value">
+                  <span>Rent paid through</span>
+                  <strong>{{ paidThrough | date: 'mediumDate' }}</strong>
+                  <small>Managed by Data Sync</small>
+                </div>
+              }
+            </div>
+            <div class="fields">
+              <label class="field"
+                ><span>CID</span><input type="number" min="1" formControlName="cid"
+              /></label>
+              <label class="field"
+                ><span>Tenant full name</span><input formControlName="fullName"
+              /></label>
+              <label class="field"
+                ><span>Phone number</span
+                ><input formControlName="phoneNumber" inputmode="numeric" placeholder="123-4567" />
+                @if (
+                  tenantForm.controls.phoneNumber.invalid && tenantForm.controls.phoneNumber.touched
+                ) {
+                  <small class="error">Use the format 123-4567.</small>
+                }
+              </label>
+              <label class="field"
+                ><span>Discord ID</span
+                ><input formControlName="discordId" inputmode="numeric" autocomplete="off" />
+                @if (tenantForm.controls.discordId.invalid && tenantForm.controls.discordId.touched) {
+                  <small class="error">Enter a numeric Discord ID.</small>
+                }
+              </label>
+              <label class="field"
+                ><span>Monthly rent</span
+                ><input type="number" min="0" formControlName="monthlyRent"
+              /></label>
+              <label class="field">
+                <span>Security deposit</span>
+                <input
+                  type="number"
+                  [min]="tenantForm.controls.monthlyRent.value ?? 0"
+                  formControlName="securityDeposit"
+                />
+                @if (
+                  tenantForm.hasError('depositBelowRent') &&
+                  (tenantForm.controls.securityDeposit.dirty ||
+                    tenantForm.controls.securityDeposit.touched)
+                ) {
+                  <small class="error">Deposit cannot be lower than the monthly rent.</small>
+                }
+              </label>
+              <label class="field"
+                ><span>Tenancy start date</span><input type="date" formControlName="startDate"
+              /></label>
+              <label class="field"
+                ><span>Expected end date <small>Optional</small></span
+                ><input type="date" formControlName="expectedEndDate"
+              /></label>
+              <label class="field wide"
+                ><span>Emergency contact <small>Optional</small></span
+                ><input formControlName="emergencyContact"
+              /></label>
+              <label class="field wide"
+                ><span>Notes <small>Optional</small></span
+                ><textarea rows="4" formControlName="notes"></textarea>
+              </label>
+            </div>
+          </section>
+        }
         <section>
           <h2>Property images</h2>
           <app-image-uploader [images]="images()" (imagesChange)="images.set($event)" />
         </section>
-        <section class="checks">
+        <section class="checks" [formGroup]="form">
           <label><input type="checkbox" formControlName="isFeatured" /> Feature publicly</label
           ><label><input type="checkbox" formControlName="isActive" /> Active property</label>
         </section>
-      </form>
+      </div>
       <aside>
         @if (property(); as p) {
           <section class="panel summary">
@@ -182,6 +267,39 @@ import { depositAtLeastRentValidator } from '../../core/validators/financial.val
       .form h2,
       .summary h2 {
         font-size: 1.15rem;
+      }
+      .section-heading {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 18px;
+      }
+      .section-heading h2 {
+        margin: 3px 0 5px;
+      }
+      .section-heading > div > p:last-child {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+      .sync-value {
+        flex: 0 0 auto;
+        min-width: 160px;
+        padding: 11px 13px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface-soft);
+        display: grid;
+        gap: 2px;
+      }
+      .sync-value span,
+      .sync-value small {
+        color: var(--muted);
+        font-size: 0.68rem;
+      }
+      .sync-value strong {
+        font-size: 0.84rem;
       }
       .fields {
         display: grid;
@@ -266,6 +384,12 @@ import { depositAtLeastRentValidator } from '../../core/validators/financial.val
         .form {
           padding: 18px;
         }
+        .section-heading {
+          display: grid;
+        }
+        .sync-value {
+          width: 100%;
+        }
       }
     `,
   ],
@@ -282,6 +406,7 @@ export class PropertyFormComponent {
   readonly blocks = signal<Block[]>([]);
   readonly images = signal<string[]>([]);
   readonly saving = signal(false);
+  readonly hasTenant = computed(() => Boolean(this.property()?.currentTenantId));
   readonly types = PROPERTY_TYPE_OPTIONS;
   readonly capacity = propertyTypeCapacity;
   readonly form = new FormGroup(
@@ -298,6 +423,30 @@ export class PropertyFormComponent {
     },
     { validators: depositAtLeastRentValidator() },
   );
+  readonly tenantForm = new FormGroup(
+    {
+      cid: new FormControl<number | null>(null, [Validators.required, Validators.min(1)]),
+      fullName: new FormControl('', { nonNullable: true, validators: Validators.required }),
+      phoneNumber: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required, Validators.pattern(/^\d{3}-\d{4}$/)],
+      }),
+      discordId: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required, Validators.pattern(/^\d+$/), Validators.maxLength(32)],
+      }),
+      monthlyRent: new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
+      securityDeposit: new FormControl<number | null>(null, [
+        Validators.required,
+        Validators.min(0),
+      ]),
+      startDate: new FormControl('', { nonNullable: true, validators: Validators.required }),
+      expectedEndDate: new FormControl('', { nonNullable: true }),
+      emergencyContact: new FormControl('', { nonNullable: true }),
+      notes: new FormControl('', { nonNullable: true }),
+    },
+    { validators: depositAtLeastRentValidator('monthlyRent', 'securityDeposit') },
+  );
   constructor() {
     this.blockService.all().subscribe((v) => this.blocks.set(v));
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroy)).subscribe((params) => {
@@ -311,14 +460,33 @@ export class PropertyFormComponent {
             ...p,
             type: isSupportedPropertyType(p.type) ? p.type : 'motel',
           });
+          if (p.currentTenantId) {
+            this.tenantForm.patchValue({
+              cid: p.tenantCid ?? null,
+              fullName: p.tenantName ?? '',
+              phoneNumber: p.tenantPhoneNumber ?? '',
+              discordId: p.tenantDiscordId ?? '',
+              monthlyRent: p.tenantMonthlyRent ?? p.rent,
+              securityDeposit: p.tenantSecurityDeposit ?? p.securityDeposit ?? null,
+              startDate: this.dateInputValue(p.tenantStartDate),
+              expectedEndDate: this.dateInputValue(p.tenantExpectedEndDate),
+              emergencyContact: p.tenantEmergencyContact ?? '',
+              notes: p.tenantNotes ?? '',
+            });
+          }
         });
     });
   }
   save() {
-    if (this.form.invalid) return;
+    if (this.form.invalid || (this.hasTenant() && this.tenantForm.invalid)) {
+      this.form.markAllAsTouched();
+      this.tenantForm.markAllAsTouched();
+      return;
+    }
     this.saving.set(true);
     const raw = this.form.getRawValue();
     const existing = this.property();
+    const tenantRaw = this.tenantForm.getRawValue();
     const body: UpsertPropertyRequest = {
       propertyId: raw.propertyId!,
       blockId: raw.blockId,
@@ -326,8 +494,10 @@ export class PropertyFormComponent {
       description: raw.description || null,
       type: raw.type,
       storage: existing?.storage ?? null,
-      rent: raw.rent ?? 0,
-      securityDeposit: raw.securityDeposit ?? null,
+      rent: this.hasTenant() ? tenantRaw.monthlyRent! : (raw.rent ?? 0),
+      securityDeposit: this.hasTenant()
+        ? tenantRaw.securityDeposit!
+        : (raw.securityDeposit ?? null),
       bedrooms: existing?.bedrooms ?? null,
       bathrooms: existing?.bathrooms ?? null,
       floor: existing?.floor ?? null,
@@ -339,7 +509,24 @@ export class PropertyFormComponent {
       isActive: raw.isActive,
     };
     const isEditing = Boolean(this.id());
-    const request = isEditing ? this.service.update(this.id()!, body) : this.service.create(body);
+    let request = isEditing ? this.service.update(this.id()!, body) : this.service.create(body);
+    if (isEditing && this.hasTenant()) {
+      const tenantRequest: AssignTenantRequest = {
+        cid: tenantRaw.cid!,
+        fullName: tenantRaw.fullName,
+        phoneNumber: tenantRaw.phoneNumber,
+        discordId: tenantRaw.discordId,
+        monthlyRent: tenantRaw.monthlyRent!,
+        securityDeposit: tenantRaw.securityDeposit!,
+        startDate: tenantRaw.startDate,
+        expectedEndDate: tenantRaw.expectedEndDate || undefined,
+        emergencyContact: tenantRaw.emergencyContact || undefined,
+        notes: tenantRaw.notes || undefined,
+      };
+      request = request.pipe(
+        switchMap(() => this.service.updateTenant(this.id()!, tenantRequest)),
+      );
+    }
     request.subscribe({
       next: () => {
         this.saving.set(false);
@@ -355,5 +542,9 @@ export class PropertyFormComponent {
       },
       error: () => this.saving.set(false),
     });
+  }
+
+  private dateInputValue(value?: string): string {
+    return value ? value.slice(0, 10) : '';
   }
 }

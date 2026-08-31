@@ -27,7 +27,10 @@ public sealed record PropertyDto(
     string? Storage, decimal Rent, decimal? SecurityDeposit, PropertyStatus Status,
     int? Bedrooms, int? Bathrooms, int? Floor, decimal? Area, string? FurnishingStatus,
     IReadOnlyList<string> Amenities, IReadOnlyList<string> Images, string? CurrentTenantId,
-    string? TenantName, int? TenantCid, string? TenantPhoneNumber, DateTime? RentPaidThrough,
+    string? TenantName, int? TenantCid, string? TenantPhoneNumber, string? TenantDiscordId,
+    DateTime? TenantStartDate, DateTime? TenantExpectedEndDate, decimal? TenantMonthlyRent,
+    decimal? TenantSecurityDeposit, string? TenantEmergencyContact, string? TenantNotes,
+    DateTime? RentPaidThrough,
     string? BookedByEnquiryId, int BookingCount, string? UnavailableReason, bool IsFeatured, bool IsActive,
     DateTime CreatedAt, DateTime UpdatedAt);
 

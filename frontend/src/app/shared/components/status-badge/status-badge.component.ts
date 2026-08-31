@@ -16,6 +16,7 @@ import { propertyStatusLabel } from '../../../core/constants/property-status.con
         font-weight: 700;
         line-height: 16px;
         text-transform: capitalize;
+        white-space: nowrap;
       }
       .available {
         background: var(--available-bg);

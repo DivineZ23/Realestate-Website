@@ -9,7 +9,6 @@ import {
   LucideClipboardList,
   LucideChevronLeft,
   LucideChevronRight,
-  LucideGavel,
   LucidePauseCircle,
   LucidePencil,
   LucidePlus,
@@ -49,7 +48,6 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
     LucideClipboardList,
     LucideChevronLeft,
     LucideChevronRight,
-    LucideGavel,
     LucidePauseCircle,
     LucidePencil,
     LucidePlus,
@@ -96,9 +94,26 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
         <div class="loading">Updating portfolio…</div>
       }
       <table class="data-table">
+        <colgroup>
+          <col class="col-id" />
+          <col class="col-property" />
+          <col class="col-block" />
+          <col class="col-type" />
+          <col class="col-rent" />
+          <col class="col-status" />
+          <col class="col-tenant" />
+          <col class="col-cid" />
+          <col class="col-number" />
+          <col class="col-paid" />
+          <col class="col-actions" />
+        </colgroup>
         <thead>
           <tr>
-            <th>ID</th>
+            <th [attr.aria-sort]="idSortDirection() === 'asc' ? 'ascending' : 'descending'">
+              <button class="sort-button" type="button" (click)="toggleIdSort()">
+                ID <span aria-hidden="true">{{ idSortDirection() === 'asc' ? '↑' : '↓' }}</span>
+              </button>
+            </th>
             <th>Property</th>
             <th>Block</th>
             <th>Type</th>
@@ -160,9 +175,7 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
                   }
                   @if (
                     access.canAccess('portfolio.properties.book') &&
-                    (property.status === 'available' ||
-                      property.status === 'booked' ||
-                      property.bookingCount > 0)
+                    property.bookingCount > 0
                   ) {
                     <a [routerLink]="[property.id, 'bookings']">
                       <svg lucideClipboardList></svg>Bookings ({{ property.bookingCount }})
@@ -176,9 +189,6 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
                     <button (click)="release(property)"><svg lucideUndo2></svg>Release</button>
                   }
                   @if (auth.isManager()) {
-                    @if (property.status === 'available' || property.status === 'booked') {
-                      <button (click)="auction(property)"><svg lucideGavel></svg>Auction</button>
-                    }
                     @if (!property.currentTenantId && property.status !== 'onHold') {
                       <button (click)="hold(property)"><svg lucidePauseCircle></svg>Hold</button>
                     }
@@ -265,10 +275,74 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
         color: var(--bronze);
         font-size: 0.8rem;
       }
+      .table-wrap {
+        overflow-x: visible;
+      }
+      .data-table {
+        table-layout: fixed;
+      }
+      .data-table th,
+      .data-table td {
+        padding: 11px 8px;
+        overflow-wrap: normal;
+        word-break: normal;
+      }
+      .data-table th {
+        font-size: 0.68rem;
+        letter-spacing: 0.045em;
+      }
+      .col-id {
+        width: 5%;
+      }
+      .col-property {
+        width: 13%;
+      }
+      .col-block {
+        width: 10%;
+      }
+      .col-type {
+        width: 11%;
+      }
+      .col-rent {
+        width: 6%;
+      }
+      .col-status {
+        width: 7%;
+      }
+      .col-tenant {
+        width: 8%;
+      }
+      .col-cid {
+        width: 5%;
+      }
+      .col-number {
+        width: 7%;
+      }
+      .col-paid {
+        width: 8%;
+      }
+      .col-actions {
+        width: 20%;
+      }
+      .sort-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        font-weight: 750;
+        letter-spacing: inherit;
+        text-transform: inherit;
+        cursor: pointer;
+      }
       .row-actions {
         display: flex;
         align-items: center;
-        gap: 9px;
+        flex-wrap: wrap;
+        gap: 7px 10px;
       }
       .data-table td small {
         display: block;
@@ -281,7 +355,7 @@ import { EvictTenantDialogComponent } from './evict-tenant-dialog.component';
         background: none;
         color: var(--forest);
         font-weight: 700;
-        font-size: 0.78rem;
+        font-size: 0.72rem;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
@@ -349,7 +423,7 @@ export class PropertyManagementComponent {
   readonly result = signal<PagedResult<Property>>({
     items: [],
     page: 1,
-    pageSize: 20,
+    pageSize: 10,
     totalItems: 0,
     totalPages: 0,
     hasPreviousPage: false,
@@ -360,6 +434,8 @@ export class PropertyManagementComponent {
     status: new FormControl<PropertyStatus | ''>('', { nonNullable: true }),
     type: new FormControl<PropertyType | ''>('', { nonNullable: true }),
     blockId: new FormControl('', { nonNullable: true }),
+    sortBy: new FormControl('id', { nonNullable: true }),
+    sortDirection: new FormControl<'asc' | 'desc'>('asc', { nonNullable: true }),
     page: new FormControl(1, { nonNullable: true }),
   });
   constructor() {
@@ -371,7 +447,7 @@ export class PropertyManagementComponent {
         switchMap((value) => {
           this.loading.set(true);
           return this.service
-            .all({ ...value, pageSize: 20 })
+            .all({ ...value, pageSize: 10 })
             .pipe(finalize(() => this.loading.set(false)));
         }),
         takeUntilDestroyed(this.destroy),
@@ -380,6 +456,16 @@ export class PropertyManagementComponent {
   }
   page(page: number) {
     this.filters.controls.page.setValue(page);
+  }
+  idSortDirection(): 'asc' | 'desc' {
+    return this.filters.controls.sortDirection.value;
+  }
+  toggleIdSort() {
+    this.filters.patchValue({
+      sortBy: 'id',
+      sortDirection: this.idSortDirection() === 'asc' ? 'desc' : 'asc',
+      page: 1,
+    });
   }
   refresh() {
     this.filters.controls.page.setValue(this.filters.controls.page.value, { emitEvent: true });
@@ -403,22 +489,6 @@ export class PropertyManagementComponent {
       .subscribe((result) => {
         if (result?.confirmed)
           this.service.changeStatus(property.id, 'available').subscribe(() => this.refresh());
-      });
-  }
-  auction(property: Property) {
-    this.dialog
-      .open(ConfirmDialogComponent, {
-        data: {
-          title: 'List this property for auction?',
-          message:
-            'The property will leave public availability and its status will become Auction.',
-          confirmLabel: 'List for auction',
-        },
-      })
-      .afterClosed()
-      .subscribe((result) => {
-        if (result?.confirmed)
-          this.service.changeStatus(property.id, 'auction').subscribe(() => this.refresh());
       });
   }
   hold(property: Property) {

@@ -56,6 +56,9 @@ export class PropertyService {
   assignTenant(id: string, body: AssignTenantRequest): Observable<Property> {
     return this.api.post(`${API_ENDPOINTS.properties.root}/${id}/assign-tenant`, body);
   }
+  updateTenant(id: string, body: AssignTenantRequest): Observable<Property> {
+    return this.api.put(`${API_ENDPOINTS.properties.root}/${id}/tenant`, body);
+  }
   bookings(id: string): Observable<PropertyBooking[]> {
     return this.api.get(`${API_ENDPOINTS.properties.root}/${id}/bookings`);
   }

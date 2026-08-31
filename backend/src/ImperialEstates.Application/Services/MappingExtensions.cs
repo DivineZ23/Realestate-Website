@@ -16,7 +16,9 @@ internal static class MappingExtensions
         value.Type, value.Type.PersonCapacity(), value.Type.StateCost(), value.Type.StorageCapacity(),
         value.Storage, value.Rent, value.SecurityDeposit, value.Status, value.Bedrooms,
         value.Bathrooms, value.Floor, value.Area, value.FurnishingStatus, value.Amenities, value.Images,
-        value.CurrentTenantId, tenant?.FullName, tenant?.Cid, tenant?.PhoneNumber,
+        value.CurrentTenantId, tenant?.FullName, tenant?.Cid, tenant?.PhoneNumber, tenant?.DiscordId,
+        tenant?.StartDate, tenant?.ExpectedEndDate, tenant?.MonthlyRent, tenant?.SecurityDeposit,
+        tenant?.EmergencyContact, tenant?.Notes,
         tenant is null ? null : tenant.RentPaidThrough ?? tenant.StartDate.Date.AddDays(7),
         value.BookedByEnquiryId, bookingCount, value.UnavailableReason, value.IsFeatured,
         value.IsActive, value.CreatedAt, value.UpdatedAt);

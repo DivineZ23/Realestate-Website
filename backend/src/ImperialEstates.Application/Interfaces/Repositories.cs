@@ -36,6 +36,15 @@ public interface IPropertyBookingRepository
     Task<IReadOnlyList<PropertyBooking>> GetActiveByPropertyAsync(string propertyId, CancellationToken cancellationToken);
     Task<PropertyBooking?> GetByIdAsync(string id, CancellationToken cancellationToken);
     Task<long> CountActiveByPropertyAsync(string propertyId, CancellationToken cancellationToken);
+    async Task<IReadOnlyDictionary<string, long>> CountActiveByPropertiesAsync(
+        IReadOnlyCollection<string> propertyIds,
+        CancellationToken cancellationToken)
+    {
+        var counts = new Dictionary<string, long>(StringComparer.Ordinal);
+        foreach (var propertyId in propertyIds)
+            counts[propertyId] = await CountActiveByPropertyAsync(propertyId, cancellationToken);
+        return counts;
+    }
     Task CreateAsync(PropertyBooking booking, CancellationToken cancellationToken);
     Task UpdateAsync(PropertyBooking booking, CancellationToken cancellationToken);
     Task CloseActiveAsync(string propertyId, BookingStatus status, string actorId, CancellationToken cancellationToken);
@@ -46,6 +55,18 @@ public interface ITenantRepository
     Task<PagedResult<Tenant>> QueryAsync(int page, int pageSize, CancellationToken cancellationToken);
     Task<IReadOnlyList<Tenant>> GetAllAsync(CancellationToken cancellationToken);
     Task<Tenant?> GetByIdAsync(string id, CancellationToken cancellationToken);
+    async Task<IReadOnlyList<Tenant>> GetByIdsAsync(
+        IReadOnlyCollection<string> ids,
+        CancellationToken cancellationToken)
+    {
+        var values = new List<Tenant>();
+        foreach (var id in ids)
+        {
+            var value = await GetByIdAsync(id, cancellationToken);
+            if (value is not null) values.Add(value);
+        }
+        return values;
+    }
     Task<IReadOnlyList<Tenant>> GetByCidsAsync(IReadOnlyCollection<int> cids, CancellationToken cancellationToken);
     Task<IReadOnlyList<Tenant>> GetEvictedAsync(CancellationToken cancellationToken);
     Task CreateAsync(Tenant tenant, CancellationToken cancellationToken);
@@ -123,6 +144,7 @@ public interface IStatusHistoryRepository
 public interface IPropertyLifecycleStore
 {
     Task AssignTenantAsync(Property property, Tenant tenant, PropertyStatusHistory history, AuditLog audit, CommissionRecord? commission, CancellationToken cancellationToken);
+    Task UpdateTenantAsync(Property property, Tenant tenant, AuditLog audit, CancellationToken cancellationToken);
     Task EvictAsync(Property property, Tenant tenant, PropertyStatusHistory history, AuditLog audit, CancellationToken cancellationToken);
 }
 

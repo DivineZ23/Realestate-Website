@@ -22,15 +22,24 @@ public sealed class RentSyncService(
         @"^(?<status>[^,]+),(?<address>[^,]+),(?<interior>[^,]+),(?<cid>[^,]+),(?<name>[^,]+),(?<phone>[^,]+),(?<income>\$[\d,]+),(?<cost>\$[\d,]+)$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-    public async Task<RentSyncSnapshotDto> GetCurrentAsync(CancellationToken ct) =>
-        Map(await snapshots.GetCurrentAsync(ct));
+    public async Task<RentSyncSnapshotDto> GetCurrentAsync(CancellationToken ct)
+    {
+        var snapshot = await snapshots.GetCurrentAsync(ct);
+        if (snapshot is not null) await RefreshTenantMappingsAsync([snapshot], ct);
+        return Map(snapshot);
+    }
 
-    public async Task<IReadOnlyList<RentSyncSnapshotDto>> GetAllAsync(CancellationToken ct) =>
-        (await snapshots.GetAllAsync(ct)).Select(Map).ToList();
+    public async Task<IReadOnlyList<RentSyncSnapshotDto>> GetAllAsync(CancellationToken ct)
+    {
+        var values = await snapshots.GetAllAsync(ct);
+        await RefreshTenantMappingsAsync(values, ct);
+        return values.Select(Map).ToList();
+    }
 
     public async Task<IReadOnlyList<EvictionQueueItemDto>> GetEvictionQueueAsync(CancellationToken ct)
     {
         var allSnapshots = await snapshots.GetAllAsync(ct);
+        await RefreshTenantMappingsAsync(allSnapshots, ct);
         var currentSnapshot = allSnapshots.FirstOrDefault();
         if (currentSnapshot is null) return [];
 
@@ -120,6 +129,7 @@ public sealed class RentSyncService(
             PerformedByUserId = actorId,
             Metadata = new Dictionary<string, object?> { ["status"] = record.Status, ["address"] = record.Address },
         }, ct);
+        await RefreshTenantMappingsAsync([snapshot], ct);
         return Map(snapshot);
     }
 
@@ -612,6 +622,32 @@ public sealed class RentSyncService(
 
     private static string NormalizeAddress(string value) =>
         Regex.Replace(value.Trim(), @"\s+", " ").ToUpperInvariant();
+
+    private async Task RefreshTenantMappingsAsync(
+        IReadOnlyList<RentSyncSnapshot> snapshotValues,
+        CancellationToken ct)
+    {
+        var records = snapshotValues.SelectMany(value => value.Records).Where(value => value.Cid.HasValue).ToList();
+        if (records.Count == 0) return;
+
+        var matchedTenants = await tenants.GetByCidsAsync(
+            records.Select(value => value.Cid!.Value).Distinct().ToArray(), ct);
+        foreach (var record in records)
+        {
+            var mappedTenant = matchedTenants
+                .Where(tenant =>
+                    tenant.Cid == record.Cid &&
+                    !string.IsNullOrWhiteSpace(tenant.DiscordId))
+                .OrderByDescending(tenant => tenant.Id == record.TenantId)
+                .ThenByDescending(tenant => tenant.Status == TenantStatus.Active)
+                .ThenByDescending(tenant => tenant.UpdatedAt)
+                .FirstOrDefault();
+            if (mappedTenant is null) continue;
+
+            record.TenantId ??= mappedTenant.Id;
+            record.DiscordId = mappedTenant.DiscordId.Trim();
+        }
+    }
 
     private RentSyncSnapshotDto Map(RentSyncSnapshot? snapshot)
     {

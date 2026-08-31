@@ -86,6 +86,46 @@ public sealed class RentSyncServiceTests
     }
 
     [Fact]
+    public async Task Historical_unresolved_notice_uses_discord_id_added_after_it_was_generated()
+    {
+        var snapshots = new SnapshotRepository();
+        var tenant = new Tenant
+        {
+            Id = "tenant-1",
+            PropertyId = "property-1",
+            Cid = 99,
+            DiscordId = string.Empty,
+            Status = TenantStatus.Active,
+        };
+        var property = new Property { Id = "property-1", PropertyName = "Marina Drive 8" };
+        property.SetTenantForPersistence(tenant.Id);
+        property.SetStatusForPersistence(PropertyStatus.Paid);
+        var service = new RentSyncService(
+            snapshots,
+            new TenantRepository(tenant),
+            new PropertyRepository(property),
+            new LifecycleStore(),
+            new StatusHistoryRepository(),
+            new UserRepository(new User { Id = "owner-1", DisplayName = "Divine", Role = UserRole.Owner }),
+            new GoogleSheetsSyncService(),
+            new AuditRepository());
+
+        var first = await service.SyncAsync(
+            new RentSyncRequest(Export("Evictable")), "owner-1", default);
+        Assert.Contains("Discord ID unavailable", Assert.Single(first.Records).EvictionNotice);
+
+        tenant.DiscordId = "727075012489510944";
+        await service.SyncAsync(new RentSyncRequest(Export("Evictable")), "owner-1", default);
+
+        var history = await service.GetAllAsync(default);
+        var originalNotice = Assert.Single(history
+            .SelectMany(snapshot => snapshot.Records)
+            .Where(record => record.EvictionNotice is not null));
+        Assert.Equal("727075012489510944", originalNotice.DiscordId);
+        Assert.Contains("Notify : <@727075012489510944>", originalNotice.EvictionNotice);
+    }
+
+    [Fact]
     public async Task Eviction_queue_starts_twenty_four_hours_after_notice_is_sent()
     {
         var snapshots = new SnapshotRepository();

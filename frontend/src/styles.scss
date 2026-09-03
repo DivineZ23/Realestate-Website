@@ -712,7 +712,7 @@ app-notices {
   }
   .queue-summary {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 180px));
+    grid-template-columns: repeat(4, minmax(0, 180px));
     gap: 12px;
     margin-bottom: 16px;
   }
@@ -736,6 +736,9 @@ app-notices {
   .queue-summary .waiting b {
     color: var(--warning-ink);
   }
+  .queue-summary .held b {
+    color: var(--muted);
+  }
   .queue-list {
     display: grid;
     gap: 10px;
@@ -750,6 +753,10 @@ app-notices {
   }
   .queue-card.ready {
     border-left-color: var(--danger);
+  }
+  .queue-card.held {
+    border-left-color: var(--muted);
+    background: var(--surface-soft);
   }
   .queue-property {
     display: flex;
@@ -770,6 +777,10 @@ app-notices {
   .ready .queue-icon {
     background: var(--danger-soft);
     color: var(--danger);
+  }
+  .held .queue-icon {
+    background: var(--neutral-soft);
+    color: var(--muted);
   }
   .queue-icon svg,
   .queue-action svg {
@@ -805,9 +816,14 @@ app-notices {
   .ready .eligibility b {
     color: var(--danger);
   }
+  .held .eligibility b {
+    color: var(--muted);
+  }
   .queue-action {
     display: flex;
     justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
   }
   .queue-action .btn {
     min-width: 88px;
@@ -890,6 +906,53 @@ app-notices {
   .no-evidence {
     color: var(--muted);
     font-size: 0.76rem;
+  }
+}
+
+app-dashboard-layout {
+  .nav-alert {
+    position: relative;
+    display: grid;
+    width: 28px;
+    height: 28px;
+    margin-left: auto;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--sidebar-active) 34%, transparent);
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--sidebar-active) 12%, transparent);
+    color: var(--sidebar-active);
+  }
+  .nav-alert > svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 2.2;
+  }
+  .nav-alert-count {
+    position: absolute;
+    top: -6px;
+    right: -7px;
+    display: grid;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    place-items: center;
+    border: 2px solid var(--sidebar-bg);
+    border-radius: 999px;
+    background: var(--sidebar-active);
+    color: var(--sidebar-active-text);
+    font-size: 0.58rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  nav a.active .nav-alert {
+    border-color: color-mix(in srgb, var(--sidebar-active-text) 30%, transparent);
+    background: color-mix(in srgb, var(--sidebar-active-text) 12%, transparent);
+    color: var(--sidebar-active-text);
+  }
+  nav a.active .nav-alert-count {
+    border-color: var(--sidebar-active);
+    background: var(--sidebar-active-text);
+    color: var(--sidebar-active);
   }
 }
 

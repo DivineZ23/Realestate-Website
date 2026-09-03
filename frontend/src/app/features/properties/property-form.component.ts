@@ -22,7 +22,6 @@ import { BlockService } from '../../core/services/management.services';
 import { PropertyService } from '../../core/services/property.service';
 import { ImageUploaderComponent } from '../../shared/components/image-uploader/image-uploader.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
-import { depositAtLeastRentValidator } from '../../core/validators/financial.validators';
 
 @Component({
   selector: 'app-property-form',
@@ -96,19 +95,15 @@ import { depositAtLeastRentValidator } from '../../core/validators/financial.val
                 <span>Security deposit <small>Optional</small></span>
                 <input
                   type="number"
-                  [min]="form.controls.rent.value ?? 0"
+                  min="0"
                   formControlName="securityDeposit"
                   placeholder="Ask our team"
                 />
                 <small class="field-note"
-                  >Leave empty to show “Ask our team”. If entered, it must be at least the monthly
-                  rent.</small
+                  >Leave empty to show “Ask our team”. Any non-negative amount is accepted.</small
                 >
-                @if (
-                  form.hasError('depositBelowRent') &&
-                  (form.controls.securityDeposit.dirty || form.controls.securityDeposit.touched)
-                ) {
-                  <small class="error">Deposit cannot be lower than the monthly rent.</small>
+                @if (form.controls.securityDeposit.invalid && form.controls.securityDeposit.touched) {
+                  <small class="error">Security deposit cannot be negative.</small>
                 }
               </label>
             }
@@ -161,18 +156,14 @@ import { depositAtLeastRentValidator } from '../../core/validators/financial.val
                 ><input type="number" min="0" formControlName="monthlyRent"
               /></label>
               <label class="field">
-                <span>Security deposit</span>
+                <span>Security deposit <small>Optional</small></span>
                 <input
                   type="number"
-                  [min]="tenantForm.controls.monthlyRent.value ?? 0"
+                  min="0"
                   formControlName="securityDeposit"
                 />
-                @if (
-                  tenantForm.hasError('depositBelowRent') &&
-                  (tenantForm.controls.securityDeposit.dirty ||
-                    tenantForm.controls.securityDeposit.touched)
-                ) {
-                  <small class="error">Deposit cannot be lower than the monthly rent.</small>
+                @if (tenantForm.controls.securityDeposit.invalid && tenantForm.controls.securityDeposit.touched) {
+                  <small class="error">Security deposit cannot be negative.</small>
                 }
               </label>
               <label class="field"
@@ -443,7 +434,6 @@ export class PropertyFormComponent {
       isActive: new FormControl(true, { nonNullable: true }),
       allowOccupiedBookings: new FormControl(false, { nonNullable: true }),
     },
-    { validators: depositAtLeastRentValidator() },
   );
   readonly tenantForm = new FormGroup(
     {
@@ -458,16 +448,12 @@ export class PropertyFormComponent {
         validators: [Validators.required, Validators.pattern(/^\d+$/), Validators.maxLength(32)],
       }),
       monthlyRent: new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
-      securityDeposit: new FormControl<number | null>(null, [
-        Validators.required,
-        Validators.min(0),
-      ]),
+      securityDeposit: new FormControl<number | null>(null, Validators.min(0)),
       startDate: new FormControl('', { nonNullable: true, validators: Validators.required }),
       expectedEndDate: new FormControl('', { nonNullable: true }),
       emergencyContact: new FormControl('', { nonNullable: true }),
       notes: new FormControl('', { nonNullable: true }),
     },
-    { validators: depositAtLeastRentValidator('monthlyRent', 'securityDeposit') },
   );
   constructor() {
     this.blockService.all().subscribe((v) => this.blocks.set(v));
@@ -518,7 +504,7 @@ export class PropertyFormComponent {
       storage: existing?.storage ?? null,
       rent: this.hasTenant() ? tenantRaw.monthlyRent! : (raw.rent ?? 0),
       securityDeposit: this.hasTenant()
-        ? tenantRaw.securityDeposit!
+        ? tenantRaw.securityDeposit
         : (raw.securityDeposit ?? null),
       bedrooms: existing?.bedrooms ?? null,
       bathrooms: existing?.bathrooms ?? null,
@@ -540,7 +526,7 @@ export class PropertyFormComponent {
         phoneNumber: tenantRaw.phoneNumber,
         discordId: tenantRaw.discordId,
         monthlyRent: tenantRaw.monthlyRent!,
-        securityDeposit: tenantRaw.securityDeposit!,
+        securityDeposit: tenantRaw.securityDeposit,
         startDate: tenantRaw.startDate,
         expectedEndDate: tenantRaw.expectedEndDate || undefined,
         emergencyContact: tenantRaw.emergencyContact || undefined,

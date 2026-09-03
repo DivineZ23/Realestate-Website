@@ -365,6 +365,10 @@ export class PropertyBookingComponent {
       })
       .subscribe({
         next: () => {
+          if (this.auth.isManager())
+            this.propertyService
+              .refreshBookingAnnouncementCount()
+              .subscribe({ error: () => undefined });
           this.snackBar.open('Booking added successfully.', 'Dismiss', { duration: 3000 });
           void this.router.navigate(['/dashboard/properties']);
         },

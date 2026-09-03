@@ -32,7 +32,8 @@ import { ApiService } from './api.service';
 import {
   CommissionOverview,
   CommissionRecord,
-  CommissionSettings,
+  AuctionCommissionCalculation,
+  CreateAuctionSettlement,
 } from '../models/commission.models';
 
 @Injectable({ providedIn: 'root' })
@@ -147,9 +148,6 @@ export class UserService {
   delete(id: string, reason: string): Observable<void> {
     return this.api.delete(`${API_ENDPOINTS.users}/${id}`, { reason });
   }
-  setCommissionLevel(id: string, level: 1 | 2): Observable<User> {
-    return this.api.put(`${API_ENDPOINTS.users}/${id}/commission-level`, { level });
-  }
 }
 
 @Injectable({ providedIn: 'root' })
@@ -158,11 +156,14 @@ export class CommissionService {
   overview(): Observable<CommissionOverview> {
     return this.api.get(API_ENDPOINTS.commissions);
   }
-  updateSettings(settings: CommissionSettings): Observable<CommissionSettings> {
-    return this.api.put(`${API_ENDPOINTS.commissions}/settings`, settings);
+  preview(finalAuctionPrice: number, basePrice: number, totalNumberOfAgents: number): Observable<AuctionCommissionCalculation> {
+    return this.api.post(`${API_ENDPOINTS.commissions}/preview`, { finalAuctionPrice, basePrice, totalNumberOfAgents });
   }
-  setReceived(id: string, isReceived: boolean): Observable<CommissionRecord> {
-    return this.api.patch(`${API_ENDPOINTS.commissions}/${id}/received`, { isReceived });
+  createSettlement(value: CreateAuctionSettlement): Observable<CommissionRecord[]> {
+    return this.api.post(`${API_ENDPOINTS.commissions}/settlements`, value);
+  }
+  setPaid(id: string, isPaid: boolean): Observable<CommissionRecord> {
+    return this.api.patch(`${API_ENDPOINTS.commissions}/${id}/paid`, { isPaid });
   }
 }
 
@@ -197,6 +198,12 @@ export class NoticeService {
   }
   evictionQueue(): Observable<EvictionQueueItem[]> {
     return this.api.get(API_ENDPOINTS.notices.evictionQueue);
+  }
+  setEvictionHold(snapshotId: string, rowNumber: number, isOnHold: boolean): Observable<void> {
+    return this.api.patch(
+      `${API_ENDPOINTS.notices.evictionQueue}/${snapshotId}/records/${rowNumber}/hold`,
+      { isOnHold },
+    );
   }
   sync(rawData: string): Observable<RentSyncSnapshot> {
     return this.api.post(API_ENDPOINTS.notices.sync, { rawData });

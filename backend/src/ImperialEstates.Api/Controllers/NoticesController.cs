@@ -33,4 +33,12 @@ public sealed class NoticesController(RentSyncService service) : ControllerBase
     [Authorize(Policy = "ApprovedUser"), HttpPatch("snapshots/{snapshotId}/records/{rowNumber:int}/resolution")]
     public Task<RentSyncSnapshotDto> SetResolution(string snapshotId, int rowNumber, SetNoticeResolutionRequest request, CancellationToken ct) =>
         service.SetResolutionAsync(snapshotId, rowNumber, request.IsResolved, User.UserId(), ct);
+
+    [Authorize(Policy = "Manager"), HttpPatch("eviction-queue/{snapshotId}/records/{rowNumber:int}/hold")]
+    public async Task<IActionResult> SetEvictionHold(
+        string snapshotId, int rowNumber, SetEvictionHoldRequest request, CancellationToken ct)
+    {
+        await service.SetEvictionHoldAsync(snapshotId, rowNumber, request.IsOnHold, User.UserId(), ct);
+        return NoContent();
+    }
 }

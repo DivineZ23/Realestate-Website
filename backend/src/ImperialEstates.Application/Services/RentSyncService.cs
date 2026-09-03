@@ -54,26 +54,32 @@ public sealed class RentSyncService(
                 continue;
 
             var latestNotice = allSnapshots
-                .SelectMany(snapshot => snapshot.Records)
-                .FirstOrDefault(record =>
-                    record.Status == "evictable" &&
-                    record.NoticeGenerated != false &&
-                    IsSameProperty(current, record));
-            if (latestNotice is not { IsResolved: true, ResolvedAt: not null }) continue;
+                .SelectMany(snapshot => snapshot.Records.Select(record => new { Snapshot = snapshot, Record = record }))
+                .FirstOrDefault(entry =>
+                    entry.Record.Status == "evictable" &&
+                    entry.Record.NoticeGenerated != false &&
+                    IsSameProperty(current, entry.Record));
+            if (latestNotice?.Record is not { IsResolved: true, ResolvedAt: not null } notice) continue;
 
-            var eligibleAt = latestNotice.ResolvedAt.Value.AddHours(24);
+            var eligibleAt = notice.ResolvedAt.Value.AddHours(24);
             result.Add(new EvictionQueueItemDto(
                 property.Id,
                 property.PropertyId,
                 property.PropertyName,
+                latestNotice.Snapshot.Id,
+                notice.RowNumber,
                 current.RenterName,
                 current.Cid,
                 current.Phone,
                 current.DiscordId,
                 current.Income,
-                latestNotice.ResolvedAt.Value,
+                notice.ResolvedAt.Value,
                 eligibleAt,
-                eligibleAt <= now));
+                eligibleAt <= now && !notice.IsEvictionOnHold,
+                notice.IsEvictionOnHold,
+                notice.EvictionHeldByUserId,
+                notice.EvictionHeldByDisplayName,
+                notice.EvictionHeldAt));
         }
 
         return result.OrderBy(item => item.EligibleAt).ToList();
@@ -117,6 +123,10 @@ public sealed class RentSyncService(
             record.ResolvedByUserId = null;
             record.ResolvedByDisplayName = null;
             record.ResolvedAt = null;
+            record.IsEvictionOnHold = false;
+            record.EvictionHeldByUserId = null;
+            record.EvictionHeldByDisplayName = null;
+            record.EvictionHeldAt = null;
         }
 
         snapshot.UpdatedBy = actorId;
@@ -131,6 +141,50 @@ public sealed class RentSyncService(
         }, ct);
         await RefreshTenantMappingsAsync([snapshot], ct);
         return Map(snapshot);
+    }
+
+    public async Task SetEvictionHoldAsync(
+        string snapshotId, int rowNumber, bool isOnHold, string actorId, CancellationToken ct)
+    {
+        var snapshot = await snapshots.GetByIdAsync(snapshotId, ct)
+            ?? throw new KeyNotFoundException("Rent sync snapshot not found.");
+        var record = snapshot.Records.FirstOrDefault(value => value.RowNumber == rowNumber)
+            ?? throw new KeyNotFoundException("Eviction notice record not found.");
+        if (record.Status != "evictable" || record.NoticeGenerated == false || !record.IsResolved)
+            throw new DomainRuleException(
+                "Only sent eviction notices can be placed on hold.",
+                "EVICTION_NOTICE_NOT_ELIGIBLE");
+
+        if (isOnHold)
+        {
+            var actor = await users.GetByIdAsync(actorId, ct) ?? throw new UnauthorizedAccessException();
+            record.IsEvictionOnHold = true;
+            record.EvictionHeldByUserId = actorId;
+            record.EvictionHeldByDisplayName = actor.DisplayName;
+            record.EvictionHeldAt = DateTime.UtcNow;
+        }
+        else
+        {
+            record.IsEvictionOnHold = false;
+            record.EvictionHeldByUserId = null;
+            record.EvictionHeldByDisplayName = null;
+            record.EvictionHeldAt = null;
+        }
+
+        snapshot.UpdatedBy = actorId;
+        await snapshots.UpdateAsync(snapshot, ct);
+        await audits.CreateAsync(new AuditLog
+        {
+            Action = isOnHold ? "eviction.queue.held" : "eviction.queue.released",
+            EntityType = "rentSyncRecord",
+            EntityId = $"{snapshotId}:{rowNumber}",
+            PerformedByUserId = actorId,
+            Metadata = new Dictionary<string, object?>
+            {
+                ["address"] = record.Address,
+                ["cid"] = record.Cid,
+            },
+        }, ct);
     }
 
     public async Task<RentSyncSnapshotDto> SyncAsync(RentSyncRequest request, string actorId, CancellationToken ct)

@@ -12,6 +12,7 @@ import {
 import { filter, forkJoin, switchMap } from 'rxjs';
 import { propertyTypeLabel } from '../../core/constants/property-status.constants';
 import { Property, PropertyBooking } from '../../core/models/property.models';
+import { AuthService } from '../../core/services/auth.service';
 import { PropertyService } from '../../core/services/property.service';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
@@ -77,6 +78,16 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
             <p class="eyebrow">Current bookings</p>
             <h2>{{ bookings().length }} {{ bookings().length === 1 ? 'booking' : 'bookings' }}</h2>
           </div>
+          @if (auth.isManager() && bookings().length) {
+            <button
+              class="btn btn-danger"
+              type="button"
+              [disabled]="closingAll()"
+              (click)="closeAll()"
+            >
+              <svg lucideTrash2></svg>{{ closingAll() ? 'Closing…' : 'Close all bookings' }}
+            </button>
+          }
         </header>
 
         @if (loading()) {
@@ -218,6 +229,10 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         overflow: hidden;
       }
       .bookings-panel > header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
         padding: 20px 22px;
         border-bottom: 1px solid var(--border);
       }
@@ -283,6 +298,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
 export class PropertyBookingsComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly properties = inject(PropertyService);
+  readonly auth = inject(AuthService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
 
@@ -300,6 +316,7 @@ export class PropertyBookingsComponent {
   }
   readonly loading = signal(true);
   readonly removing = signal<string | null>(null);
+  readonly closingAll = signal(false);
   readonly typeLabel = propertyTypeLabel;
 
   constructor() {
@@ -348,11 +365,63 @@ export class PropertyBookingsComponent {
               value ? { ...value, bookingCount: this.bookings().length } : value,
             );
           }
+          if (this.auth.isManager()) {
+            this.properties.refreshBookingAnnouncementCount().subscribe({ error: () => undefined });
+          }
           this.snackBar.open('Booking removed.', 'Dismiss', { duration: 2500 });
         },
         error: () => {
           this.removing.set(null);
           this.snackBar.open('The booking could not be removed.', 'Dismiss', {
+            duration: 3500,
+            panelClass: ['error-toast'],
+          });
+        },
+      });
+  }
+
+  closeAll() {
+    const property = this.property();
+    if (!property || !this.bookings().length || this.closingAll()) return;
+    this.dialog
+      .open(ConfirmDialogComponent, {
+        data: {
+          title: 'Close all bookings?',
+          message: `All ${this.bookings().length} active bookings for ${property.propertyName} will be closed.`,
+          confirmLabel: 'Close all bookings',
+          dangerous: true,
+        },
+      })
+      .afterClosed()
+      .pipe(
+        filter((result) => result?.confirmed),
+        switchMap(() => {
+          this.closingAll.set(true);
+          return this.properties.closeAllBookings(property.id);
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.bookings.set([]);
+          this.property.update((value) =>
+            value
+              ? {
+                  ...value,
+                  status:
+                    value.status === 'booked' && !value.currentTenantId
+                      ? 'available'
+                      : value.status,
+                  bookingCount: 0,
+                }
+              : value,
+          );
+          this.closingAll.set(false);
+          this.properties.refreshBookingAnnouncementCount().subscribe({ error: () => undefined });
+          this.snackBar.open('All bookings closed.', 'Dismiss', { duration: 2800 });
+        },
+        error: () => {
+          this.closingAll.set(false);
+          this.snackBar.open('The bookings could not be closed.', 'Dismiss', {
             duration: 3500,
             panelClass: ['error-toast'],
           });

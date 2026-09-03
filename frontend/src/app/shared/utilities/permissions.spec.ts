@@ -6,7 +6,6 @@ const user = (overrides: Partial<User>): User => ({
   discordUserId: 'discord-1',
   username: 'person',
   displayName: 'Person',
-  commissionLevel: 1,
   role: 'agent',
   approvalStatus: 'approved',
   accessStatus: 'active',

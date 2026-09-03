@@ -23,6 +23,5 @@ public sealed class UsersController(UserManagementService service) : ControllerB
     [HttpPost("{id}/demote")] public Task<UserDto> Demote(string id, UserActionRequest request, CancellationToken ct) => service.DemoteAsync(id, User.UserId(), request.Reason, ct);
     [HttpPost("{id}/revoke")] public Task<UserDto> Revoke(string id, UserActionRequest request, CancellationToken ct) => service.RevokeAsync(id, User.UserId(), request.Reason, ct);
     [HttpPost("{id}/restore")] public Task<UserDto> Restore(string id, CancellationToken ct) => service.RestoreAsync(id, User.UserId(), ct);
-    [HttpPut("{id}/commission-level")] public Task<UserDto> SetCommissionLevel(string id, SetCommissionLevelRequest request, CancellationToken ct) => service.SetCommissionLevelAsync(id, request.Level, User.UserId(), ct);
     [HttpDelete("{id}")] public async Task<IActionResult> Delete(string id, [FromBody] UserActionRequest request, CancellationToken ct) { await service.DeleteAsync(id, User.UserId(), request.Reason, ct); return NoContent(); }
 }

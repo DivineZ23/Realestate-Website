@@ -176,6 +176,8 @@ export interface EvictionQueueItem {
   propertyId: string;
   propertyBusinessId: number;
   propertyName: string;
+  noticeSnapshotId: string;
+  noticeRowNumber: number;
   tenantName?: string;
   cid?: number;
   phone?: string;
@@ -184,4 +186,8 @@ export interface EvictionQueueItem {
   noticeSentAt: string;
   eligibleAt: string;
   isReady: boolean;
+  isOnHold: boolean;
+  heldByUserId?: string;
+  heldByDisplayName?: string;
+  heldAt?: string;
 }

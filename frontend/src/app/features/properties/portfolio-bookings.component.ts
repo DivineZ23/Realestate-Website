@@ -1,16 +1,23 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import {
   LucideBuilding2,
+  LucideBell,
   LucideCalendarPlus,
   LucideChevronDown,
   LucideClipboardList,
+  LucideTrash2,
 } from '@lucide/angular';
+import { filter, switchMap } from 'rxjs';
 import { propertyTypeLabel } from '../../core/constants/property-status.constants';
 import { PropertyBookingGroup } from '../../core/models/property.models';
 import { PropertyService } from '../../core/services/property.service';
+import { AuthService } from '../../core/services/auth.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
+import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 
 @Component({
@@ -22,9 +29,11 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
     EmptyStateComponent,
     StatusBadgeComponent,
     LucideBuilding2,
+    LucideBell,
     LucideCalendarPlus,
     LucideChevronDown,
     LucideClipboardList,
+    LucideTrash2,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -83,17 +92,67 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
 
             <div class="group-content">
               <div class="group-actions">
-                <a [routerLink]="['/dashboard/properties', group.propertyId, 'bookings']">
-                  Open property bookings
-                </a>
-                @if (canBook(group)) {
-                  <a
-                    class="btn btn-secondary"
-                    [routerLink]="['/dashboard/properties', group.propertyId, 'book']"
-                  >
-                    <svg lucideCalendarPlus></svg>Add booking
+                <div class="group-context">
+                  <a [routerLink]="['/dashboard/properties', group.propertyId, 'bookings']">
+                    Open property bookings
                   </a>
-                }
+                  @if (
+                    auth.isManager() &&
+                    (group.bookingAnnouncementPending || group.bookingAnnouncementPostedAt)
+                  ) {
+                    <label
+                      class="announcement-control"
+                      [class.pending]="group.bookingAnnouncementPending"
+                      [title]="
+                        group.bookingAnnouncementPending
+                          ? 'Check after this property has been posted in the Discord channel.'
+                          : 'This property has been posted in the Discord channel.'
+                      "
+                    >
+                      <svg lucideBell></svg>
+                      <input
+                        type="checkbox"
+                        [checked]="!group.bookingAnnouncementPending"
+                        [disabled]="updatingAnnouncement() === group.propertyId"
+                        (change)="setAnnouncementPosted(group, $any($event.target).checked)"
+                      />
+                      <span>
+                        <b>{{
+                          group.bookingAnnouncementPending
+                            ? 'Discord post pending'
+                            : 'Posted to Discord'
+                        }}</b>
+                        <small>
+                          @if (!group.bookingAnnouncementPending) {
+                            {{ group.bookingAnnouncementPostedByDisplayName || 'A manager' }} ·
+                            {{ group.bookingAnnouncementPostedAt | date: 'mediumDate' }}
+                          }
+                        </small>
+                      </span>
+                    </label>
+                  }
+                </div>
+                <div class="booking-actions">
+                  @if (canBook(group)) {
+                    <a
+                      class="btn btn-secondary"
+                      [routerLink]="['/dashboard/properties', group.propertyId, 'book']"
+                    >
+                      <svg lucideCalendarPlus></svg>Add booking
+                    </a>
+                  }
+                  @if (auth.isManager()) {
+                    <button
+                      class="btn btn-danger"
+                      type="button"
+                      [disabled]="closingGroup() === group.propertyId"
+                      (click)="closeAll(group)"
+                    >
+                      <svg lucideTrash2></svg>
+                      {{ closingGroup() === group.propertyId ? 'Closing…' : 'Close all' }}
+                    </button>
+                  }
+                </div>
               </div>
               <div class="table-wrap">
                 <table class="data-table">
@@ -251,10 +310,67 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
         padding: 12px 18px;
         background: var(--surface-soft);
       }
+      .booking-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      .booking-actions svg {
+        width: 16px;
+        height: 16px;
+      }
       .group-actions > a:first-child {
         color: var(--forest);
         font-size: 0.76rem;
         font-weight: 700;
+      }
+      .group-context {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 0;
+      }
+      .group-context > a {
+        color: var(--forest);
+        font-size: 0.76rem;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .announcement-control {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 8px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--surface);
+        cursor: pointer;
+      }
+      .announcement-control.pending {
+        border-color: color-mix(in srgb, var(--warning-ink) 45%, var(--border));
+        background: var(--warning-soft);
+      }
+      .announcement-control span {
+        display: grid;
+        gap: 1px;
+      }
+      .announcement-control > svg {
+        width: 14px;
+        height: 14px;
+        flex: 0 0 auto;
+        color: var(--warning-ink);
+      }
+      .announcement-control input {
+        width: 14px;
+        height: 14px;
+        margin: 0;
+      }
+      .announcement-control b {
+        font-size: 0.68rem;
+      }
+      .announcement-control small {
+        font-size: 0.6rem;
       }
       .table-wrap {
         overflow-x: auto;
@@ -294,14 +410,23 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
           align-items: flex-start;
           flex-direction: column;
         }
+        .group-context {
+          align-items: flex-start;
+          flex-direction: column;
+        }
       }
     `,
   ],
 })
 export class PortfolioBookingsComponent {
   private readonly properties = inject(PropertyService);
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
+  readonly auth = inject(AuthService);
 
   readonly groups = signal<PropertyBookingGroup[]>([]);
+  readonly updatingAnnouncement = signal<string | null>(null);
+  readonly closingGroup = signal<string | null>(null);
 
   canBook(group: PropertyBookingGroup): boolean {
     return (
@@ -324,6 +449,79 @@ export class PortfolioBookingsComponent {
       0,
     ),
   );
+
+  setAnnouncementPosted(group: PropertyBookingGroup, isPosted: boolean) {
+    if (this.updatingAnnouncement()) return;
+    this.updatingAnnouncement.set(group.propertyId);
+    this.properties.setBookingAnnouncement(group.propertyId, isPosted).subscribe({
+      next: (state) => {
+        this.groups.update((groups) =>
+          groups.map((value) =>
+            value.propertyId === state.propertyId
+              ? {
+                  ...value,
+                  bookingAnnouncementPending: state.isPending,
+                  bookingAnnouncementCreatedAt: state.createdAt,
+                  bookingAnnouncementPostedAt: state.postedAt,
+                  bookingAnnouncementPostedByDisplayName: state.postedByDisplayName,
+                }
+              : value,
+          ),
+        );
+        this.updatingAnnouncement.set(null);
+        this.snackBar.open(
+          isPosted ? 'Discord property post marked complete.' : 'Discord property post reopened.',
+          'Dismiss',
+          { duration: 2800 },
+        );
+      },
+      error: () => {
+        this.updatingAnnouncement.set(null);
+        this.snackBar.open('The announcement status could not be updated.', 'Dismiss', {
+          duration: 3500,
+          panelClass: ['error-toast'],
+        });
+      },
+    });
+  }
+
+  closeAll(group: PropertyBookingGroup) {
+    if (this.closingGroup()) return;
+    this.dialog
+      .open(ConfirmDialogComponent, {
+        data: {
+          title: 'Close all bookings?',
+          message: `All ${group.bookings.length} active bookings for ${group.propertyName} will be closed.`,
+          confirmLabel: 'Close all bookings',
+          dangerous: true,
+        },
+      })
+      .afterClosed()
+      .pipe(
+        filter((result) => result?.confirmed),
+        switchMap(() => {
+          this.closingGroup.set(group.propertyId);
+          return this.properties.closeAllBookings(group.propertyId);
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.groups.update((groups) =>
+            groups.filter((value) => value.propertyId !== group.propertyId),
+          );
+          this.closingGroup.set(null);
+          this.properties.refreshBookingAnnouncementCount().subscribe({ error: () => undefined });
+          this.snackBar.open('All bookings closed.', 'Dismiss', { duration: 2800 });
+        },
+        error: () => {
+          this.closingGroup.set(null);
+          this.snackBar.open('The bookings could not be closed.', 'Dismiss', {
+            duration: 3500,
+            panelClass: ['error-toast'],
+          });
+        },
+      });
+  }
 
   constructor() {
     this.properties.bookingGroups().subscribe({

@@ -2,11 +2,13 @@ namespace ImperialEstates.Application.DTOs;
 
 public sealed record RentSyncRequest(string RawData);
 public sealed record SetNoticeResolutionRequest(bool IsResolved);
+public sealed record SetEvictionHoldRequest(bool IsOnHold);
 
 public sealed record EvictionQueueItemDto(
-    string PropertyId, int PropertyBusinessId, string PropertyName,
+    string PropertyId, int PropertyBusinessId, string PropertyName, string NoticeSnapshotId, int NoticeRowNumber,
     string? TenantName, int? Cid, string? Phone, string? DiscordId, decimal Rent,
-    DateTime NoticeSentAt, DateTime EligibleAt, bool IsReady);
+    DateTime NoticeSentAt, DateTime EligibleAt, bool IsReady, bool IsOnHold,
+    string? HeldByUserId, string? HeldByDisplayName, DateTime? HeldAt);
 
 public sealed record RentSyncRecordDto(
     int RowNumber, string Status, DateTime? PaidThrough, string Address, string Interior,

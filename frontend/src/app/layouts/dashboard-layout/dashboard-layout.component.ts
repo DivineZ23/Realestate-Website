@@ -1,6 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { NgIf } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { interval } from 'rxjs';
 import {
   LucideBell,
   LucideBadgeDollarSign,
@@ -39,6 +41,7 @@ import { PageAccessService } from '../../core/services/page-access.service';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 import { SiteCreditComponent } from '../../shared/components/site-credit/site-credit.component';
 import { USER_ROLES } from '../../core/constants/user-role.constants';
+import { PropertyService } from '../../core/services/property.service';
 
 @Component({
   selector: 'app-dashboard-layout',
@@ -199,6 +202,21 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
                 routerLinkActive="active"
               >
                 <svg lucideClipboardList></svg><b>Bookings</b>
+                <span
+                  *ngIf="auth.isManager() && properties.pendingBookingAnnouncements() > 0"
+                  class="nav-alert"
+                  [attr.aria-label]="
+                    properties.pendingBookingAnnouncements() + ' booking announcements pending'
+                  "
+                  title="Pending Discord property posts"
+                >
+                  <svg lucideBell></svg>
+                  <span class="nav-alert-count">{{
+                    properties.pendingBookingAnnouncements() > 99
+                      ? '99+'
+                      : properties.pendingBookingAnnouncements()
+                  }}</span>
+                </span>
               </a>
               <a
                 *ngIf="access.canAccess('portfolio.blocks')"
@@ -745,6 +763,8 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
 export class DashboardLayoutComponent {
   readonly auth = inject(AuthService);
   readonly access = inject(PageAccessService);
+  readonly properties = inject(PropertyService);
+  private readonly destroyRef = inject(DestroyRef);
   readonly collapsed = signal(false);
   readonly performanceOpen = signal(true);
   readonly financeOpen = signal(true);
@@ -760,6 +780,14 @@ export class DashboardLayoutComponent {
   });
   constructor() {
     this.access.load().subscribe();
+    if (this.auth.isManager()) {
+      this.properties.refreshBookingAnnouncementCount().subscribe({ error: () => undefined });
+      interval(30_000)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(() =>
+          this.properties.refreshBookingAnnouncementCount().subscribe({ error: () => undefined }),
+        );
+    }
   }
   hasAny(resources: string[]): boolean {
     return resources.some((resource) => this.access.canAccess(resource));

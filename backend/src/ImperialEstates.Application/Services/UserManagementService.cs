@@ -110,21 +110,6 @@ public sealed class UserManagementService(IUserRepository users, IAuditRepositor
         }, null, ct);
     }
 
-    public async Task<UserDto> SetCommissionLevelAsync(string id, int level, string actorId, CancellationToken ct)
-    {
-        if (level is not (1 or 2))
-            throw new DomainRuleException("Commission level must be either 1 or 2.", "INVALID_COMMISSION_LEVEL");
-        var actor = await GetEntityAsync(actorId, ct);
-        if (actor.Role is not (UserRole.Manager or UserRole.Owner))
-            throw new DomainRuleException("Only managers and owners can change commission levels.", "MANAGER_REQUIRED");
-        var target = await GetEntityAsync(id, ct);
-        if (target.Role is not (UserRole.Agent or UserRole.SeniorAgent))
-            throw new DomainRuleException("Commission levels only apply to agents and senior agents.", "COMMISSION_LEVEL_NOT_APPLICABLE");
-        if (target.ApprovalStatus != ApprovalStatus.Approved || target.AccessStatus != AccessStatus.Active)
-            throw new DomainRuleException("Only approved active agents can change commission level.", "USER_NOT_ACTIVE");
-        return await MutateAsync(target, actorId, "user.commission-level.updated", user => user.CommissionLevel = level, null, ct);
-    }
-
     public async Task DeleteAsync(string id, string actorId, string? reason, CancellationToken ct)
     {
         RequireReason(reason);

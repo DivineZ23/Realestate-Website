@@ -29,4 +29,8 @@ public sealed class RentSyncRecord
     public string? ResolvedByUserId { get; set; }
     public string? ResolvedByDisplayName { get; set; }
     public DateTime? ResolvedAt { get; set; }
+    public bool IsEvictionOnHold { get; set; }
+    public string? EvictionHeldByUserId { get; set; }
+    public string? EvictionHeldByDisplayName { get; set; }
+    public DateTime? EvictionHeldAt { get; set; }
 }

@@ -81,6 +81,11 @@ public sealed class PropertyRepository(MongoContext db) : IPropertyRepository
         if (status.HasValue) filter &= Builders<Property>.Filter.Eq(x => x.Status, status.Value);
         return db.Properties.CountDocumentsAsync(filter, cancellationToken: ct);
     }
+
+    public Task<long> CountPendingBookingAnnouncementsAsync(CancellationToken ct) =>
+        db.Properties.CountDocumentsAsync(
+            property => !property.IsDeleted && property.IsActive && property.BookingAnnouncementPending,
+            cancellationToken: ct);
     public Task CreateAsync(Property value, CancellationToken ct) { RepositoryHelpers.PrepareForInsert(value); return db.Properties.InsertOneAsync(value, cancellationToken: ct); }
     public Task UpdateAsync(Property value, CancellationToken ct) => RepositoryHelpers.ReplaceAsync(db.Properties, value, ct);
 

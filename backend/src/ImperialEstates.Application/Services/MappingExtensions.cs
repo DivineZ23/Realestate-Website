@@ -32,7 +32,7 @@ internal static class MappingExtensions
 
     public static UserDto ToDto(this User value) => new(
         value.Id, value.DiscordUserId, value.Username, value.DisplayName, value.AvatarUrl, value.Email,
-        value.FullName, value.Cid, value.PhoneNumber, value.CommissionLevel is 1 or 2 ? value.CommissionLevel : 1,
+        value.FullName, value.Cid, value.PhoneNumber,
         value.Role, value.ApprovalStatus, value.AccessStatus, value.ApprovedBy, value.ApprovedAt,
         value.RevokedBy, value.RevokedAt, value.RevokeReason, value.LastLoginAt, value.CreatedAt, value.UpdatedAt);
 

@@ -10,98 +10,106 @@ namespace ImperialEstates.Tests.Services;
 public sealed class CommissionServiceTests
 {
     [Fact]
-    public async Task Sale_snapshots_agent_level_rate_and_calculated_amount()
+    public void Base_price_only_goes_entirely_to_winner()
     {
-        var agent = ActiveUser("agent-1", UserRole.Agent, 2);
-        var owner = ActiveUser("owner-1", UserRole.Owner, 1);
-        var fixture = new Fixture(agent, owner);
-        await fixture.Service.UpdateSettingsAsync(new UpdateCommissionSettingsRequest(25, 50, 30, 60), owner.Id, default);
-        var property = new Property { Id = "property-1", PropertyId = 4, PropertyName = "Chinatown 4" };
-        var tenant = new Tenant { Id = "tenant-1", FullName = "Alex Mercer", SecurityDeposit = 10_000 };
+        var result = CommissionService.Calculate(10_000, 10_000, 3);
 
-        var result = await fixture.Service.PrepareForSaleAsync(property, tenant, agent.Id, default);
-
-        Assert.NotNull(result);
-        Assert.Equal(2, result.CommissionLevel);
-        Assert.Equal(50, result.CommissionRatePercent);
-        Assert.Equal(5_000, result.CommissionAmount);
-        Assert.Equal("Chinatown 4", result.PropertyName);
-        Assert.Equal("Alex Mercer", result.TenantName);
+        Assert.Equal(10_000, result.WinningAgentTotal);
+        Assert.Equal(0, result.AdditionalAgentPool);
+        Assert.Equal(0, result.AmountPerOtherAgent);
     }
 
     [Fact]
-    public async Task Manager_sale_does_not_create_a_commission_liability()
+    public void Premium_slabs_are_applied_and_split_sixty_forty()
     {
-        var manager = ActiveUser("manager-1", UserRole.Manager, 1);
-        var fixture = new Fixture(manager);
+        var result = CommissionService.Calculate(410_000, 10_000, 3);
 
-        var result = await fixture.Service.PrepareForSaleAsync(
-            new Property { Id = "property-1" },
-            new Tenant { Id = "tenant-1", SecurityDeposit = 10_000 },
+        Assert.Equal(400_000, result.AuctionPremium);
+        Assert.Equal(100_000, result.AdditionalAgentPool);
+        Assert.Equal(60_000, result.WinningAgentClosingShare);
+        Assert.Equal(70_000, result.WinningAgentTotal);
+        Assert.Equal(40_000, result.ParticipationPool);
+        Assert.Equal(20_000, result.AmountPerOtherAgent);
+    }
+
+    [Fact]
+    public void Additional_pool_is_capped_at_two_hundred_thousand()
+    {
+        var result = CommissionService.Calculate(2_000_000, 0, 2);
+
+        Assert.Equal(200_000, result.AdditionalAgentPool);
+        Assert.Equal(120_000, result.WinningAgentClosingShare);
+        Assert.Equal(80_000, result.AmountPerOtherAgent);
+    }
+
+    [Fact]
+    public void No_other_agents_means_no_participation_payout()
+    {
+        var result = CommissionService.Calculate(110_000, 10_000, 1);
+
+        Assert.Equal(40_000, result.AdditionalAgentPool);
+        Assert.Equal(24_000, result.WinningAgentClosingShare);
+        Assert.Equal(0, result.ParticipationPool);
+    }
+
+    [Fact]
+    public async Task Manager_can_record_and_reconcile_agent_payouts()
+    {
+        var winner = ActiveUser("winner", UserRole.Agent);
+        var participant = ActiveUser("participant", UserRole.SeniorAgent);
+        var manager = ActiveUser("manager", UserRole.Manager);
+        var fixture = new Fixture(winner, participant, manager);
+
+        var records = await fixture.Service.CreateSettlementAsync(
+            new CreateAuctionSettlementRequest("Rockford 7", 110_000, 10_000, winner.Id, [participant.Id]),
             manager.Id,
             default);
+        var paid = await fixture.Service.SetPaidAsync(records[0].Id, true, manager.Id, default);
 
-        Assert.Null(result);
+        Assert.Equal(2, records.Count);
+        Assert.Equal(34_000, records.Single(x => x.IsWinningAgent).CommissionAmount);
+        Assert.Equal(16_000, records.Single(x => !x.IsWinningAgent).CommissionAmount);
+        Assert.True(paid.IsPaid);
     }
 
-    [Fact]
-    public async Task Manager_can_mark_commission_received_and_reopen_it()
-    {
-        var agent = ActiveUser("agent-1", UserRole.Agent, 1);
-        var manager = ActiveUser("manager-1", UserRole.Manager, 1);
-        var record = new CommissionRecord
-        {
-            Id = "commission-1", SellingAgentUserId = agent.Id, CommissionAmount = 2500
-        };
-        var fixture = new Fixture([agent, manager], [record]);
-
-        var received = await fixture.Service.SetReceivedAsync(record.Id, true, manager.Id, default);
-        var reopened = await fixture.Service.SetReceivedAsync(record.Id, false, manager.Id, default);
-
-        Assert.True(received.IsReceived);
-        Assert.NotNull(received.ReceivedAt);
-        Assert.False(reopened.IsReceived);
-        Assert.Null(reopened.ReceivedAt);
-    }
-
-    private static User ActiveUser(string id, UserRole role, int level) => new()
+    private static User ActiveUser(string id, UserRole role) => new()
     {
         Id = id,
         DisplayName = id,
         Role = role,
-        CommissionLevel = level,
         ApprovalStatus = ApprovalStatus.Approved,
         AccessStatus = AccessStatus.Active
     };
 
     private sealed class Fixture
     {
-        public Fixture(params User[] users) : this(users, []) { }
-        public Fixture(IEnumerable<User> users, IEnumerable<CommissionRecord> records)
+        public Fixture(params User[] users)
         {
             Service = new CommissionService(
-                new FakeCommissionRepository(records),
-                new FakeSettingRepository(),
+                new FakeCommissionRepository(),
                 new FakeUserRepository(users),
                 new FakeAuditRepository());
         }
         public CommissionService Service { get; }
     }
 
-    private sealed class FakeCommissionRepository(IEnumerable<CommissionRecord> seed) : ICommissionRepository
+    private sealed class FakeCommissionRepository : ICommissionRepository
     {
-        private readonly List<CommissionRecord> _values = [.. seed];
+        private readonly List<CommissionRecord> _values = [];
+        public Task CreateManyAsync(IReadOnlyCollection<CommissionRecord> values, CancellationToken ct)
+        {
+            foreach (var value in values)
+            {
+                value.Id = Guid.NewGuid().ToString("N");
+                value.CreatedAt = DateTime.UtcNow;
+                _values.Add(value);
+            }
+            return Task.CompletedTask;
+        }
         public Task<IReadOnlyList<CommissionRecord>> GetAllAsync(CancellationToken ct) => Task.FromResult<IReadOnlyList<CommissionRecord>>(_values);
-        public Task<IReadOnlyList<CommissionRecord>> GetByAgentAsync(string id, CancellationToken ct) => Task.FromResult<IReadOnlyList<CommissionRecord>>(_values.Where(x => x.SellingAgentUserId == id).ToList());
+        public Task<IReadOnlyList<CommissionRecord>> GetByAgentAsync(string id, CancellationToken ct) => Task.FromResult<IReadOnlyList<CommissionRecord>>(_values.Where(x => x.AgentUserId == id).ToList());
         public Task<CommissionRecord?> GetByIdAsync(string id, CancellationToken ct) => Task.FromResult(_values.FirstOrDefault(x => x.Id == id));
         public Task UpdateAsync(CommissionRecord value, CancellationToken ct) => Task.CompletedTask;
-    }
-
-    private sealed class FakeSettingRepository : ISettingRepository
-    {
-        private ApplicationSetting? _value;
-        public Task<ApplicationSetting?> GetAsync(string key, CancellationToken ct) => Task.FromResult(_value?.Key == key ? _value : null);
-        public Task UpsertAsync(ApplicationSetting value, CancellationToken ct) { _value = value; return Task.CompletedTask; }
     }
 
     private sealed class FakeUserRepository(IEnumerable<User> seed) : IUserRepository

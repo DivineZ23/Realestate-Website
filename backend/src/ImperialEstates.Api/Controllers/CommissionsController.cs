@@ -15,15 +15,15 @@ public sealed class CommissionsController(CommissionService service) : Controlle
     public Task<CommissionOverviewDto> Get(CancellationToken ct) =>
         service.GetOverviewAsync(User.UserId(), ct);
 
-    [Authorize(Policy = "Manager"), HttpGet("settings")]
-    public Task<CommissionSettingsDto> GetSettings(CancellationToken ct) =>
-        service.GetSettingsAsync(ct);
+    [Authorize(Policy = "Manager"), HttpPost("preview")]
+    public Task<AuctionCommissionCalculationDto> Preview(PreviewAuctionCommissionRequest request) =>
+        service.PreviewAsync(request);
 
-    [Authorize(Policy = "Manager"), HttpPut("settings")]
-    public Task<CommissionSettingsDto> UpdateSettings(UpdateCommissionSettingsRequest request, CancellationToken ct) =>
-        service.UpdateSettingsAsync(request, User.UserId(), ct);
+    [Authorize(Policy = "Manager"), HttpPost("settlements")]
+    public Task<IReadOnlyList<CommissionRecordDto>> CreateSettlement(CreateAuctionSettlementRequest request, CancellationToken ct) =>
+        service.CreateSettlementAsync(request, User.UserId(), ct);
 
-    [Authorize(Policy = "Manager"), HttpPatch("{id}/received")]
-    public Task<CommissionRecordDto> SetReceived(string id, SetCommissionReceivedRequest request, CancellationToken ct) =>
-        service.SetReceivedAsync(id, request.IsReceived, User.UserId(), ct);
+    [Authorize(Policy = "Manager"), HttpPatch("{id}/paid")]
+    public Task<CommissionRecordDto> SetPaid(string id, SetCommissionPaidRequest request, CancellationToken ct) =>
+        service.SetPaidAsync(id, request.IsPaid, User.UserId(), ct);
 }

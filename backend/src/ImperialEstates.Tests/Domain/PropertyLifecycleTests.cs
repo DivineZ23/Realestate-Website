@@ -57,6 +57,29 @@ public sealed class PropertyLifecycleTests
         Assert.Equal("booking-2", property.BookedByEnquiryId);
     }
 
+    [Fact]
+    public void Booking_announcement_can_be_completed_reopened_and_cleared()
+    {
+        var property = NewProperty();
+
+        property.StartBookingAnnouncement();
+        Assert.True(property.BookingAnnouncementPending);
+        Assert.NotNull(property.BookingAnnouncementCreatedAt);
+
+        property.SetBookingAnnouncementPosted(true, "manager-1", "Manager");
+        Assert.False(property.BookingAnnouncementPending);
+        Assert.Equal("Manager", property.BookingAnnouncementPostedByDisplayName);
+        Assert.NotNull(property.BookingAnnouncementPostedAt);
+
+        property.SetBookingAnnouncementPosted(false, "manager-1", "Manager");
+        Assert.True(property.BookingAnnouncementPending);
+        Assert.Null(property.BookingAnnouncementPostedAt);
+
+        property.ClearBookingAnnouncement();
+        Assert.False(property.BookingAnnouncementPending);
+        Assert.Null(property.BookingAnnouncementCreatedAt);
+    }
+
     [Theory]
     [InlineData(PropertyStatus.Paid)]
     [InlineData(PropertyStatus.Overdue)]

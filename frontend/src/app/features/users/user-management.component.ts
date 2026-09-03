@@ -78,23 +78,6 @@ import { USER_ROLES } from '../../core/constants/user-role.constants';
               <dd>{{ user.phoneNumber || 'Not set' }}</dd>
             </div>
             <div>
-              <dt>Commission level</dt>
-              <dd>
-                @if (user.role === 'agent' || user.role === 'seniorAgent') {
-                  <select
-                    aria-label="Commission level"
-                    [value]="user.commissionLevel"
-                    (change)="setCommissionLevel(user, $any($event.target).value)"
-                  >
-                    <option value="1">Level 1</option>
-                    <option value="2">Level 2</option>
-                  </select>
-                } @else {
-                  <span class="not-applicable">Not applicable</span>
-                }
-              </dd>
-            </div>
-            <div>
               <dt>Registered</dt>
               <dd>{{ user.createdAt | date: 'mediumDate' }}</dd>
             </div>
@@ -411,15 +394,6 @@ export class UserManagementComponent {
   canChangeAccess(user: User): boolean {
     if (user.role === 'owner' || user.id === this.auth.user()?.id) return false;
     return this.auth.isOwner() || user.role === 'agent' || user.role === 'seniorAgent';
-  }
-  setCommissionLevel(user: User, rawLevel: string) {
-    const level = Number(rawLevel) as 1 | 2;
-    if (level === user.commissionLevel || ![1, 2].includes(level)) return;
-    this.service.setCommissionLevel(user.id, level).subscribe((updated) => {
-      this.users.update((values) =>
-        values.map((value) => (value.id === updated.id ? updated : value)),
-      );
-    });
   }
   simple(user: User, action: 'approve' | 'promote' | 'restore') {
     this.confirm(user, action, false);

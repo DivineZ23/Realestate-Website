@@ -8,6 +8,12 @@ public sealed class MongoIndexInitializer(MongoContext db)
 {
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
+        // One-way reset from the retired deposit-percentage/grade commission scheme.
+        await db.Commissions.DeleteManyAsync(
+            Builders<CommissionRecord>.Filter.Ne(x => x.SchemeVersion, CommissionRecord.CurrentSchemeVersion),
+            cancellationToken);
+        await db.Settings.DeleteManyAsync(x => x.Key == "commission.settings", cancellationToken);
+
         await db.Blocks.Indexes.CreateManyAsync([
             new CreateIndexModel<Block>(Builders<Block>.IndexKeys.Ascending(x => x.BlockId), new() { Unique = true, Name = "ux_block_id" }),
             new CreateIndexModel<Block>(Builders<Block>.IndexKeys.Ascending(x => x.BlockName), new() { Unique = true, Name = "ux_block_name" }),
@@ -47,8 +53,8 @@ public sealed class MongoIndexInitializer(MongoContext db)
         await db.Settings.Indexes.CreateOneAsync(new CreateIndexModel<ApplicationSetting>(Builders<ApplicationSetting>.IndexKeys.Ascending(x => x.Key), new() { Name = "ux_setting_key", Unique = true }), cancellationToken: cancellationToken);
         await db.RentSyncSnapshots.Indexes.CreateOneAsync(new CreateIndexModel<RentSyncSnapshot>(Builders<RentSyncSnapshot>.IndexKeys.Descending(x => x.UpdatedAt), new() { Name = "ix_rent_sync_updated" }), cancellationToken: cancellationToken);
         await db.Commissions.Indexes.CreateManyAsync([
-            new CreateIndexModel<CommissionRecord>(Builders<CommissionRecord>.IndexKeys.Ascending(x => x.TenantId), new() { Name = "ux_commission_tenant", Unique = true }),
-            new CreateIndexModel<CommissionRecord>(Builders<CommissionRecord>.IndexKeys.Ascending(x => x.SellingAgentUserId).Ascending(x => x.IsReceived).Descending(x => x.CreatedAt), new() { Name = "ix_commission_agent_state_date" })
+            new CreateIndexModel<CommissionRecord>(Builders<CommissionRecord>.IndexKeys.Ascending(x => x.SchemeVersion).Ascending(x => x.AgentUserId).Ascending(x => x.IsPaid).Descending(x => x.CreatedAt), new() { Name = "ix_commission_v2_agent_paid_date" }),
+            new CreateIndexModel<CommissionRecord>(Builders<CommissionRecord>.IndexKeys.Ascending(x => x.SettlementId), new() { Name = "ix_commission_v2_settlement" })
         ], cancellationToken);
     }
 }

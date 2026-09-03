@@ -12,8 +12,9 @@ public sealed class User : BaseDocument
     public string? FullName { get; set; }
     public int? Cid { get; set; }
     public string? PhoneNumber { get; set; }
-    public UserRole Role { get; set; } = UserRole.Agent;
+    // Legacy field retained only so existing MongoDB user documents remain readable.
     public int CommissionLevel { get; set; } = 1;
+    public UserRole Role { get; set; } = UserRole.Agent;
     public ApprovalStatus ApprovalStatus { get; set; } = ApprovalStatus.Pending;
     public AccessStatus AccessStatus { get; set; } = AccessStatus.Pending;
     public string? ApprovedBy { get; set; }

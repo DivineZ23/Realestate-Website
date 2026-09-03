@@ -1,9 +1,11 @@
-import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { inject, Injectable, signal } from '@angular/core';
+import { map, Observable, switchMap, tap } from 'rxjs';
 import { API_ENDPOINTS } from '../config/api-endpoints';
 import { PagedResult } from '../models/api.models';
 import {
   AssignTenantRequest,
+  BookingAnnouncementState,
+  BookingAnnouncementSummary,
   CreatePropertyBookingRequest,
   EvictTenantRequest,
   Property,
@@ -20,6 +22,8 @@ import { ApiService } from './api.service';
 @Injectable({ providedIn: 'root' })
 export class PropertyService {
   private readonly api = inject(ApiService);
+  private readonly pendingBookingAnnouncementsState = signal(0);
+  readonly pendingBookingAnnouncements = this.pendingBookingAnnouncementsState.asReadonly();
   available(query: PropertyQuery): Observable<PagedResult<PublicProperty>> {
     return this.api.get(API_ENDPOINTS.properties.available, query);
   }
@@ -65,11 +69,36 @@ export class PropertyService {
   bookingGroups(): Observable<PropertyBookingGroup[]> {
     return this.api.get(`${API_ENDPOINTS.properties.root}/bookings`);
   }
+  refreshBookingAnnouncementCount(): Observable<BookingAnnouncementSummary> {
+    return this.api
+      .get<BookingAnnouncementSummary>(
+        `${API_ENDPOINTS.properties.root}/bookings/announcement-summary`,
+      )
+      .pipe(tap((summary) => this.pendingBookingAnnouncementsState.set(summary.pendingCount)));
+  }
+  setBookingAnnouncement(
+    propertyId: string,
+    isPosted: boolean,
+  ): Observable<BookingAnnouncementState> {
+    return this.api
+      .patch<{ isPosted: boolean }, BookingAnnouncementState>(
+        `${API_ENDPOINTS.properties.root}/${propertyId}/bookings/announcement`,
+        { isPosted },
+      )
+      .pipe(
+        switchMap((state) =>
+          this.refreshBookingAnnouncementCount().pipe(map(() => state)),
+        ),
+      );
+  }
   createBooking(id: string, body: CreatePropertyBookingRequest): Observable<PropertyBooking> {
     return this.api.post(`${API_ENDPOINTS.properties.root}/${id}/bookings`, body);
   }
   cancelBooking(propertyId: string, bookingId: string): Observable<void> {
     return this.api.delete(`${API_ENDPOINTS.properties.root}/${propertyId}/bookings/${bookingId}`);
+  }
+  closeAllBookings(propertyId: string): Observable<void> {
+    return this.api.delete(`${API_ENDPOINTS.properties.root}/${propertyId}/bookings`);
   }
   evict(id: string, request: EvictTenantRequest): Observable<Property> {
     return this.api.post(`${API_ENDPOINTS.properties.root}/${id}/evict`, request);

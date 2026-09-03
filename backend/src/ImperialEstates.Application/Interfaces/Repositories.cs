@@ -26,6 +26,9 @@ public interface IPropertyRepository
     Task<IReadOnlyList<Property>> GetFeaturedAsync(int limit, CancellationToken cancellationToken);
     Task<long> CountByBlockAsync(string blockId, CancellationToken cancellationToken);
     Task<long> CountByStatusAsync(PropertyStatus? status, CancellationToken cancellationToken);
+    async Task<long> CountPendingBookingAnnouncementsAsync(CancellationToken cancellationToken) =>
+        (await GetAllAsync(cancellationToken)).LongCount(property =>
+            !property.IsDeleted && property.IsActive && property.BookingAnnouncementPending);
     Task CreateAsync(Property property, CancellationToken cancellationToken);
     Task UpdateAsync(Property property, CancellationToken cancellationToken);
 }
@@ -150,6 +153,7 @@ public interface IPropertyLifecycleStore
 
 public interface ICommissionRepository
 {
+    Task CreateManyAsync(IReadOnlyCollection<CommissionRecord> values, CancellationToken cancellationToken);
     Task<IReadOnlyList<CommissionRecord>> GetAllAsync(CancellationToken cancellationToken);
     Task<IReadOnlyList<CommissionRecord>> GetByAgentAsync(string userId, CancellationToken cancellationToken);
     Task<CommissionRecord?> GetByIdAsync(string id, CancellationToken cancellationToken);

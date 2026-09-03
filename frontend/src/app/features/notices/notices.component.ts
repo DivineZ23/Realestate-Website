@@ -19,6 +19,7 @@ import {
   LucideCopy,
   LucideExternalLink,
   LucideImages,
+  LucidePauseCircle,
   LucidePhone,
   LucideRefreshCw,
   LucideTimer,
@@ -78,6 +79,7 @@ interface EvictionDayGroup {
     LucideCopy,
     LucideExternalLink,
     LucideImages,
+    LucidePauseCircle,
     LucidePhone,
     LucideRefreshCw,
     LucideTimer,
@@ -270,8 +272,11 @@ interface EvictionDayGroup {
             ><span>Ready now</span>
           </div>
           <div class="panel waiting">
-            <b>{{ evictionQueue().length - readyEvictionCount() }}</b
+            <b>{{ waitingEvictionCount() }}</b
             ><span>Waiting</span>
+          </div>
+          <div class="panel held">
+            <b>{{ heldEvictionCount() }}</b><span>On hold</span>
           </div>
         </div>
         @if (queueLoading()) {
@@ -279,7 +284,11 @@ interface EvictionDayGroup {
         } @else if (evictionQueue().length) {
           <div class="queue-list">
             @for (item of evictionQueue(); track item.propertyId) {
-              <article class="panel queue-card" [class.ready]="isEvictionReady(item)">
+              <article
+                class="panel queue-card"
+                [class.ready]="isEvictionReady(item)"
+                [class.held]="item.isOnHold"
+              >
                 <div class="queue-property">
                   <span class="queue-icon"><svg lucideTimer></svg></span>
                   <div>
@@ -294,20 +303,47 @@ interface EvictionDayGroup {
                   <span>{{ item.noticeSentAt | date: 'shortTime' }}</span>
                 </div>
                 <div class="queue-detail eligibility">
-                  <small>{{ isEvictionReady(item) ? 'Eviction status' : 'Eligible in' }}</small>
-                  <b>{{ evictionCountdown(item) }}</b>
-                  <span>
-                    {{ item.eligibleAt | date: 'mediumDate' }} at
-                    {{ item.eligibleAt | date: 'shortTime' }}
-                  </span>
+                  @if (item.isOnHold) {
+                    <small>Eviction status</small>
+                    <b>On hold</b>
+                    <span>
+                      Held by {{ item.heldByDisplayName || 'a manager' }}
+                      @if (item.heldAt) {
+                        · {{ item.heldAt | date: 'mediumDate' }}
+                      }
+                    </span>
+                  } @else {
+                    <small>{{ isEvictionReady(item) ? 'Eviction status' : 'Eligible in' }}</small>
+                    <b>{{ evictionCountdown(item) }}</b>
+                    <span>
+                      {{ item.eligibleAt | date: 'mediumDate' }} at
+                      {{ item.eligibleAt | date: 'shortTime' }}
+                    </span>
+                  }
                 </div>
                 <div class="queue-action">
+                  @if (auth.isManager()) {
+                    <button
+                      class="btn btn-secondary"
+                      type="button"
+                      [disabled]="holdingEvictionKey() === evictionQueueKey(item)"
+                      (click)="setEvictionHold(item, !item.isOnHold)"
+                    >
+                      @if (item.isOnHold) {
+                        <svg lucideRefreshCw></svg>Release
+                      } @else {
+                        <svg lucidePauseCircle></svg>Hold
+                      }
+                    </button>
+                  }
                   @if (auth.canEvict() && access.canAccess('portfolio.properties.evict')) {
                     <button
                       class="btn btn-danger"
                       type="button"
                       [disabled]="
-                        !isEvictionReady(item) || evictingPropertyId() === item.propertyId
+                        item.isOnHold ||
+                        !isEvictionReady(item) ||
+                        evictingPropertyId() === item.propertyId
                       "
                       (click)="evict(item)"
                     >
@@ -861,6 +897,7 @@ export class NoticesComponent {
   readonly evictionQueue = signal<EvictionQueueItem[]>([]);
   readonly queueLoading = signal(true);
   readonly evictingPropertyId = signal<string | null>(null);
+  readonly holdingEvictionKey = signal<string | null>(null);
   readonly now = signal(Date.now());
   readonly syncing = signal(false);
   readonly sheetRetrying = signal(false);
@@ -1015,6 +1052,12 @@ export class NoticesComponent {
   readonly readyEvictionCount = computed(
     () => this.evictionQueue().filter((item) => this.isEvictionReady(item)).length,
   );
+  readonly heldEvictionCount = computed(
+    () => this.evictionQueue().filter((item) => item.isOnHold).length,
+  );
+  readonly waitingEvictionCount = computed(
+    () => this.evictionQueue().length - this.readyEvictionCount() - this.heldEvictionCount(),
+  );
 
   constructor() {
     this.load();
@@ -1045,7 +1088,37 @@ export class NoticesComponent {
   }
 
   isEvictionReady(item: EvictionQueueItem) {
-    return new Date(item.eligibleAt).getTime() <= this.now();
+    return !item.isOnHold && new Date(item.eligibleAt).getTime() <= this.now();
+  }
+
+  evictionQueueKey(item: EvictionQueueItem) {
+    return `${item.noticeSnapshotId}:${item.noticeRowNumber}`;
+  }
+
+  setEvictionHold(item: EvictionQueueItem, isOnHold: boolean) {
+    const key = this.evictionQueueKey(item);
+    if (this.holdingEvictionKey()) return;
+    this.holdingEvictionKey.set(key);
+    this.notices
+      .setEvictionHold(item.noticeSnapshotId, item.noticeRowNumber, isOnHold)
+      .subscribe({
+        next: () => {
+          this.holdingEvictionKey.set(null);
+          this.snackBar.open(
+            isOnHold ? `${item.propertyName} placed on hold.` : `${item.propertyName} released.`,
+            'Dismiss',
+            { duration: 2800 },
+          );
+          this.loadEvictionQueue();
+        },
+        error: () => {
+          this.holdingEvictionKey.set(null);
+          this.snackBar.open('The eviction hold could not be updated.', 'Dismiss', {
+            duration: 3500,
+            panelClass: ['error-toast'],
+          });
+        },
+      });
   }
 
   evictionCountdown(item: EvictionQueueItem) {
@@ -1059,7 +1132,7 @@ export class NoticesComponent {
   }
 
   evict(item: EvictionQueueItem) {
-    if (!this.isEvictionReady(item) || this.evictingPropertyId()) return;
+    if (item.isOnHold || !this.isEvictionReady(item) || this.evictingPropertyId()) return;
     this.dialog
       .open(EvictTenantDialogComponent, { data: item })
       .afterClosed()

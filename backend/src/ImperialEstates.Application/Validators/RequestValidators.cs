@@ -27,9 +27,6 @@ public sealed class UpsertPropertyRequestValidator : AbstractValidator<UpsertPro
             .WithMessage("Select a supported interior structure.");
         RuleFor(x => x.Rent).GreaterThanOrEqualTo(0);
         RuleFor(x => x.SecurityDeposit).GreaterThanOrEqualTo(0).When(x => x.SecurityDeposit.HasValue);
-        RuleFor(x => x.SecurityDeposit)
-            .Must((request, deposit) => !deposit.HasValue || deposit.Value >= request.Rent)
-            .WithMessage("Security deposit must be at least equal to the monthly rent.");
         RuleFor(x => x.Bedrooms).GreaterThanOrEqualTo(0).When(x => x.Bedrooms.HasValue);
         RuleForEach(x => x.Images).Must(uri => Uri.TryCreate(uri, UriKind.RelativeOrAbsolute, out _)).WithMessage("Image URL is invalid.");
     }
@@ -48,11 +45,7 @@ public sealed class AssignTenantRequestValidator : AbstractValidator<AssignTenan
             .WithMessage("Phone number must use the format 123-4567.");
         RuleFor(x => x.StartDate).NotEmpty();
         RuleFor(x => x.MonthlyRent).NotNull().GreaterThanOrEqualTo(0);
-        RuleFor(x => x.SecurityDeposit).NotNull().GreaterThanOrEqualTo(0);
-        RuleFor(x => x.SecurityDeposit)
-            .Must((request, deposit) =>
-                !deposit.HasValue || !request.MonthlyRent.HasValue || deposit.Value >= request.MonthlyRent.Value)
-            .WithMessage("Security deposit must be at least equal to the monthly rent.");
+        RuleFor(x => x.SecurityDeposit).GreaterThanOrEqualTo(0).When(x => x.SecurityDeposit.HasValue);
     }
 }
 
@@ -77,20 +70,26 @@ public sealed class CreatePropertyBookingRequestValidator : AbstractValidator<Cr
     }
 }
 
-public sealed class UpdateCommissionSettingsRequestValidator : AbstractValidator<UpdateCommissionSettingsRequest>
+public sealed class PreviewAuctionCommissionRequestValidator : AbstractValidator<PreviewAuctionCommissionRequest>
 {
-    public UpdateCommissionSettingsRequestValidator()
+    public PreviewAuctionCommissionRequestValidator()
     {
-        RuleFor(x => x.AgentLevel1Percent).InclusiveBetween(0, 100);
-        RuleFor(x => x.AgentLevel2Percent).InclusiveBetween(0, 100);
-        RuleFor(x => x.SeniorAgentLevel1Percent).InclusiveBetween(0, 100);
-        RuleFor(x => x.SeniorAgentLevel2Percent).InclusiveBetween(0, 100);
+        RuleFor(x => x.BasePrice).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.FinalAuctionPrice).GreaterThanOrEqualTo(x => x.BasePrice);
+        RuleFor(x => x.TotalNumberOfAgents).GreaterThanOrEqualTo(1);
     }
 }
 
-public sealed class SetCommissionLevelRequestValidator : AbstractValidator<SetCommissionLevelRequest>
+public sealed class CreateAuctionSettlementRequestValidator : AbstractValidator<CreateAuctionSettlementRequest>
 {
-    public SetCommissionLevelRequestValidator() => RuleFor(x => x.Level).InclusiveBetween(1, 2);
+    public CreateAuctionSettlementRequestValidator()
+    {
+        RuleFor(x => x.AuctionReference).NotEmpty().MaximumLength(160);
+        RuleFor(x => x.BasePrice).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.FinalAuctionPrice).GreaterThanOrEqualTo(x => x.BasePrice);
+        RuleFor(x => x.WinningAgentUserId).NotEmpty();
+        RuleFor(x => x.OtherAgentUserIds).NotNull();
+    }
 }
 
 public sealed class CreateEnquiryRequestValidator : AbstractValidator<CreateEnquiryRequest>

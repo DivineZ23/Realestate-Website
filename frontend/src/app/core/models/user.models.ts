@@ -16,7 +16,6 @@ export interface User {
   fullName?: string;
   cid?: number;
   phoneNumber?: string;
-  commissionLevel: 1 | 2;
   role: UserRole;
   approvalStatus: ApprovalStatus;
   accessStatus: AccessStatus;

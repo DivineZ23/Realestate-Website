@@ -2,55 +2,67 @@ using ImperialEstates.Domain.Enums;
 
 namespace ImperialEstates.Application.DTOs;
 
-public sealed record CommissionSettingsDto(
-    decimal AgentLevel1Percent,
-    decimal AgentLevel2Percent,
-    decimal SeniorAgentLevel1Percent,
-    decimal SeniorAgentLevel2Percent);
+public sealed record AuctionCommissionCalculationDto(
+    decimal FinalAuctionPrice,
+    decimal BasePrice,
+    decimal AuctionPremium,
+    decimal AdditionalAgentPool,
+    decimal WinningAgentBaseShare,
+    decimal WinningAgentClosingShare,
+    decimal WinningAgentTotal,
+    decimal ParticipationPool,
+    decimal AmountPerOtherAgent,
+    int TotalAgentCount,
+    int OtherAgentCount);
 
-public sealed record UpdateCommissionSettingsRequest(
-    decimal AgentLevel1Percent,
-    decimal AgentLevel2Percent,
-    decimal SeniorAgentLevel1Percent,
-    decimal SeniorAgentLevel2Percent);
+public sealed record PreviewAuctionCommissionRequest(
+    decimal FinalAuctionPrice,
+    decimal BasePrice,
+    int TotalNumberOfAgents);
+
+public sealed record CreateAuctionSettlementRequest(
+    string AuctionReference,
+    decimal FinalAuctionPrice,
+    decimal BasePrice,
+    string WinningAgentUserId,
+    IReadOnlyList<string> OtherAgentUserIds);
 
 public sealed record CommissionRecordDto(
     string Id,
-    string TenantId,
-    string TenantName,
-    string PropertyId,
-    int PropertyBusinessId,
-    string PropertyName,
-    string SellingAgentUserId,
-    string SellingAgentDisplayName,
-    UserRole SellingAgentRole,
-    int CommissionLevel,
-    decimal DepositAmount,
-    decimal CommissionRatePercent,
+    string SettlementId,
+    string AuctionReference,
+    string AgentUserId,
+    string AgentDisplayName,
+    UserRole AgentRole,
+    bool IsWinningAgent,
+    int TotalAgentCount,
+    decimal FinalAuctionPrice,
+    decimal BasePrice,
+    decimal AuctionPremium,
+    decimal AdditionalAgentPool,
+    decimal BaseShare,
+    decimal PremiumShare,
     decimal CommissionAmount,
-    bool IsReceived,
-    DateTime? ReceivedAt,
-    string? ReceivedByUserId,
-    string? ReceivedByDisplayName,
+    bool IsPaid,
+    DateTime? PaidAt,
+    string? PaidByUserId,
+    string? PaidByDisplayName,
     DateTime CreatedAt);
 
 public sealed record AgentCommissionSummaryDto(
     string UserId,
     string DisplayName,
     UserRole Role,
-    int CommissionLevel,
     decimal TotalCommission,
     decimal OutstandingCommission,
     decimal ReceivedCommission,
-    int SaleCount,
+    int AuctionCount,
     int OutstandingCount);
 
 public sealed record CommissionOverviewDto(
-    CommissionSettingsDto? Settings,
     IReadOnlyList<AgentCommissionSummaryDto> Agents,
     IReadOnlyList<CommissionRecordDto> Records,
     decimal TotalOutstanding,
     decimal TotalReceived);
 
-public sealed record SetCommissionReceivedRequest(bool IsReceived);
-public sealed record SetCommissionLevelRequest(int Level);
+public sealed record SetCommissionPaidRequest(bool IsPaid);

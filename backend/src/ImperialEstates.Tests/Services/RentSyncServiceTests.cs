@@ -167,6 +167,49 @@ public sealed class RentSyncServiceTests
         Assert.Equal("property-1", ready.PropertyId);
     }
 
+    [Fact]
+    public async Task Eviction_queue_hold_blocks_eviction_until_released()
+    {
+        var snapshots = new SnapshotRepository();
+        var tenant = new Tenant
+        {
+            Id = "tenant-1",
+            PropertyId = "property-1",
+            Cid = 99,
+            DiscordId = "727075012489510944"
+        };
+        var property = new Property { Id = "property-1", PropertyId = 8, PropertyName = "Marina Drive 8" };
+        property.SetTenantForPersistence(tenant.Id);
+        property.SetStatusForPersistence(PropertyStatus.Paid);
+        var service = new RentSyncService(
+            snapshots,
+            new TenantRepository(tenant),
+            new PropertyRepository(property),
+            new LifecycleStore(),
+            new StatusHistoryRepository(),
+            new UserRepository(new User { Id = "owner-1", DisplayName = "Divine", Role = UserRole.Owner }),
+            new GoogleSheetsSyncService(),
+            new AuditRepository());
+
+        var synced = await service.SyncAsync(new RentSyncRequest(Export("Evictable")), "owner-1", default);
+        await service.SetResolutionAsync(synced.Id, 1, true, "owner-1", default);
+        var stored = await snapshots.GetByIdAsync(synced.Id, default);
+        Assert.NotNull(stored);
+        Assert.Single(stored.Records).ResolvedAt = DateTime.UtcNow.AddHours(-25);
+        await snapshots.UpdateAsync(stored, default);
+
+        await service.SetEvictionHoldAsync(synced.Id, 1, true, "owner-1", default);
+        var held = Assert.Single(await service.GetEvictionQueueAsync(default));
+        Assert.True(held.IsOnHold);
+        Assert.False(held.IsReady);
+        Assert.Equal("Divine", held.HeldByDisplayName);
+
+        await service.SetEvictionHoldAsync(synced.Id, 1, false, "owner-1", default);
+        var released = Assert.Single(await service.GetEvictionQueueAsync(default));
+        Assert.False(released.IsOnHold);
+        Assert.True(released.IsReady);
+    }
+
     private static RentSyncService CreateService(SnapshotRepository snapshots) => new(
         snapshots,
         new TenantRepository(),

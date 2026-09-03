@@ -28,6 +28,11 @@ public sealed class Property : BaseDocument
     public bool IsFeatured { get; set; }
     public bool IsActive { get; set; } = true;
     public bool AllowOccupiedBookings { get; set; }
+    public bool BookingAnnouncementPending { get; private set; }
+    public DateTime? BookingAnnouncementCreatedAt { get; private set; }
+    public DateTime? BookingAnnouncementPostedAt { get; private set; }
+    public string? BookingAnnouncementPostedByUserId { get; private set; }
+    public string? BookingAnnouncementPostedByDisplayName { get; private set; }
 
     public void MarkBooked(string? enquiryId)
     {
@@ -64,6 +69,46 @@ public sealed class Property : BaseDocument
         CurrentTenantId = tenantId;
         BookedByEnquiryId = null;
         UnavailableReason = null;
+        Touch();
+    }
+
+    public void StartBookingAnnouncement()
+    {
+        BookingAnnouncementPending = true;
+        BookingAnnouncementCreatedAt = DateTime.UtcNow;
+        BookingAnnouncementPostedAt = null;
+        BookingAnnouncementPostedByUserId = null;
+        BookingAnnouncementPostedByDisplayName = null;
+        Touch();
+    }
+
+    public void SetBookingAnnouncementPosted(bool isPosted, string actorId, string actorDisplayName)
+    {
+        if (isPosted)
+        {
+            BookingAnnouncementPending = false;
+            BookingAnnouncementPostedAt = DateTime.UtcNow;
+            BookingAnnouncementPostedByUserId = actorId;
+            BookingAnnouncementPostedByDisplayName = actorDisplayName;
+        }
+        else
+        {
+            BookingAnnouncementPending = true;
+            BookingAnnouncementCreatedAt ??= DateTime.UtcNow;
+            BookingAnnouncementPostedAt = null;
+            BookingAnnouncementPostedByUserId = null;
+            BookingAnnouncementPostedByDisplayName = null;
+        }
+        Touch();
+    }
+
+    public void ClearBookingAnnouncement()
+    {
+        BookingAnnouncementPending = false;
+        BookingAnnouncementCreatedAt = null;
+        BookingAnnouncementPostedAt = null;
+        BookingAnnouncementPostedByUserId = null;
+        BookingAnnouncementPostedByDisplayName = null;
         Touch();
     }
 

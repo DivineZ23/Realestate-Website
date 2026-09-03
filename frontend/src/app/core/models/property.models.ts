@@ -159,7 +159,7 @@ export interface AssignTenantRequest {
   startDate: string;
   expectedEndDate?: string;
   monthlyRent: number;
-  securityDeposit: number;
+  securityDeposit?: number | null;
   emergencyContact?: string;
   notes?: string;
 }
@@ -193,7 +193,23 @@ export interface PropertyBookingGroup {
   type: PropertyType;
   status: PropertyStatus;
   allowOccupiedBookings: boolean;
+  bookingAnnouncementPending: boolean;
+  bookingAnnouncementCreatedAt?: string;
+  bookingAnnouncementPostedAt?: string;
+  bookingAnnouncementPostedByDisplayName?: string;
   bookings: PropertyBooking[];
+}
+
+export interface BookingAnnouncementSummary {
+  pendingCount: number;
+}
+
+export interface BookingAnnouncementState {
+  propertyId: string;
+  isPending: boolean;
+  createdAt?: string;
+  postedAt?: string;
+  postedByDisplayName?: string;
 }
 
 export interface CreatePropertyBookingRequest {

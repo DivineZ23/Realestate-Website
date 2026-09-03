@@ -70,7 +70,17 @@ public sealed record PropertyBookingDto(
 public sealed record PropertyBookingGroupDto(
     string PropertyId, int PropertyNumber, string PropertyName, string BlockName,
     PropertyType Type, PropertyStatus Status, bool AllowOccupiedBookings,
+    bool BookingAnnouncementPending, DateTime? BookingAnnouncementCreatedAt,
+    DateTime? BookingAnnouncementPostedAt, string? BookingAnnouncementPostedByDisplayName,
     IReadOnlyList<PropertyBookingDto> Bookings);
+
+public sealed record BookingAnnouncementSummaryDto(long PendingCount);
+
+public sealed record BookingAnnouncementStateDto(
+    string PropertyId, bool IsPending, DateTime? CreatedAt, DateTime? PostedAt,
+    string? PostedByDisplayName);
+
+public sealed record SetBookingAnnouncementRequest(bool IsPosted);
 
 public sealed record PropertyStatusHistoryDto(
     string Id, PropertyStatus PreviousStatus, PropertyStatus NewStatus, string? Reason,

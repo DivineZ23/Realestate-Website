@@ -4,7 +4,7 @@ namespace ImperialEstates.Application.DTOs;
 
 public sealed record UserDto(
     string Id, string DiscordUserId, string Username, string DisplayName, string? AvatarUrl, string? Email,
-    string? FullName, int? Cid, string? PhoneNumber, int CommissionLevel,
+    string? FullName, int? Cid, string? PhoneNumber,
     UserRole Role, ApprovalStatus ApprovalStatus, AccessStatus AccessStatus, string? ApprovedBy,
     DateTime? ApprovedAt, string? RevokedBy, DateTime? RevokedAt, string? RevokeReason,
     DateTime? LastLoginAt, DateTime CreatedAt, DateTime UpdatedAt);

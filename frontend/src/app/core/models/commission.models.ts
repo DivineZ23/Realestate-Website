@@ -1,30 +1,39 @@
 import { UserRole } from './user.models';
 
-export interface CommissionSettings {
-  agentLevel1Percent: number;
-  agentLevel2Percent: number;
-  seniorAgentLevel1Percent: number;
-  seniorAgentLevel2Percent: number;
+export interface AuctionCommissionCalculation {
+  finalAuctionPrice: number;
+  basePrice: number;
+  auctionPremium: number;
+  additionalAgentPool: number;
+  winningAgentBaseShare: number;
+  winningAgentClosingShare: number;
+  winningAgentTotal: number;
+  participationPool: number;
+  amountPerOtherAgent: number;
+  totalAgentCount: number;
+  otherAgentCount: number;
 }
 
 export interface CommissionRecord {
   id: string;
-  tenantId: string;
-  tenantName: string;
-  propertyId: string;
-  propertyBusinessId: number;
-  propertyName: string;
-  sellingAgentUserId: string;
-  sellingAgentDisplayName: string;
-  sellingAgentRole: UserRole;
-  commissionLevel: 1 | 2;
-  depositAmount: number;
-  commissionRatePercent: number;
+  settlementId: string;
+  auctionReference: string;
+  agentUserId: string;
+  agentDisplayName: string;
+  agentRole: UserRole;
+  isWinningAgent: boolean;
+  totalAgentCount: number;
+  finalAuctionPrice: number;
+  basePrice: number;
+  auctionPremium: number;
+  additionalAgentPool: number;
+  baseShare: number;
+  premiumShare: number;
   commissionAmount: number;
-  isReceived: boolean;
-  receivedAt?: string;
-  receivedByUserId?: string;
-  receivedByDisplayName?: string;
+  isPaid: boolean;
+  paidAt?: string;
+  paidByUserId?: string;
+  paidByDisplayName?: string;
   createdAt: string;
 }
 
@@ -32,18 +41,24 @@ export interface AgentCommissionSummary {
   userId: string;
   displayName: string;
   role: UserRole;
-  commissionLevel: 1 | 2;
   totalCommission: number;
   outstandingCommission: number;
   receivedCommission: number;
-  saleCount: number;
+  auctionCount: number;
   outstandingCount: number;
 }
 
 export interface CommissionOverview {
-  settings?: CommissionSettings;
   agents: AgentCommissionSummary[];
   records: CommissionRecord[];
   totalOutstanding: number;
   totalReceived: number;
+}
+
+export interface CreateAuctionSettlement {
+  auctionReference: string;
+  finalAuctionPrice: number;
+  basePrice: number;
+  winningAgentUserId: string;
+  otherAgentUserIds: string[];
 }

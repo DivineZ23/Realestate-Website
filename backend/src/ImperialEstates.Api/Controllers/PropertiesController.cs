@@ -32,6 +32,10 @@ public sealed class PropertiesController(
     public Task<IReadOnlyList<PropertyBookingGroupDto>> AllBookings(CancellationToken ct) =>
         service.GetAllBookingGroupsAsync(ct);
 
+    [Authorize(Policy = "Manager"), HttpGet("bookings/announcement-summary")]
+    public Task<BookingAnnouncementSummaryDto> BookingAnnouncementSummary(CancellationToken ct) =>
+        service.GetBookingAnnouncementSummaryAsync(ct);
+
     [Authorize(Policy = "ApprovedUser"), HttpGet("{id}/manage")]
     public Task<PropertyDto> Details(string id, CancellationToken ct) => service.GetAsync(id, ct);
 
@@ -89,6 +93,18 @@ public sealed class PropertiesController(
         await service.CancelBookingAsync(id, bookingId, User.UserId(), ct);
         return NoContent();
     }
+
+    [Authorize(Policy = "Manager"), HttpDelete("{id}/bookings")]
+    public async Task<IActionResult> CloseAllBookings(string id, CancellationToken ct)
+    {
+        await service.CloseAllBookingsAsync(id, User.UserId(), ct);
+        return NoContent();
+    }
+
+    [Authorize(Policy = "Manager"), HttpPatch("{id}/bookings/announcement")]
+    public Task<BookingAnnouncementStateDto> SetBookingAnnouncement(
+        string id, SetBookingAnnouncementRequest request, CancellationToken ct) =>
+        service.SetBookingAnnouncementAsync(id, request.IsPosted, User.UserId(), ct);
 
     [Authorize(Policy = "ApprovedUser"), HttpGet("{id}/history")]
     public Task<IReadOnlyList<PropertyStatusHistoryDto>> History(string id, CancellationToken ct) => service.GetHistoryAsync(id, ct);
